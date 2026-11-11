@@ -797,7 +797,7 @@ ns.CLASSIC_TRAINERS = {
   { name = "Jormund Stonebrow", profession = "Tailoring", npc = 5153 },
   { name = "Me'lynn", profession = "Tailoring", npc = 4159 },
   { name = "Eldrin", profession = "Tailoring", npc = 1103 },
-  { name = "Annora", profession = "Enchanting", tier = "Artisan", zone = "inside Uldaman (Badlands)", npc = 11073 },
+  { name = "Annora", profession = "Enchanting", tier = "Artisan", zone = "в Ульдамане (Бесплодные земли)", npc = 11073 },
   { name = "Kitta Firewind", profession = "Enchanting", tier = "Expert", npc = 11072 },
   { name = "Lucan Cordell", profession = "Enchanting", npc = 1317 },
   { name = "Gimble Thistlefuzz", profession = "Enchanting", npc = 5157 },

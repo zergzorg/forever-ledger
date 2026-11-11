@@ -1284,9 +1284,10 @@ SlashCmdList.FOREVERLEDGER = function(msg)
   elseif msg:match("^source") then
     local s = msg:match("^source%s+(%S+)")
     local map = { auto = "auto", own = "own", auctionator = "Auctionator", tsm = "TSM", auctioneer = "Auctioneer" }
+    local label = { auto = "Авто", own = "Мои проверки", auctionator = "Auctionator", tsm = "TSM", auctioneer = "Auctioneer" }
     if s and map[s] then
       ns.db.settings.source = map[s]
-      ns:Print("Источник цен: " .. map[s] .. ".")
+      ns:Print("Источник цен: " .. label[s] .. ".")
     else
       ns:Print("Используйте /fl source auto, own, auctionator, tsm или auctioneer.")
     end
