@@ -130,7 +130,7 @@ end
 -- The list in name order, for the Watched items view.
 local function sorted()
   local out = {}
-  for id, w in pairs(data()) do out[#out + 1] = { id = id, w = w, name = ns.ItemName(id) or ("item " .. id) } end
+  for id, w in pairs(data()) do out[#out + 1] = { id = id, w = w, name = ns.ItemName(id) or ("предмет " .. id) } end
   table.sort(out, function(a, b) return a.name:lower() < b.name:lower() end)
   return out
 end
@@ -179,19 +179,19 @@ local function addFromBox(v)
   local text = v.add:GetText()
   local id = v.pendingID or resolve(text)
   if not id then
-    ns:Print("Couldn't find that item. Shift-click it from your bags or a chat link, drag it here, or type its name.")
+    ns:Print("Не удалось найти предмет. Shift+клик по нему в сумках или ссылке в чате, перетащите сюда или введите название.")
     return
   end
   local maxText = v.max:GetText():gsub("^%s+", ""):gsub("%s+$", "")
   local max = maxText ~= "" and ns.ParseMoneyLoose(maxText, "g") or 0
   if not max or max < 0 then
-    ns:Print("Couldn't read that price. Try 2s, 1g 50s, 75c or a plain number for gold; leave it empty for the vendor price.")
+    ns:Print("Не удалось прочитать цену. Попробуйте 2s, 1g 50s, 75c или число для золота; пусто — цена торговца.")
     v.max:SetFocus()
     return
   end
   ns:WatchItem(id, max)
-  ns:Print(("Watching %s, %s. The flip watch checks it every pass."):format(ns.ItemName(id) or "it",
-    max > 0 and ("up to " .. ns.Money(max)) or "at the vendor price"))
+  ns:Print(("Следим за %s, %s. Слежение за флипами проверяет его каждый проход."):format(ns.ItemName(id) or "it",
+    max > 0 and ("до " .. ns.Money(max)) or "по цене торговца"))
   v.add:SetText(""); v.max:SetText("")
   v.pendingID = nil
   v.add:ClearFocus(); v.max:ClearFocus()
@@ -221,31 +221,31 @@ local function row(v, i)
     local limit, how, sell = ns:WatchLimit(r.id)
     GameTooltip:AddLine(" ")
     if how == "you" then
-      GameTooltip:AddLine(("Bought at %s or less, your price."):format(ns.Money(limit)), T.accent[1], T.accent[2], T.accent[3], true)
+      GameTooltip:AddLine(("Покупать по %s или дешевле, ваша цена."):format(ns.Money(limit)), T.accent[1], T.accent[2], T.accent[3], true)
     elseif how == "vendor" then
-      GameTooltip:AddLine(("Bought at %s or less: a vendor pays %s, less your vendor flip margin."):format(ns.Money(limit), ns.Money(sell)),
+      GameTooltip:AddLine(("Покупать по %s или дешевле: торговец платит %s минус ваш запас флипа."):format(ns.Money(limit), ns.Money(sell)),
         T.accent[1], T.accent[2], T.accent[3], true)
     else
-      GameTooltip:AddLine("Not bought yet: vendors don't buy it, so type the most you'd pay in Up to.", 1, 0.82, 0, true)
+      GameTooltip:AddLine("Пока не покупается: торговцы его не покупают. Введите максимум в «До».", 1, 0.82, 0, true)
     end
     if ns.IsGearItem and ns:IsGearItem(r.id) then
-      GameTooltip:AddLine("Gear is checked by the full scan (about every 15 minutes), not between them.", 0.7, 0.7, 0.7, true)
+      GameTooltip:AddLine("Снаряжение проверяется полным сканом (примерно каждые 15 минут), а не между ними.", 0.7, 0.7, 0.7, true)
     end
-    GameTooltip:AddLine("Click to search for it on the auction house.", 0.6, 0.6, 0.6)
+    GameTooltip:AddLine("Клик — найти на аукционе.", 0.6, 0.6, 0.6)
     GameTooltip:Show()
   end)
   r.hit:SetScript("OnLeave", function() GameTooltip:Hide() end)
   r.hit:SetScript("OnClick", function()
-    if not ns:SearchAuctionHouse(r.id) then ns:Print("Open the auction house, then click an item to search for it.") end
+    if not ns:SearchAuctionHouse(r.id) then ns:Print("Откройте аукцион и щёлкните предмет, чтобы найти его.") end
   end)
-  r.max = T:MoneyBox(r, function(value) ns:WatchItem(r.id, value) end, "g", false, "vendor")
+  r.max = T:MoneyBox(r, function(value) ns:WatchItem(r.id, value) end, "g", false, "торговец")
   r.max:SetWidth(76)
   r.max:SetPoint("LEFT", C.max, 0)
   r.max.compact = true
   r.max:HookScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
-    GameTooltip:AddLine("Up to", 1, 1, 1)
-    GameTooltip:AddLine("The most the Buy queue pays for it. \"vendor\": only when a vendor pays more (a vendor flip). A price of yours that's lower than that still buys vendor flips.", nil, nil, nil, true)
+    GameTooltip:AddLine("До", 1, 1, 1)
+    GameTooltip:AddLine("Максимум, который платит очередь. «торговец»: только когда торговец даёт больше (флип у торговца). Ваша цена ниже всё равно покупает флипы.", nil, nil, nil, true)
     GameTooltip:Show()
   end)
   r.max:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -257,7 +257,7 @@ local function row(v, i)
   r.vendor:SetJustifyH("RIGHT")
   r.remove = T:Button(r, "x", 20, function() ns:UnwatchItem(r.id) end, 20)
   r.remove:SetPoint("LEFT", C.x, 0)
-  tip(r.remove, "Stop watching", "Takes it off the list. Nothing you've bought is affected.")
+  tip(r.remove, "Не следить", "Убирает из списка. На купленное не влияет.")
   v.rows[i] = r
   return r
 end
@@ -283,7 +283,7 @@ local function refresh()
     local cheap = cheapest and limit and cheapest <= limit
     r.name:SetText(cheap and ("|cff7fd39c" .. e.name .. "|r") or e.name)
     if not r.max:HasFocus() then r.max:SetValue(e.w.max or 0) end
-    r.now:SetText((rec and rec.none and "|cff888888none|r") or (cheapest and (cheap and ("|cff7fd39c" .. ns.MoneyPlain(cheapest) .. "|r") or ns.MoneyPlain(cheapest)))
+    r.now:SetText((rec and rec.none and "|cff888888нет|r") or (cheapest and (cheap and ("|cff7fd39c" .. ns.MoneyPlain(cheapest) .. "|r") or ns.MoneyPlain(cheapest)))
       or "|cff888888?|r")
     local sell = ns:GetSellPrice(e.id)
     r.vendor:SetText(sell and sell > 0 and ns.MoneyPlain(sell) or "-")
@@ -293,7 +293,7 @@ local function refresh()
   v.content:SetHeight(math.max(#list * ROW_H, ROW_H))
   v.sf.UpdateScrollBar()
   v.empty:SetShown(#list == 0)
-  v.count:SetText(#list == 0 and "" or ("%d watched. Green: at or under Up to right now."):format(#list))
+  v.count:SetText(#list == 0 and "" or ("Наблюдаем: %d %s. Зелёное — сейчас по «До» или дешевле."):format(#list, ns.Plural(#list, "предмет", "предмета", "предметов")))
 end
 
 function ns:RefreshWatchedView() refresh() end
@@ -317,8 +317,8 @@ local function build(parent)
   line:SetColorTexture(T.border[1], T.border[2], T.border[3], T.border[4] or 1)
   local title = T:Text(bar, 13)
   title:SetPoint("LEFT", 10, 0)
-  title:SetText("Watched items")
-  local back = T:Button(bar, "Back to the queue", 130, function() v:Hide() end, 22)
+  title:SetText("Отслеживаемые предметы")
+  local back = T:Button(bar, "Назад к очереди", 130, function() v:Hide() end, 22)
   back:SetPoint("RIGHT", -6, 0)
 
   local info = T:Text(v, 11, T.dim)
@@ -326,10 +326,10 @@ local function build(parent)
   info:SetPoint("RIGHT", v, "RIGHT", -12, 0)
   info:SetJustifyH("LEFT")
   info:SetWordWrap(true)
-  info:SetText("Watch flips checks these every pass, on top of the items it picks. Anything at or under Up to joins Vendor flips, first in the list, and chimes. Up to \"vendor\": only when a vendor pays more.")
+  info:SetText("Слежение проверяет их каждый проход сверх обычных. Всё по «До» или дешевле попадает во «Флипы у торговца» первыми и звенит. «До» = «торговец»: только когда торговец даёт больше.")
 
   -- Add: shift-click, drag or type an item; the most you'd pay (empty: vendor price).
-  v.add = hinted(v, 214, "Shift-click, drag or type an item", "LEFT")
+  v.add = hinted(v, 214, "Shift+клик, перетащите или введите предмет", "LEFT")
   v.add:SetPoint("TOPLEFT", 10, -84)
   v.add:HookScript("OnTextChanged", function(self, userInput) if userInput then v.pendingID = ns.ItemIDFromLink(self:GetText()) end end)
   v.add:SetScript("OnEnterPressed", function() addFromBox(v) end)
@@ -346,13 +346,13 @@ local function build(parent)
   v.add:SetScript("OnReceiveDrag", drop)
   v.add:SetScript("OnMouseDown", function() if GetCursorInfo() then drop() end end)
   v:SetScript("OnReceiveDrag", drop)
-  v.max = hinted(v, 90, "up to: vendor")
+  v.max = hinted(v, 90, "до: торговец")
   T:MoneyPreview(v.max, "g")
   v.max:SetPoint("LEFT", v.add, "RIGHT", 4, 0)
   v.max:SetScript("OnEnterPressed", function() addFromBox(v) end)
   local addB = T:Button(v, "Watch", 70, function() addFromBox(v) end, 22)
   addB:SetPoint("LEFT", v.max, "RIGHT", 4, 0)
-  tip(addB, "Watch", "Adds the item. Leave the price empty to buy it only as a vendor flip, or type the most you'd pay: 2s, 1g 50s, or a plain number for gold.")
+  tip(addB, "Watch", "Добавляет предмет. Пустая цена — покупать только как флип у торговца; или введите максимум: 2s, 1g 50s или число для золота.")
 
   local header = CreateFrame("Frame", nil, v)
   header:SetPoint("TOPLEFT", 6, -114)
@@ -366,7 +366,7 @@ local function build(parent)
     return fs
   end
   head("Item", "LEFT", 8)
-  head("Up to", "LEFT", C.max + 2)
+  head("До", "LEFT", C.max + 2)
   head("Now", "RIGHT", C.now)
   head("Vendor", "RIGHT", C.vendor)   -- (what a vendor pays; "Vendor pays" ran into Now)
 
@@ -378,7 +378,7 @@ local function build(parent)
   v.empty:SetPoint("TOP", v.sf, "TOP", 0, -30)
   v.empty:SetWidth(380)
   v.empty:SetWordWrap(true)
-  v.empty:SetText("Nothing watched yet. Add an item above, or tick Watch in an item's price window.")
+  v.empty:SetText("Пока ничего не отслеживается. Добавьте предмет выше или отметьте «Следить» в окне цены.")
   v.count = T:Text(v, 11, T.dim)
   v.count:SetPoint("BOTTOMLEFT", 12, 12)
 
@@ -423,7 +423,7 @@ local function onModifiedClick(link)
   end
   if not ns:IsWatched(id) then
     ns:WatchItem(id, nil)
-    ns:Print(("Watching %s at the vendor price. Type a price in Up to to buy it for more."):format(link))
+    ns:Print(("Следим за %s по цене торговца. Введите цену в «До», чтобы покупать дороже."):format(link))
   end
 end
 if HandleModifiedItemClick then hooksecurefunc("HandleModifiedItemClick", onModifiedClick) end

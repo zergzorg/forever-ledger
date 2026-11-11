@@ -423,7 +423,7 @@ local function onMoney()
     -- Hefty Battlehammer). Commodities are saved from the page, so they're left alone.
     if (not h or h.single) and id and ns.RemoveBought then
       local ok, err = pcall(ns.RemoveBought, ns, id, 1, math.abs(delta))
-      if not ok then ns:Debug("Couldn't take the purchase off the listings:", err) end
+      if not ok then ns:Debug("Не удалось убрать покупку из лотов:", err) end
     end
   end
   ns:Debug("Money", source, delta > 0 and "+" or "-", ns.Money(math.abs(delta)))
@@ -941,7 +941,7 @@ local function trimVersions(d, key)
       local id = ids[i]
       if not id then return end
       local ok, err = pcall(trimOne, id)
-      if not ok then ns:Debug("Version history trim skipped for", id, err) end
+      if not ok then ns:Debug("Обрезка истории версий пропущена для", id, err) end
     end
     C_Timer.After(0, step)
   end
@@ -1173,11 +1173,11 @@ end
 local SPEED_MIN_MINUTES = 180
 local SPEED_NONE_MINUTES = 12 * 60   -- this long with none bought: "no sales seen"
 local SPEED = {
-  fast = { label = "Fast", color = "7fd39c" },
-  steady = { label = "Steady", color = "c8e37c" },
-  slow = { label = "Slow", color = "ffd100" },
-  rare = { label = "Rare, sells quickly", color = "7fb8ff" },
-  none = { label = "No sales seen", color = "ee8597" },
+  fast = { label = "Быстро", color = "7fd39c" },
+  steady = { label = "Стабильно", color = "c8e37c" },
+  slow = { label = "Медленно", color = "ffd100" },
+  rare = { label = "Редкое, быстро продаётся", color = "7fb8ff" },
+  none = { label = "Продаж не видно", color = "ee8597" },
 }
 -- Turnover needed for Fast and Steady, per kind.
 local SPEED_STEPS = {
@@ -1221,7 +1221,7 @@ function ns:SellSpeed(id)
 end
 
 -- Fewer sales than this aren't enough to judge by in the first day: one piece of gear
--- gone in 3 hours made it "Fast" (owner's Deals tab, October 3: nearly all gear Fast).
+-- gone in 3 hours made it "Быстро" (owner's Deals tab, October 3: nearly all gear Fast).
 local SPEED_MIN_SALES = 3
 sellSpeed = function(id)
   local gone, minutes = ns:SellRate(id, "month")
@@ -1250,9 +1250,9 @@ end
 
 -- "Steady, about 12 a day (40 listed)" for tooltips and the Deals tab.
 function ns:SellSpeedText(sp)
-  local per = sp.perDay >= 1 and ("about %d a day"):format(math.floor(sp.perDay + 0.5))
-    or sp.perDay > 0 and "under 1 a day" or "none bought"
-  return ("|cff%s%s|r, %s (%s listed)"):format(sp.color, sp.label, per, math.floor(sp.listed + 0.5))
+  local per = sp.perDay >= 1 and ("около %d в день"):format(math.floor(sp.perDay + 0.5))
+    or sp.perDay > 0 and "меньше 1 в день" or "не покупали"
+  return ("|cff%s%s|r, %s (лотов: %s)"):format(sp.color, sp.label, per, math.floor(sp.listed + 0.5))
 end
 
 local function median(list)
@@ -1313,12 +1313,12 @@ end
 -- /fl money: today's money in and out for this character, for testing
 ---------------------------------------------------------------------------
 local LABELS = {
-  ahSale = "Auction house sales", ahBuy = "Auction house purchases", ahFee = "Auction house fees",
-  ahDepositBack = "Auction deposits back",
-  vendorSell = "Sold to vendors", vendorBuy = "Bought from vendors", repair = "Repairs",
-  mailIn = "Mail received", mailOut = "Mail sent", tradeIn = "Trade received", tradeOut = "Trade given",
-  loot = "Loot", quest = "Quests", training = "Training", flight = "Flights",
-  otherIn = "Other income", otherOut = "Other spending",
+  ahSale = "Продажи на аукционе", ahBuy = "Покупки на аукционе", ahFee = "Сборы аукциона",
+  ahDepositBack = "Возврат залогов",
+  vendorSell = "Продано торговцам", vendorBuy = "Куплено у торговцев", repair = "Ремонт",
+  mailIn = "Почта получена", mailOut = "Почта отправлена", tradeIn = "Обмен получен", tradeOut = "Обмен отдан",
+  loot = "Добыча", quest = "Задания", training = "Обучение", flight = "Полёты",
+  otherIn = "Прочий доход", otherOut = "Прочие расходы",
 }
 ns.MONEY_LABELS = LABELS   -- (Sessions.lua: the tracker's hover lists money by source)
 local INCOME = { ahSale = true, ahDepositBack = true, vendorSell = true, mailIn = true, tradeIn = true, loot = true, quest = true, otherIn = true }
@@ -1342,8 +1342,8 @@ end
 
 function ns:PrintMoney()
   local lines, net = ns:MoneyToday()
-  if not lines then ns:Print("No money in or out recorded today yet."); return end
-  ns:Print("Money today for " .. (UnitName("player") or "?") .. ":")
+  if not lines then ns:Print("За сегодня движения золота ещё нет."); return end
+  ns:Print("Золото за сегодня: " .. (UnitName("player") or "?") .. ":")
   for _, line in ipairs(lines) do print("    " .. line) end
-  print(("    Net: %s%s"):format(net >= 0 and "+" or "-", ns.Money(math.abs(net))))
+  print(("    Итог: %s%s"):format(net >= 0 and "+" or "-", ns.Money(math.abs(net))))
 end

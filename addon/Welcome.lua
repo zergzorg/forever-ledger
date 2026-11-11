@@ -3,16 +3,16 @@ local T = ns.Theme
 
 ---------------------------------------------------------------------------
 -- Welcome: a short card over the main window the first time it opens, with the five
--- things to do first and a button for each that can be done from here. "Got it" puts
+-- things to do first and a button for each that can be done from here. "Понятно" puts
 -- it away; the Help tab (or /fl welcome) shows it again. From the first UI pass
 -- (Magic, October 3: a new player didn't know what Check did or where to scroll).
 ---------------------------------------------------------------------------
 local STEPS = {
-  { "Learn your recipes", "Open each profession window once on every character. Forever Ledger reads your recipes from it." },
-  { "Price everything", "At the auction house, click Full scan. It reads every listing in a few seconds; the game allows one about every 15 minutes. Prices and flips work from the first scan; deals and sell speed get sharper as a few days of scans build up." },
-  { "Buy vendor flips", "At the auction house, click Buy queue: a panel beside it lists things selling for less than a vendor pays, with Watch flips to keep scanning while you're there. Click Buy to buy the next one, or scroll down over its top strip." },
-  { "Find deals", "The Deals tab lists items selling well below their usual price, to buy and resell.", "Open Deals", "deals" },
-  { "Plan your shopping", "Shopping lists hold what you want to buy and the most you'd pay. Plan anywhere; they show beside the auction house when you get there.", "Open shopping lists", "lists" },
+  { "Изучите рецепты", "Откройте окно каждой профессии один раз на каждом персонаже. Forever Ledger прочитает оттуда ваши рецепты." },
+  { "Узнайте цены", "На аукционе нажмите «Полный скан». Он читает все лоты за несколько секунд; игра разрешает один примерно каждые 15 минут. Цены и флипы работают с первого скана; сделки и скорость продажи уточняются по мере накопления сканов за несколько дней." },
+  { "Покупайте флипы у торговца", "На аукционе нажмите «Очередь покупок»: панель рядом покажет то, что продаётся дешевле цены торговца, а «Следить за флипами» продолжит сканировать, пока вы там. Клик «Купить» берёт следующее, или прокрутите колесо над верхней полосой." },
+  { "Ищите сделки", "Вкладка «Сделки» показывает предметы заметно ниже обычной цены — для покупки и перепродажи.", "Открыть сделки", "deals" },
+  { "Планируйте покупки", "Списки покупок хранят, что вы хотите купить и сколько максимум готовы заплатить. Планируйте где угодно; у аукциона они появятся рядом.", "Открыть списки покупок", "lists" },
 }
 
 ---------------------------------------------------------------------------
@@ -129,7 +129,7 @@ end
 
 local card, shade
 
--- Every button closes it (Magic, October 3: "Open shopping lists" opened behind it).
+-- Every button closes it (Magic, October 3: "Открыть списки покупок" opened behind it).
 local function close()
   ns.db.settings.welcomeSeen = true
   shade:Hide()   -- (the card is inside it)
@@ -140,8 +140,8 @@ local function build()
   if not body then return end
   local W
   shade, card, W = overlay(body)
-  local y = header(card, "Welcome to Forever Ledger",
-    "It finds gold for you: things to buy and sell on, and what your crafting is worth. Five things to start with:")
+  local y = header(card, "Добро пожаловать в Forever Ledger",
+    "Он ищет золото за вас: что купить и перепродать и сколько стоит ваш крафт. Пять шагов для начала:")
   for i, s in ipairs(STEPS) do
     local key = s[4]
     local button = s[3] and { s[3], function()
@@ -150,9 +150,9 @@ local function build()
     end }
     y = y + itemCard(card, y, W, tostring(i), s[1], s[2], button) + 6
   end
-  footer(card, "The Help tab explains every feature, and can show this again.", {
-    { "Open Help", function() close(); ns:ShowTab("help") end },
-    { "Got it", close },
+  footer(card, "Вкладка «Справка» объясняет всё, и это окно можно открыть снова.", {
+    { "Открыть справку", function() close(); ns:ShowTab("help") end },
+    { "Понятно", close },
   })
 end
 
@@ -174,22 +174,22 @@ end
 ns.WHATS_NEW = {
   version = "0.20.0",
   lines = {
-    { "Watched items: pick items to always check, each with the most you'd pay (or \"vendor\"). Watch flips checks them every pass, and they go first in the Buy queue's Vendor flips. Add one with Watch in its price window.", major = true },
-    { "Buy queue: a row of several (bags) is bought one at a time, and buying goes on after a purchase that got no answer, as in the beta.", change = true },
-    { "Vendor flips: items vendors buy are no longer marked \"vendors won't buy it\" partway through a session, which hid their flips until a reload.", fix = true },
-    { "Refused listings: one the auction house won't sell at its price is skipped, and a flip found gone stays off the list until a newer price comes in.", fix = true },
-    { "Sell protection: on the stacks page the cut is worked out on the whole listing, so 20 at 19c no longer slips under a vendor's price.", fix = true },
-    { "Undercuts: they need a price from the last 30 minutes, so a listing that's since sold can't get a fine auction canceled.", fix = true },
-    { "Damaged gear: Worth to you uses what a vendor pays for it as it is.", fix = true },
+    { "Отслеживаемые предметы: отметьте то, что проверять всегда, с максимальной ценой (или «торговец»). Слежение проверяет их каждый проход, и в очереди они идут первыми во «Флипах у торговца». Добавить можно кнопкой «Следить» в окне цены.", major = true },
+    { "Очередь покупок: ряд из нескольких (сумки) покупается по одному, и покупка продолжается после лота без ответа, как в бете.", change = true },
+    { "Флипы у торговца: предметы, которые торговцы покупают, больше не помечаются «торговцы не купят» посреди сессии, из-за чего их флипы пропадали до перезагрузки.", fix = true },
+    { "Отклонённые лоты: лот, который аукцион не продаёт по его цене, пропускается, а исчезнувший флип не возвращается, пока не придёт более свежая цена.", fix = true },
+    { "Защита продажи: на странице стопок комиссия считается со всего лота, поэтому 20 по 19с больше не проваливается ниже цены торговца.", fix = true },
+    { "Перебитые цены: нужна цена за последние 30 минут, поэтому проданный лот не отменит нормальный аукцион.", fix = true },
+    { "Повреждённое снаряжение: «Стоит для вас» считает по тому, что торговец платит за него как есть.", fix = true },
   },
 }
 
 -- The kinds: icon (media/icons, drawn by tools/make-icons.ps1), colour, what a hover says.
 local KINDS = {
-  major = { "change-major", nil, "A big change" },
-  new = { "change-new", { 0.5, 0.83, 0.61 }, "New" },
-  change = { "change-edit", { 0.95, 0.75, 0.35 }, "Changed" },
-  fix = { "change-fix", { 0.6, 0.7, 0.85 }, "Fixed" },
+  major = { "change-major", nil, "Крупное изменение" },
+  new = { "change-new", { 0.5, 0.83, 0.61 }, "Новое" },
+  change = { "change-edit", { 0.95, 0.75, 0.35 }, "Изменено" },
+  fix = { "change-fix", { 0.6, 0.7, 0.85 }, "Исправлено" },
 }
 local function kindOf(l)
   if type(l) ~= "table" then return "new" end
@@ -284,8 +284,8 @@ local function buildNews()
   local W
   newsShade, news, W = overlay(body)
   local w = ns.WHATS_NEW
-  local y = header(news, "What's new in " .. w.version,
-    "The highlights of this version. Every change is in the changelog on CurseForge and Wago.")
+  local y = header(news, "Что нового в " .. w.version,
+    "Главное в этой версии. Все изменения — в списке изменений на CurseForge и Wago.")
   -- Big changes first, then the rest: new, changed, fixed.
   local rest = { new = {}, change = {}, fix = {} }
   for _, l in ipairs(w.lines) do
@@ -297,10 +297,10 @@ local function buildNews()
   for _, kind in ipairs({ "new", "change", "fix" }) do
     for _, l in ipairs(rest[kind]) do small[#small + 1] = l end
   end
-  if #small > 0 then y = y + groupCard(news, y, W, "Also in this version", small) + 6 end
-  footer(news, "The Help tab explains every feature. /fl new shows this again.", {
-    { "Open Help", function() newsShade:Hide(); ns:ShowTab("help") end },
-    { "Close", function() newsShade:Hide() end },
+  if #small > 0 then y = y + groupCard(news, y, W, "Также в этой версии", small) + 6 end
+  footer(news, "Вкладка «Справка» объясняет всё. /fl new покажет это снова.", {
+    { "Открыть справку", function() newsShade:Hide(); ns:ShowTab("help") end },
+    { "Закрыть", function() newsShade:Hide() end },
   })
 end
 
@@ -314,9 +314,9 @@ end
 
 function ns:ShowWhatsNew()
   local w = ns.WHATS_NEW
-  ns:Print(("What's new in %s:"):format(w.version))
+  ns:Print(("Что нового в %s:"):format(w.version))
   for _, line in ipairs(w.lines) do print("  - " .. lineText(line)) end
-  print("  The Help tab explains everything; What's new there (or /fl new) shows this again.")
+  print("  Вкладка «Справка» объясняет всё; «Что нового» там (или /fl new) покажет это снова.")
 end
 
 ns:OnReady(function()

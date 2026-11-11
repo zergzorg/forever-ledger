@@ -76,7 +76,7 @@ function ns:ItemPriceSummary(id, suffix)
   s.have = { total = bags + bank + alts, here = bags + bank, alts = alts }
   local posted = 0
   for key, mine in pairs(ns.db.myAuctions or {}) do
-    local char = key:gsub(" %(neutral%)$", "")
+    local char = key:gsub(" %(нейтральный%)$", "")
     if ns:SameMarketChar(char) then
       for _, e in ipairs(mine.list or {}) do
         if e.id == id and not e.sold then posted = posted + (e.q or 1) end
@@ -317,8 +317,8 @@ local function drawGraph(g, pts, flats)
 
     -- The price lines: typical first, cheapest on top. Days more than 8 apart (no scans
     -- in between) aren't joined.
-    for _, key in ipairs({ "typical", "cheapest" }) do
-      local c = key == "cheapest" and GOLD or BLUE
+    for _, key in ipairs({ "обычно", "минимум" }) do
+      local c = key == "минимум" and GOLD or BLUE
       local prev
       for _, p in ipairs(pts) do
         local v = p[key]
@@ -326,7 +326,7 @@ local function drawGraph(g, pts, flats)
           local px, py = p.week and x(p.day + 3) or x(p.day), y(v)
           if prev and p.day - prev.day <= 8 and g.CreateLine then
             local l = nextLine()
-            l:SetColorTexture(c[1], c[2], c[3], key == "cheapest" and 1 or 0.8)
+            l:SetColorTexture(c[1], c[2], c[3], key == "минимум" and 1 or 0.8)
             l:SetStartPoint("BOTTOMLEFT", g, prev.x, prev.y)
             l:SetEndPoint("BOTTOMLEFT", g, px, py)
           elseif not (prev and p.day - prev.day <= 8) then
@@ -338,7 +338,7 @@ local function drawGraph(g, pts, flats)
             t:SetSize(3, 3)
           end
           prev = { day = p.day, x = px, y = py }
-          if key == "cheapest" then g.pts[#g.pts + 1] = { x = px, p = p } end
+          if key == "минимум" then g.pts[#g.pts + 1] = { x = px, p = p } end
         end
       end
     end
@@ -354,9 +354,9 @@ local function drawGraph(g, pts, flats)
       t:SetSize(1, plotH)
       local l1, l2 = nextLabel(), nextLabel()
       l1:ClearAllPoints(); l1:SetPoint("TOPRIGHT", g, "BOTTOMLEFT", x(firstDaily) - 6, PAD_B + plotH)
-      l1:SetText("weekly")
+      l1:SetText("неделя")
       l2:ClearAllPoints(); l2:SetPoint("TOPLEFT", g, "BOTTOMLEFT", x(firstDaily) + 2, PAD_B + plotH)
-      l2:SetText("daily")
+      l2:SetText("день")
     end
 
     -- Dates along the bottom
@@ -365,7 +365,7 @@ local function drawGraph(g, pts, flats)
       local l = nextLabel()
       l:ClearAllPoints()
       l:SetPoint("TOP", g, "BOTTOMLEFT", x(day), PAD_B - 4)
-      l:SetText(day == d and "Today" or date("%b %d", dayTime(day)))
+      l:SetText(day == d and "Сегодня" or date("%d.%m", dayTime(day)))
     end
   end
   doneLines(); doneTex(); doneLabels()
@@ -386,11 +386,11 @@ local function hoverGraph(g)
   g.marker:SetHeight(g:GetHeight() - PAD_T - PAD_B)
   g.marker:Show()
   GameTooltip:SetOwner(g, "ANCHOR_CURSOR")
-  local when = p.week and ("Week of " .. date("%b %d", dayTime(p.day))) or (p.day == today() and "Today" or date("%a %b %d", dayTime(p.day)))
+  local when = p.week and ("Неделя от " .. date("%d.%m", dayTime(p.day))) or (p.day == today() and "Сегодня" or date("%d.%m", dayTime(p.day)))
   GameTooltip:AddLine(when, 1, 1, 1)
-  GameTooltip:AddDoubleLine("Cheapest", ns.Money(p.cheapest), 0.7, 0.7, 0.7, GOLD[1], GOLD[2], GOLD[3])
-  if p.typical then GameTooltip:AddDoubleLine("Typical", ns.Money(p.typical), 0.7, 0.7, 0.7, BLUE[1], BLUE[2], BLUE[3]) end
-  if p.listed then GameTooltip:AddDoubleLine(p.week and "Listed, on average" or "Listed", count(p.listed), 0.7, 0.7, 0.7, 1, 1, 1) end
+  GameTooltip:AddDoubleLine("Минимум", ns.Money(p.cheapest), 0.7, 0.7, 0.7, GOLD[1], GOLD[2], GOLD[3])
+  if p.typical then GameTooltip:AddDoubleLine("Обычная", ns.Money(p.typical), 0.7, 0.7, 0.7, BLUE[1], BLUE[2], BLUE[3]) end
+  if p.listed then GameTooltip:AddDoubleLine(p.week and "В продаже, в среднем" or "Лотов", count(p.listed), 0.7, 0.7, 0.7, 1, 1, 1) end
   GameTooltip:Show()
 end
 
@@ -410,7 +410,7 @@ local function buildFind(f)
   eb:SetPoint("RIGHT", f.bar, "RIGHT", -36, 0)
   local hint = T:Text(eb, 11, T.section)
   hint:SetPoint("LEFT", 6, 0)
-  hint:SetText("Look up an item")
+  hint:SetText("Поиск предмета")
   local function showHint() hint:SetShown(eb:GetText() == "" and not eb:HasFocus()) end
   f.find = eb
 
@@ -456,7 +456,7 @@ local function buildFind(f)
       end
       b.e = e
       b.icon:SetTexture(ns:ItemIcon(e.id))
-      b.text:SetText(e.bound and (e.name .. " |cff888888(can't be bought)|r") or e.name)
+      b.text:SetText(e.bound and (e.name .. " |cff888888(нельзя купить)|r") or e.name)
       b:Show()
     end
     for i = #found + 1, #sug.buttons do sug.buttons[i]:Hide() end
@@ -479,7 +479,7 @@ local function buildFind(f)
     local text = self:GetText()
     local id = ns:ResolveItem(text) or (found[1] and found[1].id)
     if id then open(id)
-    elseif text:gsub("%s", "") ~= "" then ns:Print(("No item called \"%s\" found. Try part of its name."):format(text)) end
+    elseif text:gsub("%s", "") ~= "" then ns:Print(("Предмет «%s» не найден. Попробуйте часть названия."):format(text)) end
   end)
   eb:SetScript("OnEscapePressed", function(self) sug:Hide(); self:SetText(""); self:ClearFocus(); showHint() end)
   local function drop()
@@ -490,8 +490,8 @@ local function buildFind(f)
   eb:SetScript("OnMouseDown", function() if GetCursorInfo() then drop() end end)
   eb:HookScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
-    GameTooltip:AddLine("Look up an item", 1, 1, 1)
-    GameTooltip:AddLine("Type two letters or more of any item's name and pick it, or press Enter for the top one. You don't need to have it. A shift-clicked link or an item dragged here works too.", 0.8, 0.8, 0.8, true)
+    GameTooltip:AddLine("Поиск предмета", 1, 1, 1)
+    GameTooltip:AddLine("Введите две буквы названия любого предмета и выберите его или нажмите Enter для первого. Иметь его не нужно. Ссылка с Shift или перетащенный предмет тоже подойдут.", 0.8, 0.8, 0.8, true)
     GameTooltip:Show()
   end)
   eb:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -507,15 +507,15 @@ local function buildFind(f)
   msg:SetPoint("CENTER", 0, 10)
   msg:SetWidth(W - 120)
   cover:SetScript("OnShow", function()
-    msg:SetText("Type an item's name in the box at the top right (two letters or more), or "
-      .. ns:PriceClickName() .. " an item in your bags, a link in chat or a listing on the auction house. (Settings, Tooltips, General picks another click.)")
+    msg:SetText("Введите название предмета в поле справа вверху (две буквы или больше) или "
+      .. ns:PriceClickName() .. " по предмету в сумках, ссылке в чате или лоту на аукционе. (Настройки → Подсказки → Общие меняют клик.)")
   end)
   cover:Hide()
   f.cover = cover
 end
 
 local function build()
-  win = ns.ThemedWindow("ForeverLedgerPriceWindow", W, 600, T:TitleCode() .. "Price window|r")
+  win = ns.ThemedWindow("ForeverLedgerPriceWindow", W, 600, T:TitleCode() .. "Окно цены|r")
   local f = win
   buildFind(f)
 
@@ -534,16 +534,16 @@ local function build()
   f.kind = text(f, 11, T.dim)
   f.kind:SetPoint("TOPLEFT", f.name, "BOTTOMLEFT", 0, -4)
   f.kind:SetWidth(W - 300)
-  f.search = T:Button(f, "Search on the auction house", 200, function()
-    if not ns:SearchAuctionHouse(f.id) then ns:Print("Open the auction house first, then click Search again.") end
+  f.search = T:Button(f, "Поиск на аукционе", 200, function()
+    if not ns:SearchAuctionHouse(f.id) then ns:Print("Сначала откройте аукцион, затем нажмите «Поиск» снова.") end
   end, 24)
   f.search:SetPrimary(true)
   f.search:SetPoint("TOPRIGHT", -12, -46)
   f.search:HookScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
-    GameTooltip:AddLine("Search on the auction house", 1, 1, 1)
-    GameTooltip:AddLine(ns:IsAHOpen() and "Shows this item on the auction house's Buy tab."
-      or "Works while the auction house is open.", 0.8, 0.8, 0.8, true)
+    GameTooltip:AddLine("Поиск на аукционе", 1, 1, 1)
+    GameTooltip:AddLine(ns:IsAHOpen() and "Показывает предмет на вкладке покупки аукциона."
+      or "Работает, пока открыт аукцион.", 0.8, 0.8, 0.8, true)
     GameTooltip:Show()
   end)
   f.search:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -559,7 +559,7 @@ local function build()
   local g = CreateFrame("Frame", nil, f)
   g.empty = T:Text(g, 12, T.dim)
   g.empty:SetPoint("CENTER")
-  g.empty:SetText("No price history yet. Each scan saves one point a day.")
+  g.empty:SetText("Истории цен пока нет. Каждый скан сохраняет одну точку в день.")
   g.marker = g:CreateTexture(nil, "OVERLAY")
   g.marker:SetColorTexture(1, 1, 1, 0.25)
   g.marker:SetWidth(1)
@@ -581,14 +581,14 @@ local function build()
     f.weekRows[i] = { l = text(f, 12), v = text(f, 12, nil, "RIGHT") }
     f.worthRows[i] = { l = text(f, 11), v = text(f, 12, nil, "RIGHT") }
   end
-  f.addItem = T:Button(f, "Add to shopping list", SIDE - 24, function()
+  f.addItem = T:Button(f, "В список покупок", SIDE - 24, function()
     local list = ns:QuickAddToShoppingList(f.id, state.suffix)
-    ns:Print(("Added %s to shopping list \"%s\" (/fl lists)."):format(ns.ItemName(f.id) or "it", list.name))
+    ns:Print(("%s добавлен в список покупок «%s» (/fl lists)."):format(ns.ItemName(f.id) or "it", list.name))
   end, 22)
   f.addItem:HookScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
-    GameTooltip:AddLine("Add to shopping list", 1, 1, 1)
-    GameTooltip:AddLine("Puts this item on the shopping list you're on (or a new one), at your usual price plus the list's allowance. Change Want and Up to there.", 0.8, 0.8, 0.8, true)
+    GameTooltip:AddLine("В список покупок", 1, 1, 1)
+    GameTooltip:AddLine("Добавляет предмет в текущий список покупок (или новый) по обычной цене плюс допуск списка. «Нужно» и «До» меняются там.", 0.8, 0.8, 0.8, true)
     GameTooltip:Show()
   end)
   f.addItem:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -597,10 +597,10 @@ local function build()
   -- the Buy queue buys it at or under the price beside it. Typing a price watches it too.
   local function watchTip(self)
     GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
-    GameTooltip:AddLine("Watch this item", 1, 1, 1)
-    GameTooltip:AddLine("Watch flips checks it every pass, and the Buy queue buys it, first under Vendor flips, at or under the price here. \"vendor\": only when a vendor pays more. All of them: the Watched button on the Buy queue.", 0.8, 0.8, 0.8, true)
+    GameTooltip:AddLine("Следить за предметом", 1, 1, 1)
+    GameTooltip:AddLine("Слежение проверяет его каждый проход, а очередь покупает первым во «Флипах у торговца» по цене отсюда или дешевле. «торговец»: только когда торговец даёт больше. Все отслеживаемые — кнопка на очереди покупок.", 0.8, 0.8, 0.8, true)
     if f.id and ns:IsGearItem(f.id) then
-      GameTooltip:AddLine("Gear is checked by the full scan (about every 15 minutes), any version.", 0.7, 0.7, 0.7, true)
+      GameTooltip:AddLine("Снаряжение проверяется полным сканом (примерно каждые 15 минут), любая версия.", 0.7, 0.7, 0.7, true)
     end
     GameTooltip:Show()
   end
@@ -608,11 +608,11 @@ local function build()
     if not f.id then return end
     if self:GetChecked() then ns:WatchItem(f.id, f.watchMax.value or 0) else ns:UnwatchItem(f.id) end
   end)
-  f.watch.label:SetText("Watch, up to")
+  f.watch.label:SetText("Следить, до")
   f.watch:SetHitRectInsets(0, -(f.watch.label:GetStringWidth() + 8), 0, 0)
   f.watch:SetScript("OnEnter", watchTip)
   f.watch:SetScript("OnLeave", function() GameTooltip:Hide() end)
-  f.watchMax = T:MoneyBox(f, function(value) if f.id then ns:WatchItem(f.id, value) end end, "g", false, "vendor")
+  f.watchMax = T:MoneyBox(f, function(value) if f.id then ns:WatchItem(f.id, value) end end, "g", false, "торговец")
   f.watchMax:SetWidth(84)
   f.watchMax:HookScript("OnEnter", watchTip)
   f.watchMax:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -620,7 +620,7 @@ local function build()
   -- Craft card
   f.craftHead, f.craftWho = text(f, 11), text(f, 11, T.dim)
   f.matCols = {}
-  for i, label in ipairs({ "Material", "Need", "Each", "Per craft", "You have" }) do
+  for i, label in ipairs({ "Material", "Need", "Each", "На крафт", "У вас" }) do
     f.matCols[i] = text(f, 10, T.dim, i == 1 and "LEFT" or "RIGHT")
     f.matCols[i]:SetText(label)
   end
@@ -641,7 +641,7 @@ local function build()
     r:SetScript("OnEnter", function(self)
       if not self.id then return end
       itemTooltip(self, self.id)
-      GameTooltip:AddLine("Click for this material's price history", 0.5, 0.83, 0.61)
+      GameTooltip:AddLine("Клик — история цен этого материала", 0.5, 0.83, 0.61)
       GameTooltip:Show()
     end)
     r:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -652,9 +652,9 @@ local function build()
   for i = 1, 5 do f.sum[i] = { l = text(f, 11, T.dim), v = text(f, 12, nil, "RIGHT") } end
   f.crafts = T:Number(f, { min = 1, max = 10000, step = 1 }, function(v) state.crafts = math.floor(v) end)
   f.craftsLabel = text(f, 11, T.dim)
-  f.craftsLabel:SetText("Crafts")
+  f.craftsLabel:SetText("Крафтов")
   f.listPick = T:Dropdown(f, 190, function(v) state.target = v end)
-  f.addMats = T:Button(f, "Add materials to shopping list", 210, function()
+  f.addMats = T:Button(f, "Материалы в список покупок", 210, function()
     local target = state.target ~= "new" and state.target or nil
     local list, err = ns:CraftToShoppingList(f.id, state.crafts or 1, target)
     if not list then ns:Print(err); return end
@@ -664,8 +664,8 @@ local function build()
   f.addMats:SetPrimary(true)
   f.addMats:HookScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
-    GameTooltip:AddLine("Add materials to shopping list", 1, 1, 1)
-    GameTooltip:AddLine("Everything this many crafts need, added to what the list already wants. Up to starts at your usual price plus the list's allowance; prices you typed stay. What you already have isn't taken off: check Want on the list.", 0.8, 0.8, 0.8, true)
+    GameTooltip:AddLine("Материалы в список покупок", 1, 1, 1)
+    GameTooltip:AddLine("Всё, что нужно для стольких крафтов, добавляется к тому, что список уже хочет. «До» начинается с обычной цены плюс допуск списка; ваши цены сохраняются. Имеющееся не вычитается: проверьте «Нужно» в списке.", 0.8, 0.8, 0.8, true)
     GameTooltip:Show()
   end)
   f.addMats:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -692,12 +692,12 @@ function ns:RefreshPriceWindow()
   f.link = f.link or link
   f.icon.tex:SetTexture(icon or ns:ItemIcon(id))
   local colour = quality and ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[quality]
-  local shown = (name or ns.ItemName(id) or ("item " .. id)) .. (state.suffix and (" " .. (ns:VersionName(state.suffix) or "(other stats)")) or "")
+  local shown = (name or ns.ItemName(id) or ("предмет " .. id)) .. (state.suffix and (" " .. (ns:VersionName(state.suffix) or "(др. характеристики)")) or "")
   f.name:SetText(colour and colour.hex and (colour.hex .. shown .. "|r") or shown)
   local kind = {}
   if itemType and itemType ~= "" then kind[#kind + 1] = itemType end
   if subType and subType ~= "" and subType ~= itemType then kind[#kind + 1] = subType end
-  if (classID == 2 or classID == 4) and ilvl then kind[#kind + 1] = "item level " .. ilvl end
+  if (classID == 2 or classID == 4) and ilvl then kind[#kind + 1] = "уровень предмета " .. ilvl end
   f.kind:SetText(table.concat(kind, ", "))
   ns:PriceWindowSearchState()
 
@@ -705,9 +705,9 @@ function ns:RefreshPriceWindow()
   local x0, stripTop, stripH = 12, 88, 54
   local inner = W - 24
   local tw = math.floor((inner - 4 * GAP) / 5)
-  local trend = s.trend and (s.trend >= 0 and ("|cff7fd39cup %.1f%%|r"):format(s.trend * 100)
-    or ("|cffee8597down %.1f%%|r"):format(-s.trend * 100))
-  local haveSub = s.have.alts > 0 and ("%s here, %s on alts"):format(count(s.have.here), count(s.have.alts)) or "bags and bank"
+  local trend = s.trend and (s.trend >= 0 and ("|cff7fd39cрост %.1f%%|r"):format(s.trend * 100)
+    or ("|cffee8597падение %.1f%%|r"):format(-s.trend * 100))
+  local haveSub = s.have.alts > 0 and ("%s здесь, %s у альтов"):format(count(s.have.here), count(s.have.alts)) or "сумки и банк"
   -- (Short words: a tile is about 125 pixels wide. Owner's screenshot, November 8: "not
   -- enough scans" and "this week vs the 2 before" were cut off.)
   -- Cheapest now: the graph's point for today is the lowest seen today, which can be gone
@@ -715,16 +715,16 @@ function ns:RefreshPriceWindow()
   -- the 20s ones had sold and 46 were left at 45s).
   local now, nowSub
   if s.cheapest then now = ns.Money(s.cheapest)
-  elseif s.listed == 0 then now = dim("none listed")
-  else now = dim("not scanned") end
-  if s.listed and s.listed > 0 then nowSub = count(s.listed) .. " listed" .. (s.scanned and (", " .. ns.Age(s.scanned)) or "")
+  elseif s.listed == 0 then now = dim("лотов нет")
+  else now = dim("не сканировалось") end
+  if s.listed and s.listed > 0 then nowSub = count(s.listed) .. " в продаже" .. (s.scanned and (", " .. ns.Age(s.scanned)) or "")
   else nowSub = s.scanned and ns.Age(s.scanned) or "" end
   local tiles = {
-    { state.suffix and "Usual cheapest" or "Usual price", s.usual and ns.Money(s.usual) or dim("too new"), s.usual and "this month" or "needs 3 days of scans" },
-    { "Trend", trend or dim("too new"), trend and "7 days vs 14 before" or "needs about 10 days" },
-    { "Cheapest now", now, nowSub },
-    { "You have", count(s.have.total), haveSub },
-    { "Posted", count(s.posted), "your auctions" },
+    { state.suffix and "Обычный минимум" or "Обычная цена", s.usual and ns.Money(s.usual) or dim("слишком новое"), s.usual and "этот месяц" or "нужно 3 дня сканов" },
+    { "Trend", trend or dim("слишком новое"), trend and "7 дней против 14 раньше" or "нужно около 10 дней" },
+    { "Минимум сейчас", now, nowSub },
+    { "У вас", count(s.have.total), haveSub },
+    { "Posted", count(s.posted), "ваши лоты" },
   }
   for i, t in ipairs(f.tiles) do
     local x = x0 + (i - 1) * (tw + GAP)
@@ -741,7 +741,7 @@ function ns:RefreshPriceWindow()
   local gTop = stripTop + stripH + GAP
   local gw = inner - SIDE - GAP
   nextCard(gTop, gTop + GRAPH_H, x0, gw)
-  T:StyleHeading(f.graphHead, "Price history")
+  T:StyleHeading(f.graphHead, "История цен")
   place(f.graphHead, x0 + 12, gTop + 10)
   f.range:ClearAllPoints()
   f.range:SetPoint("TOPRIGHT", f, "TOPLEFT", x0 + gw - 8, -(gTop + 6))
@@ -749,8 +749,8 @@ function ns:RefreshPriceWindow()
   local versions = ns:PriceVersions(id)
   f.version:SetShown(#versions > 0)
   if #versions > 0 then
-    local opts = { { value = "all", label = "All versions" } }
-    for _, v in ipairs(versions) do opts[#opts + 1] = { value = v, label = ns:VersionName(v) or "other stats" } end
+    local opts = { { value = "all", label = "Все версии" } }
+    for _, v in ipairs(versions) do opts[#opts + 1] = { value = v, label = ns:VersionName(v) or "др. характеристики" } end
     f.version:SetOptions(opts)
     f.version:SetValue(state.suffix or "all")
     f.version:ClearAllPoints()
@@ -765,9 +765,9 @@ function ns:RefreshPriceWindow()
   legend[#legend + 1] = "|cff555555[]|r listed"
   local vendor = ns:GetSellPrice(id)
   local de = ns.DisenchantSaleValue and ns:DisenchantSaleValue(id)
-  if de and de > 0 then flats[#flats + 1] = { de, GREEN, "disenchant value" }
-  elseif vendor and vendor > 0 then flats[#flats + 1] = { vendor, GREEN, "vendor price" } end
-  if s.craft and s.craft.cost then flats[#flats + 1] = { s.craft.cost, PURPLE, "cost to craft" } end
+  if de and de > 0 then flats[#flats + 1] = { de, GREEN, "стоимость распыления" }
+  elseif vendor and vendor > 0 then flats[#flats + 1] = { vendor, GREEN, "цена торговца" } end
+  if s.craft and s.craft.cost then flats[#flats + 1] = { s.craft.cost, PURPLE, "стоимость крафта" } end
   local pts = ns:PriceSeries(id, state.suffix, state.range)
   -- Only the flat lines the graph drew go in the legend.
   for _, fl in ipairs(drawGraph(f.graph, pts, flats)) do
@@ -776,21 +776,21 @@ function ns:RefreshPriceWindow()
   place(f.legend, x0 + 12, gTop + GRAPH_H - 18, gw - 24)
   -- The hover hint only where it fits (owner's screenshot, November 8: "hover for each..."
   -- with a vendor price and a cost to craft in the legend).
-  f.legend:SetText(table.concat(legend, "    ") .. dim("    hover for each day"))
+  f.legend:SetText(table.concat(legend, "    ") .. dim("    наведите для каждого дня"))
   if f.legend:GetStringWidth() > gw - 24 then f.legend:SetText(table.concat(legend, "    ")) end
   if f.legend:GetStringWidth() > gw - 24 then f.legend:SetText(table.concat(legend, "  ")) end
 
   -- Side
   local sx = x0 + gw + GAP
   nextCard(gTop, gTop + GRAPH_H, sx, SIDE)
-  T:StyleHeading(f.weekHead, "Your last 7 days")
+  T:StyleHeading(f.weekHead, "Ваши последние 7 дней")
   place(f.weekHead, sx + 12, gTop + 10)
   local wk = s.week
   local weekLines = {}
-  if wk.sold.n > 0 then weekLines[#weekLines + 1] = { "Sold " .. count(wk.sold.n), ns.Money(wk.sold.a) } end
-  if wk.bought.n > 0 then weekLines[#weekLines + 1] = { "Bought " .. count(wk.bought.n), ns.Money(wk.bought.a) } end
-  if wk.vendorSold.n > 0 then weekLines[#weekLines + 1] = { "To vendors " .. count(wk.vendorSold.n), ns.Money(wk.vendorSold.a) } end
-  if #weekLines == 0 then weekLines[1] = { dim("Nothing bought or sold"), "" } end
+  if wk.sold.n > 0 then weekLines[#weekLines + 1] = { "Продано " .. count(wk.sold.n), ns.Money(wk.sold.a) } end
+  if wk.bought.n > 0 then weekLines[#weekLines + 1] = { "Куплено " .. count(wk.bought.n), ns.Money(wk.bought.a) } end
+  if wk.vendorSold.n > 0 then weekLines[#weekLines + 1] = { "Торговцам " .. count(wk.vendorSold.n), ns.Money(wk.vendorSold.a) } end
+  if #weekLines == 0 then weekLines[1] = { dim("Ничего не куплено и не продано"), "" } end
   for i, r in ipairs(f.weekRows) do
     local line = weekLines[i]
     r.l:SetShown(line ~= nil); r.v:SetShown(line ~= nil)
@@ -802,7 +802,7 @@ function ns:RefreshPriceWindow()
     end
   end
   local wTop = gTop + 30 + 3 * 18 + 10
-  T:StyleHeading(f.worthHead, "Worth to you")
+  T:StyleHeading(f.worthHead, "Стоит для вас")
   place(f.worthHead, sx + 12, wTop)
   local _, options = ns:GetValue(id, true)
   -- Each way gets the width its value leaves and up to 3 lines; the next starts below it
@@ -832,7 +832,7 @@ function ns:RefreshPriceWindow()
   if not (options and options[1]) then
     local r = f.worthRows[1]
     r.l:Show(); place(r.l, sx + 12, wTop + 20, SIDE - 24); r.l:SetHeight(28); r.l:SetWordWrap(true)
-    r.l:SetText(dim("Needs a price first: scan at the auction house."))
+    r.l:SetText(dim("Сначала нужна цена: просканируйте аукцион."))
   end
   f.addItem:ClearAllPoints()
   f.addItem:SetPoint("TOPLEFT", f, "TOPLEFT", sx + 12, -(gTop + GRAPH_H - 32))
@@ -861,23 +861,23 @@ function ns:RefreshPriceWindow()
     -- doesn't sell (as Worth to you counts it), the profit and what that means.
     local dep = c.deposit or 0
     local sums = {
-      { c.oq > 1 and "Cost to craft, each" or "Cost to craft", c.cost and ns.Money(c.cost) or dim("a material has no price") },
-      { "Sells for, after cut", c.sells and ns.Money(c.sells + dep) or dim("no price yet") },
+      { c.oq > 1 and "Стоимость крафта за штуку" or "Стоимость крафта", c.cost and ns.Money(c.cost) or dim("у материала нет цены") },
+      { "Продажа после комиссии", c.sells and ns.Money(c.sells + dep) or dim("цены пока нет") },
     }
-    if c.sells and dep > 0 then sums[#sums + 1] = { "One unsold listing", "|cffee8597-" .. ns.Money(dep) .. "|r" } end
-    sums[#sums + 1] = { "Profit each", c.profit and signedMoney(c.profit) or dim("?") }
-    sums[#sums + 1] = { "", c.profit and (c.profit > 0 and c.cost > 0 and dim(("%d%% on what you spend"):format(math.floor(c.profit / c.cost * 100 + 0.5)))
-      or c.profit < 0 and "|cffee8597Cheaper to buy it|r" or "") or "" }
+    if c.sells and dep > 0 then sums[#sums + 1] = { "Один непроданный лот", "|cffee8597-" .. ns.Money(dep) .. "|r" } end
+    sums[#sums + 1] = { "Прибыль/шт", c.profit and signedMoney(c.profit) or dim("?") }
+    sums[#sums + 1] = { "", c.profit and (c.profit > 0 and c.cost > 0 and dim(("%d%% от затрат"):format(math.floor(c.profit / c.cost * 100 + 0.5)))
+      or c.profit < 0 and "|cffee8597Дешевле купить|r" or "") or "" }
     local boxH = 12 + #sums * 20
     local cH = math.max(30 + 14 + rows * 18 + 26 + 40, 28 + boxH + 8 + 40)
     nextCard(cTop, cTop + cH, x0, inner)
-    T:StyleHeading(f.craftHead, "Craft it")
+    T:StyleHeading(f.craftHead, "Скрафтить")
     place(f.craftHead, x0 + 12, cTop + 10)
     f.craftWho:ClearAllPoints()
     f.craftWho:SetPoint("LEFT", f.craftHead, "RIGHT", 10, 0)
-    f.craftWho:SetText((c.prof or "") .. (c.who and (", known by " .. c.who) or "")
-      .. (c.classic and ", none of your characters knows this recipe yet" or "")
-      .. (c.oq > 1 and (", makes " .. c.oq) or ""))
+    f.craftWho:SetText((c.prof or "") .. (c.who and (", знает " .. c.who) or "")
+      .. (c.classic and ", ни один ваш персонаж пока не знает рецепт" or "")
+      .. (c.oq > 1 and (", даёт " .. c.oq) or ""))
     -- Materials table, left (each column's right edge and width, from the row's left);
     -- the sums, right.
     local tableW = inner - SIDE - GAP - 4
@@ -901,8 +901,8 @@ function ns:RefreshPriceWindow()
         r.icon:SetTexture(ns:ItemIcon(m.id))
         local each = m.cost and math.floor(m.cost / m.qty + 0.5)
         local cells = {
-          ns.ItemName(m.id) or ("item " .. m.id), "x" .. m.qty,
-          each and ns.Money(each) or dim("no price"), m.cost and ns.Money(m.cost) or dim("?"),
+          ns.ItemName(m.id) or ("предмет " .. m.id), "x" .. m.qty,
+          each and ns.Money(each) or dim("нет цены"), m.cost and ns.Money(m.cost) or dim("?"),
           m.have > 0 and count(m.have) or dim("0"),
         }
         for k, fs in ipairs(r.cells) do
@@ -916,7 +916,7 @@ function ns:RefreshPriceWindow()
     end
     local totalY = headY + 14 + rows * 18 + 6
     place(f.matTotal.l, rowX + 22, totalY, COLS[3][1] - 22)
-    f.matTotal.l:SetText("One craft at today's prices (vendor where cheaper)")
+    f.matTotal.l:SetText("Один крафт по сегодняшним ценам (торговец, если дешевле)")
     f.matTotal.v:ClearAllPoints()
     f.matTotal.v:SetPoint("TOPRIGHT", f, "TOPLEFT", rowX + COLS[4][1], -totalY)
     f.matTotal.v:SetWidth(COLS[4][2])
@@ -946,7 +946,7 @@ function ns:RefreshPriceWindow()
     f.crafts:SetPoint("LEFT", f.craftsLabel, "RIGHT", 8, 0)
     if f.craftsFor ~= id then f.craftsFor, state.crafts, state.target = id, 1, "new" end
     f.crafts:SetValue(state.crafts or 1)
-    local opts = { { value = "new", label = "New list: " .. (ns.ItemName(id) or "this item") } }
+    local opts = { { value = "new", label = "Новый список: " .. (ns.ItemName(id) or "этот предмет") } }
     local found = state.target == "new"
     for _, l in ipairs(ns:ShoppingLists()) do
       if not l.countHave and not l.temp and not l.crateID then
@@ -969,7 +969,7 @@ function ns:RefreshPriceWindow()
   f:SetHeight(height)
 end
 
-ns.RefreshPriceWindow = ns.Timed("Price window", ns.RefreshPriceWindow)
+ns.RefreshPriceWindow = ns.Timed("Окно цены", ns.RefreshPriceWindow)
 
 -- Opens the window on an item. link: the item's link, for its version and tooltip.
 -- Without an item: the window as it was (or empty), ready to type a name. find: text to
@@ -1003,7 +1003,7 @@ function ns:PriceWindowSearchState()
   if not win then return end
   local open = ns:IsAHOpen()
   win.search:SetEnabled(open)
-  win.search:SetText(open and "Search on the auction house" or "Search: open the auction house")
+  win.search:SetText(open and "Поиск на аукционе" or "Поиск: откройте аукцион")
 end
 ns:On("AUCTION_HOUSE_SHOW", function() C_Timer.After(0, function() ns:PriceWindowSearchState() end) end)
 ns:On("AUCTION_HOUSE_CLOSED", function() C_Timer.After(0, function() ns:PriceWindowSearchState() end) end)

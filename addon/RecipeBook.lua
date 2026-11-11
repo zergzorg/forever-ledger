@@ -224,7 +224,7 @@ end)
 -- /fl book: what's been gathered so far
 ---------------------------------------------------------------------------
 function ns:PrintRecipeBook()
-  ns:Print("Recipe book so far:")
+  ns:Print("Книга рецептов:")
   local known = {}
   -- (Your characters on this ruleset and faction, as everywhere else: Core.lua.)
   for key, c in pairs(ns.db.chars) do
@@ -240,13 +240,13 @@ function ns:PrintRecipeBook()
       if known[prof] and known[prof][id] then have = have + 1 end
       if r.n and ns.db.recipeSources[r.n:lower()] then withSource = withSource + 1 end
     end
-    print(("  %s: %d recipes, %d known by your characters, %d with a source seen"):format(prof, total, have, withSource))
+    print(("  %s: рецептов %d, известно вашим персонажам %d, с найденным источником %d"):format(prof, total, have, withSource))
   end
   local kinds, vendors = {}, 0
   for _, list in pairs(ns.db.recipeSources) do
     for _, s in pairs(list) do kinds[s.kind] = (kinds[s.kind] or 0) + 1 end
   end
   for _ in pairs(ns.db.vendors) do vendors = vendors + 1 end
-  print(("  Sources seen: %d from vendors, %d from trainers, %d drops. %d vendors and trainers with positions."):format(
+  print(("  Источники: %d у торговцев, %d у тренеров, %d добыча. %d торговцев и тренеров с координатами."):format(
     kinds.vendor or 0, kinds.trainer or 0, kinds.drop or 0, vendors))
 end

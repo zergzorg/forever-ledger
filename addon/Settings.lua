@@ -18,255 +18,255 @@ local function ads() ns:UpdateCustomerAds() end
 -- A label starting with spaces is a sub-option of the one above it. { sub = "..." } is
 -- a small heading.
 local PAGES = {
-  { key = "global", title = "Global settings", icon = "Interface\\AddOns\\ForeverLedger\\media\\icons\\global",
-    desc = "The same for every character and profile: they decide what items are worth and what counts as a flip or a deal.",
+  { key = "global", title = "Глобальные настройки", icon = "Interface\\AddOns\\ForeverLedger\\media\\icons\\global",
+    desc = "Одинаковы для всех персонажей и профилей: они решают, сколько стоят предметы и что считается флипом или сделкой.",
     tabs = {
-      { name = "Prices", rows = {
-        { sub = "How items are valued" },
-        { key = "ahCut", label = "Auction house cut", kind = "number", suffix = "%", min = 0, max = 99, after = recalc,
-          help = "Taken off every auction house sale in values and shuffles, at your faction's auction house. Neutral ones (Booty Bay, Gadgetzan, Everlook) take 15%, counted by themselves." },
-        { key = "margin", label = "Safety margin", kind = "number", suffix = "%", min = 0, max = 99,
-          help = "Shuffles and \"buy at or below\" keep this much below an item's worth." },
-        { key = "actionSeconds", label = "Seconds per craft", kind = "number", suffix = "seconds", min = 1, max = 60,
-          help = "Used for the rough profit per hour." },
-        { key = "source", label = "Auction house prices from", kind = "choice", after = recalc, options = {
-            { "auto", "Auto" }, { "own", "My scans" }, { "Auctionator", "Auctionator" }, { "TSM", "TSM" }, { "Auctioneer", "Auctioneer" } },
-          help = "Auto uses your own scans while they're fresh, then other auction addons." },
+      { name = "Цены", rows = {
+        { sub = "Как оцениваются предметы" },
+        { key = "ahCut", label = "Комиссия аукциона", kind = "number", suffix = "%", min = 0, max = 99, after = recalc,
+          help = "Вычитается из каждой продажи на аукционе в оценках и цепочках, на аукционе вашей фракции. Нейтральные (Бухта Боти, Прибамбасск, Круговзор) берут 15% и считаются отдельно." },
+        { key = "margin", label = "Запас", kind = "number", suffix = "%", min = 0, max = 99,
+          help = "Цепочки и «покупать по или ниже» держат такую долю ниже стоимости предмета." },
+        { key = "actionSeconds", label = "Секунд на крафт", kind = "number", suffix = "сек", min = 1, max = 60,
+          help = "Для примерной прибыли в час." },
+        { key = "source", label = "Цены аукциона из", kind = "choice", after = recalc, options = {
+            { "auto", "Авто" }, { "own", "Мои сканы" }, { "Auctionator", "Auctionator" }, { "TSM", "TSM" }, { "Auctioneer", "Auctioneer" } },
+          help = "Авто берёт ваши свежие сканы, затем другие аукционные аддоны." },
       } },
-      { name = "Flips and deals", rules = true, rows = {
-        { sub = "Vendor flips" },
-        { key = "dealVendorPct", label = "Least profit, share of price", kind = "number", suffix = "% of vendor price", min = 0, max = 99, after = recalc,
-          help = "Selling to a vendor has no risk, only the effort of buying. 0 counts any listing below vendor price." },
-        { key = "dealVendorMin", label = "Least profit each", kind = "money", after = recalc,
-          help = "For example 10c or 1s. \"off\" for no minimum. A flip needs both this and the share above." },
-        { sub = "Deals" },
-        { key = "dealUsualPct", label = "Below usual price by", kind = "number", suffix = "% or more", min = 1, max = 99 },
-        { key = "dealWindow", label = "Usual price over", kind = "choice", options = {
-            { "week", "Week" }, { "month", "Month" }, { "3months", "3 months" }, { "6months", "6 months" },
-            { "year", "Year" }, { "all", "All time" } } },
-        { key = "dealHistory", label = "Usual prices from", kind = "choice", options = {
-            { "auto", "Auto" }, { "local", "My scans" }, { "tsm", "TSM" } },
-          help = "Auto uses TSM's history where it has a price, otherwise your own scans." },
-        { key = "dealUsualMin", label = "Least resale profit each", kind = "money",
-          help = "Deals tab: profit after the auction house cut, reselling at the usual price or under the next listing. \"off\" for no minimum." },
+      { name = "Флипы и сделки", rules = true, rows = {
+        { sub = "Флипы у торговца" },
+        { key = "dealVendorPct", label = "Мин. прибыль от цены", kind = "number", suffix = "% от цены торговца", min = 0, max = 99, after = recalc,
+          help = "Продажа торговцу без риска, только усилия на покупку. 0 считает любой лот дешевле цены торговца." },
+        { key = "dealVendorMin", label = "Мин. прибыль за штуку", kind = "money", after = recalc,
+          help = "Например 10c или 1s. «выкл» — без минимума. Флипу нужны и это, и доля выше." },
+        { sub = "Сделки" },
+        { key = "dealUsualPct", label = "Ниже обычной цены на", kind = "number", suffix = "% и больше", min = 1, max = 99 },
+        { key = "dealWindow", label = "Обычная цена за", kind = "choice", options = {
+            { "week", "Неделя" }, { "month", "Месяц" }, { "3months", "3 месяца" }, { "6months", "6 месяцев" },
+            { "year", "Год" }, { "all", "Всё время" } } },
+        { key = "dealHistory", label = "Обычные цены из", kind = "choice", options = {
+            { "auto", "Авто" }, { "local", "Мои сканы" }, { "tsm", "TSM" } },
+          help = "Авто берёт историю TSM, где есть цена, иначе ваши сканы." },
+        { key = "dealUsualMin", label = "Мин. прибыль при перепродаже", kind = "money",
+          help = "Вкладка «Сделки»: прибыль после комиссии аукциона при перепродаже по обычной цене или ниже следующего лота. «выкл» — без минимума." },
       } },
       -- Parts of the addon you can switch off whole (owner, October 7: modules, so extras
       -- don't crowd the window). Off means not running at all. More join with the side tabs.
-      { name = "Modules", rows = {
-        { sub = "Leveling help" },
-        { key = "moduleLevelling", label = "Leveling help", kind = "check", after = function()
+      { name = "Модули", rows = {
+        { sub = "Помощь в прокачке" },
+        { key = "moduleLevelling", label = "Помощь в прокачке", kind = "check", after = function()
             ns:LayoutTabs(); ns:RefreshUI()
             if ns.db.settings.moduleLevelling == false and ns.HideTrainingAdvice then ns:HideTrainingAdvice() end
           end,
-          help = "The Leveling tab (ways to make gold while leveling, under level 20), training advice at the class trainer and the riding fund on the Dashboard. Off: none of it runs, and the spells you cast aren't counted. It switches itself off on level 60 characters." },
-        { key = "trainerAdvice", label = "  Training advice beside the class trainer", kind = "check",
+          help = "Вкладка «Прокачка» (способы заработать до 20 уровня), советы тренера у классового тренера и сбор на транспорт в Обзоре. Выкл: ничего не работает, применённые заклинания не считаются. Само отключается на 60 уровне." },
+        { key = "trainerAdvice", label = "  Советы тренера у классового тренера", kind = "check",
           after = function() if ns.db.settings.trainerAdvice == false and ns.HideTrainingAdvice then ns:HideTrainingAdvice() end end,
-          help = "When you open your class trainer, a panel beside it sorts what you can learn now into Must have, Nice to have and Skip while leveling, with what each costs and why (hover). It follows the tree your talent points are in and the spells you actually cast. Advice only: you still train in Blizzard's window." },
-        { key = "ridingFund", label = "  Riding fund on the Dashboard", kind = "check", after = function() ns:RefreshUI() end,
-          help = "A strip under the tiles: the riding this character doesn't know yet (then epic riding), what it costs, how much gold you have toward it and about how many days at your pace. It goes away once learned. Hide here (on the strip) hides it on one character; /fl fund shows it again." },
+          help = "При открытии классового тренера панель рядом делит доступное на «Обязательно», «Полезно» и «Пропустить при прокачке», с ценой и причиной (наведите). Учитывает ваше древо талантов и реально применяемые заклинания. Только совет: учитесь вы всё равно в окне Blizzard." },
+        { key = "ridingFund", label = "  Сбор на транспорт в Обзоре", kind = "check", after = function() ns:RefreshUI() end,
+          help = "Полоса под плитками: транспорт, которого у персонажа ещё нет (потом эпический), его цена, сколько золота уже есть и примерно сколько дней при вашем темпе. Исчезает после обучения. «Скрыть» на полосе убирает её у одного персонажа; /fl fund вернёт." },
       } },
-      { name = "Advanced", rows = {
-        { sub = "Sync with your other account" },
-        { key = "syncMoney", label = "Share gold and sales with your sync partner", kind = "check",
+      { name = "Дополнительно", rows = {
+        { sub = "Синхронизация со вторым аккаунтом" },
+        { key = "syncMoney", label = "Делиться золотом и продажами с партнёром", kind = "check",
           after = function() if ns.SyncSend then ns:SyncSend(true) end end,
-          help = "Sends your characters' gold, money in and out, Ledger entries and sessions to the character you linked (Settings, Characters), so both accounts' Dashboards and Ledgers show the same. These include your buyers' names, so leave it off if you linked a friend. Unlinking removes what you got from them." },
-        { key = "syncBags", label = "Share bags and bank with your sync partner", kind = "check",
+          help = "Отправляет золото персонажей, приход и расход, записи журнала и сессии связанному персонажу (Настройки, Персонажи), чтобы Обзор и Журнал на обоих аккаунтах совпадали. Там есть имена покупателей, поэтому не включайте, если связали друга. Отвязка удаляет полученное от него." },
+        { key = "syncBags", label = "Делиться сумками и банком с партнёром", kind = "check",
           after = function() if ns.SyncSend then ns:SyncSend(true) end end,
-          help = "Sends what your characters carry and keep in the bank to the character you linked (Settings, Characters), so it counts in Have, shopping lists and the Characters tab there. Only for your own second account: off by default. Unlinking removes what you got from them." },
-        { sub = "Testing" },
-        { key = "debug", label = "Debug messages", kind = "check", help = "Extra chat lines for testing." },
+          help = "Отправляет содержимое сумок и банка связанному персонажу (Настройки, Персонажи), чтобы это учитывалось в «Есть», списках покупок и вкладке «Персонажи». Только для своего второго аккаунта: по умолчанию выкл. Отвязка удаляет полученное от него." },
+        { sub = "Проверка" },
+        { key = "debug", label = "Отладочные сообщения", kind = "check", help = "Дополнительные строки в чате для проверки." },
       } },
     } },
 
-  { key = "profiles", title = "Profiles", icon = "Interface\\AddOns\\ForeverLedger\\media\\icons\\profiles", custom = true,
-    desc = "Sets of settings your characters can share, switch between, export and import." },
+  { key = "profiles", title = "Профили", icon = "Interface\\AddOns\\ForeverLedger\\media\\icons\\profiles", custom = true,
+    desc = "Наборы настроек, которыми персонажи могут делиться, переключаться между ними, экспортировать и импортировать." },
 
-  { key = "appearance", title = "Appearance", icon = "Interface\\AddOns\\ForeverLedger\\media\\icons\\appearance",
-    desc = "How Forever Ledger's windows look. A change shows after a reload.",
+  { key = "appearance", title = "Внешний вид", icon = "Interface\\AddOns\\ForeverLedger\\media\\icons\\appearance",
+    desc = "Как выглядят окна Forever Ledger. Изменение видно после перезагрузки.",
     rows = {
-      { sub = "Theme and color" },
-      { key = "theme", label = "Theme", kind = "choice", after = function() ns:OfferReload() end, options = {
+      { sub = "Тема и цвет" },
+      { key = "theme", label = "Тема", kind = "choice", after = function() ns:OfferReload() end, options = {
           { "clean", "FL Clean" }, { "default", "FL Bronze" }, { "gilded", "FL Gilded" } },
-        help = "FL Clean: flat and quiet. FL Bronze: a bronze edge, gold titles, sections as cards, switches. FL Gilded: a bronze frame and gold serif titles. Looks based on WoW Forever's and Blizzard's own windows are coming." },
-      { key = "uiScale", label = "Size", kind = "slider", min = 75, max = 150, step = 5, suffix = "%",
+        help = "FL Clean: плоская и тихая. FL Bronze: бронзовый край, золотые заголовки, секции-карточки, переключатели. FL Gilded: бронзовая рамка и золотые заголовки с засечками. Оформление в стиле окон WoW Forever и Blizzard появится позже." },
+      { key = "uiScale", label = "Размер", kind = "slider", min = 75, max = 150, step = 5, suffix = "%",
         after = function() if ns.ApplyScale then ns:ApplyScale() end end,
-        help = "How big Forever Ledger's windows are, from 75% to 150%. Drag, then let go." },
-      { key = "accent", label = "Accent color", kind = "accent", after = function() ns:OfferReload() end,
-        help = "The color of what's active: the chosen tab, switches that are on, highlights. Auto uses EllesmereUI's color when it's installed." },
+        help = "Размер окон Forever Ledger от 75% до 150%. Перетащите и отпустите." },
+      { key = "accent", label = "Цвет акцента", kind = "accent", after = function() ns:OfferReload() end,
+        help = "Цвет активного: выбранная вкладка, включённые переключатели, подсветка. Авто берёт цвет EllesmereUI, если он установлен." },
     } },
 
-  { group = "Gold making" },
-  { key = "ah", title = "Auction house", icon = "Interface\\Icons\\INV_Misc_Coin_02",
-    desc = "Buying, selling and alerts at the auction house.",
+  { group = "Заработок" },
+  { key = "ah", title = "Аукцион", icon = "Interface\\Icons\\INV_Misc_Coin_02",
+    desc = "Покупка, продажа и оповещения на аукционе.",
     tabs = {
-      { name = "Buying", rows = {
-        { sub = "Auction house window" },
-        { key = "ahHighlight", label = "Mark good buys", kind = "check",
-          help = "Listings at or below an item's buy limit get a green tint, bar and BUY badge." },
-        { sub = "Buy queue" },
-        { key = "vendorItemsAH", label = "Buy vendor items on the auction house too", kind = "check",
+      { name = "Покупка", rows = {
+        { sub = "Окно аукциона" },
+        { key = "ahHighlight", label = "Отмечать выгодные покупки", kind = "check",
+          help = "Лоты по цене покупки или ниже получают зелёный фон, полосу и значок «BUY»." },
+        { sub = "Очередь покупок" },
+        { key = "vendorItemsAH", label = "Покупать товары торговцев и на аукционе", kind = "check",
           after = function() if ns.RefreshListsView then ns:RefreshListsView() end; if ns.RebuildBuyQueue then ns:RebuildBuyQueue() end end,
-          help = "Unlimited-stock vendor items on shopping lists normally stay out of the auction house queue. On: buy them there at no more than the vendor price. Limited-stock items stay ordinary auction house items." },
-        { key = "openFlips", label = "Open the Buy queue after a full scan", kind = "check",
-          help = "When a full scan finds vendor flips and the Buy queue beside the auction house is closed, open it. The flip watch's quick checks only chime." },
-        { key = "watchResume", label = "Resume the flip watch", kind = "check",
-          help = "If the flip watch was on when you closed the auction house, start it again when you come back. It can only scan while the auction house is open." },
-        { key = "keepGold", label = "Buy queue: always keep", kind = "money", plainUnit = "g",
-          help = "The Buy queue never takes your gold below this, so there's always enough for repairs, training or a mount. Type 100 for 100g. \"off\": it may spend all of it. (The most to spend each visit is on the Buy queue itself.)" },
+          help = "Товары торговцев с бесконечным запасом из списков обычно не попадают в очередь аукциона. Вкл: покупать их там не дороже цены торговца. С ограниченным запасом остаются обычными лотами." },
+        { key = "openFlips", label = "Открывать очередь покупок после полного скана", kind = "check",
+          help = "Когда полный скан находит флипы у торговца, а очередь покупок у аукциона закрыта, открыть её. Быстрые проверки слежения только звенят." },
+        { key = "watchResume", label = "Возобновлять слежение за флипами", kind = "check",
+          help = "Если слежение было включено при закрытии аукциона, запустить его снова при возвращении. Сканировать оно может только при открытом аукционе." },
+        { key = "keepGold", label = "Очередь покупок: всегда оставлять", kind = "money", plainUnit = "g",
+          help = "Очередь не опускает ваше золото ниже этого, чтобы всегда хватало на ремонт, обучение или транспорт. Введите 100 для 100g. «выкл»: может потратить всё. (Максимум на визит задаётся в самой очереди.)" },
       } },
-      { name = "Selling", rows = {
-        { sub = "Sell tab" },
-        { key = "priceHelper", label = "Price helper on the Sell tab", kind = "check",
-          help = "Under the Create Auction button: the usual price and the cheapest now, and buttons to fill in 1 copper under the cheapest or the usual price. Says when the cheapest is well below usual." },
-        { key = "sellGuard", label = "Stop posts below vendor price", kind = "check",
-          help = "On the Sell tab, when a vendor would pay more than the auction house after its cut, Post is grayed out until you click Post anyway. Off: just the warning." },
-        { sub = "Your auctions" },
-        { key = "undercutAlerts", label = "Undercut alerts", kind = "check",
-          help = "When a scan finds one of your auctions undercut: a line in chat, once per price. The Auctions tab beside the auction house lists them all." },
-        { key = "undercutSound", label = "  Sound with undercut alerts", kind = "check",
-          help = "A short alarm sound with each undercut alert." },
-        { key = "saleSound", label = "Sound when an auction sells", kind = "check",
-          help = "A coin sound when the game says a buyer was found for one of your auctions." },
-        { key = "soldSummary", label = "What sold while you were away", kind = "check",
-          help = "Opening the auction house: one line in chat with what sold since you were last there, and the gold it brings." },
+      { name = "Продажа", rows = {
+        { sub = "Вкладка продажи" },
+        { key = "priceHelper", label = "Помощь с ценой на вкладке продажи", kind = "check",
+          help = "Под кнопкой создания лота: обычная цена и минимум сейчас, кнопки подставить на 1 медь ниже минимума или обычную цену. Сообщает, когда минимум заметно ниже обычного." },
+        { key = "sellGuard", label = "Не выставлять дешевле цены торговца", kind = "check",
+          help = "На вкладке продажи, если торговец даёт больше, чем аукцион после комиссии, «Выставить» недоступна, пока не нажмёте «Всё равно выставить». Выкл: только предупреждение." },
+        { sub = "Ваши аукционы" },
+        { key = "undercutAlerts", label = "Оповещения о перебитых лотах", kind = "check",
+          help = "Когда скан находит ваш перебитый лот: строка в чате, раз на цену. Вкладка «Аукционы» у аукциона покажет все." },
+        { key = "undercutSound", label = "  Звук при оповещениях о перебитых", kind = "check",
+          help = "Короткий сигнал с каждым оповещением о перебитом лоте." },
+        { key = "saleSound", label = "Звук при продаже лота", kind = "check",
+          help = "Звук монет, когда игра сообщает, что на ваш лот нашёлся покупатель." },
+        { key = "soldSummary", label = "Что продалось без вас", kind = "check",
+          help = "При открытии аукциона: строка в чате о том, что продалось с прошлого визита, и сколько золота это даёт." },
       } },
-      { name = "Alerts", rows = {
-        { sub = "New flips and deals" },
-        { key = "dealSound", label = "Chime for new flips and deals", kind = "check", help = "Plays the raid warning sound when a scan finds new vendor flips or deals." },
-        { key = "quietWatch", label = "Quiet mode while the flip watch runs", kind = "check", after = function() ns:UpdateQuiet() end,
-          help = "While the flip watch runs: the game's music, effects, ambience and voices go off, and Forever Ledger's chimes play at full volume, even with the game in the background, plus a chime when you win an auction. Your sound settings come back when the watch stops. /fl quiet turns it on for one character until you type it again." },
-        { key = "dealScreen", label = "Big message on screen", kind = "check", help = "Shows new flips and deals in large text at the top of the screen, where raid warnings go. Turn it off if it covers your windows." },
-        { key = "dealChat", label = "Chat line for new flips and deals", kind = "check", help = "Lists each new vendor flip and deal in chat." },
+      { name = "Оповещения", rows = {
+        { sub = "Новые флипы и сделки" },
+        { key = "dealSound", label = "Звонок при новых флипах и сделках", kind = "check", help = "Играет звук предупреждения рейда, когда скан находит новые флипы или сделки." },
+        { key = "quietWatch", label = "Тихий режим во время слежения", kind = "check", after = function() ns:UpdateQuiet() end,
+          help = "Пока идёт слежение: музыка, эффекты, окружение и голоса игры выключены, а звонки Forever Ledger звучат в полную громкость даже в фоне, плюс звонок при выигрыше лота. Настройки звука вернутся после остановки. /fl quiet включает это для одного персонажа, пока не введёте снова." },
+        { key = "dealScreen", label = "Крупное сообщение на экране", kind = "check", help = "Показывает новые флипы и сделки крупным текстом вверху экрана, где предупреждения рейда. Отключите, если закрывает окна." },
+        { key = "dealChat", label = "Строка в чате о новых флипах и сделках", kind = "check", help = "Перечисляет каждый новый флип и сделку в чате." },
       } },
-      { name = "Disenchant finder", rows = {
-        { sub = "Rolls" },
-        { key = "deRolls", label = "Show a bad and a good roll", kind = "check",
-          help = "Besides the average, what a band's greens are worth on a bad roll and a good one (the least and the most a disenchant can give)." },
+      { name = "Поиск распыления", rows = {
+        { sub = "Броски" },
+        { key = "deRolls", label = "Показывать неудачный и удачный бросок", kind = "check",
+          help = "Помимо среднего — сколько стоят зелёные предметы уровня при неудачном и удачном броске (минимум и максимум распыления)." },
       } },
     } },
-  { key = "tooltips", title = "Tooltips", icon = "Interface\\Icons\\INV_Misc_Note_01",
-    desc = "What Forever Ledger adds to item tooltips.",
+  { key = "tooltips", title = "Подсказки", icon = "Interface\\Icons\\INV_Misc_Note_01",
+    desc = "Что Forever Ledger добавляет к подсказкам предметов.",
     tabs = {
-      { name = "General", rows = {
-        { sub = "Size and detail" },
-        { key = "tooltip", label = "Tooltip lines", kind = "check", help = "Forever Ledger's lines on item tooltips." },
-        { key = "tipMode", label = "Tooltip size", kind = "choice", options = {
-            { "full", "Everything" }, { "compact", "Short, Shift for more" } },
-          help = "Short shows today's cheapest auction price and what an item is worth to you; press Shift for the rest." },
-        { key = "tipOptions", label = "Ways under Worth to you", kind = "number", suffix = "ways", min = 1, max = 10,
-          help = "How many ways to use an item to list, best first." },
+      { name = "Общие", rows = {
+        { sub = "Размер и детали" },
+        { key = "tooltip", label = "Строки подсказки", kind = "check", help = "Строки Forever Ledger в подсказках предметов." },
+        { key = "tipMode", label = "Размер подсказки", kind = "choice", options = {
+            { "full", "Всё" }, { "compact", "Кратко, Shift — больше" } },
+          help = "Короткий показывает сегодняшний минимум аукциона и стоимость для вас; Shift — остальное." },
+        { key = "tipOptions", label = "Способов в «Стоит для вас»", kind = "number", suffix = "шт.", min = 1, max = 10,
+          help = "Сколько способов применения перечислять, лучший первым." },
         -- On the first tab, where it's found (owner, November 8: "not sure where this
         -- option is" on What they show).
-        { sub = "Price window" },
-        { key = "priceWindow", label = "Click an item for its price window", kind = "check",
-          help = "Alt-click (or the click below) an item in your bags, a link in chat or a listing on the auction house: a window with its price graph (up to a year), how many are listed, what you have and have posted, your last 7 days with it, and, if one of your characters can craft it, what that costs and the profit. Price lookup and /fl price <item> open it too." },
-        { key = "priceClick", label = "Opens with", kind = "choice", options = {
+        { sub = "Окно цены" },
+        { key = "priceWindow", label = "Клик по предмету открывает окно цены", kind = "check",
+          help = "Alt+клик (или клик ниже) по предмету в сумках, ссылке в чате или лоту на аукционе: окно с графиком цены (до года), числом лотов, вашими запасами и лотами, вашими последними 7 днями и, если кто-то из персонажей умеет его крафтить, стоимостью и прибылью. «Поиск цены» и /fl price <предмет> тоже открывают его." },
+        { key = "priceClick", label = "Открывается по", kind = "choice", options = {
             { "alt", "Alt-click" }, { "ctrl", "Ctrl-click" }, { "ctrlalt", "Ctrl+Alt-click" } },
-          help = "Pick another click if a different addon uses Alt-click (some disenchanting addons do). Ctrl-click no longer opens the dressing room; with Ctrl+Alt-click, Ctrl-click still does." },
+          help = "Выберите другой клик, если Alt+клик занят другим аддоном (некоторые аддоны распыления). Ctrl+клик больше не открывает примерочную; при Ctrl+Alt+клике Ctrl+клик по-прежнему работает." },
       } },
-      { name = "What they show", rows = {
-        { sub = "Prices and worth" },
-        { key = "tipPrice", label = "Auction and vendor prices", kind = "check",
-          help = "The cheapest on the auction house (how many listed, how long ago), the average of the cheapest 20, and what a vendor sells it for." },
-        { key = "tipHistory", label = "Price history while Ctrl is held", kind = "check",
-          help = "Hold Ctrl over an item for the cheapest price over the last 14 days, which way it's heading, the usual price this month, how many are usually listed and the lowest price ever seen." },
-        { key = "tipSpeed", label = "How fast it sells", kind = "check",
-          help = "Fast, Steady, Slow, Rare or No sales seen, once there are 3 hours of scans to judge by (and, in the first day, at least 3 sales)." },
-        { key = "tipWorth", label = "Worth to you", kind = "check",
-          help = "The best way to use the item (auction house, vendor, disenchanting or crafting it into something) and the next best few." },
+      { name = "Что показывают", rows = {
+        { sub = "Цены и стоимость" },
+        { key = "tipPrice", label = "Цены аукциона и торговцев", kind = "check",
+          help = "Минимум на аукционе (сколько лотов, как давно), среднее по 20 дешёвым и цена торговца." },
+        { key = "tipHistory", label = "История цен при Ctrl", kind = "check",
+          help = "Удерживайте Ctrl над предметом: минимум за 14 дней, направление, обычная цена месяца, обычное число лотов и исторический минимум." },
+        { key = "tipSpeed", label = "Как быстро продаётся", kind = "check",
+          help = "Быстро, стабильно, медленно, редко или продаж не видно, когда есть 3 часа сканов (и в первый день хотя бы 3 продажи)." },
+        { key = "tipWorth", label = "Стоит для вас", kind = "check",
+          help = "Лучший способ применения (аукцион, торговец, распыление или крафт) и следующие по выгоде." },
         -- Which ways count (issue #15, October 22). Only the tooltip and the Characters
         -- tab; shuffles, the Buy queue and shopping lists still use every way.
-        { key = "worthAH", label = "  Counts selling on the auction house", kind = "check",
-          help = "Worth to you and Buy at or below include selling it on the auction house. Shuffles, the Buy queue and shopping lists always count every way." },
-        { key = "worthVendor", label = "  Counts selling to a vendor", kind = "check",
-          help = "Worth to you and Buy at or below include what a vendor pays." },
-        { key = "worthDisenchant", label = "  Counts disenchanting", kind = "check",
-          help = "Worth to you and Buy at or below include disenchanting it and selling the dust and essences." },
-        { key = "worthCraft", label = "  Counts crafting and conversions", kind = "check",
-          help = "Worth to you and Buy at or below include crafting it into something (any of your characters' recipes) or converting it, like splitting an essence. Turn off if you'd rather not count what your alts could make." },
-        { key = "tipBuy", label = "Buy at or below", kind = "check",
-          help = "The most worth paying for it, after your safety margin. Green when it's already cheaper." },
-        { key = "tipNeutral", label = "Booty Bay, when it pays clearly more", kind = "check",
-          help = "One line, only on items that bring at least 25% more at the neutral auction house (Booty Bay, Gadgetzan, Everlook) after its 15% cut, from your last scan there. Off by default; the Deals tab's Booty Bay view lists them all." },
-        { sub = "Uses and quests" },
-        { key = "tipQuest", label = "Quests that need it", kind = "check",
-          help = "Quests that ask for the item (original Classic quests; Forever may have changed some), and \"keep it\" when this character will want it later." },
-        { key = "tipQuestMine", label = "  Only quests this character still needs", kind = "check",
-          help = "Leaves out quests this character has done, ones gray for its level, and other classes' quests. Off: all of them, marked (done), (too low) or (other class), handy when selling to others." },
-        { key = "tipDrops", label = "Dungeon drops you've had", kind = "check",
-          help = "\"Dropped for you: Deadmines, 2 in 14 runs\", from the dungeon runs Forever Ledger counts (/fl runs)." },
-        { key = "tipDisenchant", label = "Disenchants to", kind = "check",
-          help = "What a green disenchants into, on average." },
-        { key = "tipUsedBy", label = "Used by (your recipes)", kind = "check",
-          help = "Which of your characters' recipes use it, and how many." },
-        { key = "tipCrate", label = "Crate cheapest fill", kind = "check",
-          help = "On a Waylaid Crate: the cheapest way to fill it at today's prices." },
-        { key = "tipBagSlot", label = "Bag price per slot", kind = "check",
-          help = "On a bag: what one slot costs at today's cheapest price (auction house or vendor), and the cheapest bag per slot right now." },
+        { key = "worthAH", label = "  Учитывать продажу на аукционе", kind = "check",
+          help = "«Стоит для вас» и «Покупать по или ниже» учитывают продажу на аукционе. Цепочки, очередь и списки всегда учитывают все способы." },
+        { key = "worthVendor", label = "  Учитывать продажу торговцу", kind = "check",
+          help = "«Стоит для вас» и «Покупать по или ниже» учитывают цену торговца." },
+        { key = "worthDisenchant", label = "  Учитывать распыление", kind = "check",
+          help = "«Стоит для вас» и «Покупать по или ниже» учитывают распыление и продажу пыли и сущностей." },
+        { key = "worthCraft", label = "  Учитывать крафт и переделки", kind = "check",
+          help = "«Стоит для вас» и «Покупать по или ниже» учитывают крафт (рецепты любых ваших персонажей) или переделку, например разделение сущности. Отключите, если не хотите учитывать возможности альтов." },
+        { key = "tipBuy", label = "Покупать по или ниже", kind = "check",
+          help = "Максимум, который стоит платить, после запаса. Зелёное, если уже дешевле." },
+        { key = "tipNeutral", label = "Бухта Боти, когда платит заметно больше", kind = "check",
+          help = "Одна строка только для предметов, дающих хотя бы на 25% больше на нейтральном аукционе (Бухта Боти, Прибамбасск, Круговзор) после его комиссии 15%, по последнему скану там. По умолчанию выкл; вид «Бухта Боти» на вкладке «Сделки» покажет все." },
+        { sub = "Применение и задания" },
+        { key = "tipQuest", label = "Задания, где нужен предмет", kind = "check",
+          help = "Задания, где нужен предмет (оригинальные из Classic; в Forever часть могла измениться), и «оставьте себе», если персонажу он понадобится позже." },
+        { key = "tipQuestMine", label = "  Только задания, нужные этому персонажу", kind = "check",
+          help = "Убирает выполненные, серые по уровню и задания других классов. Выкл: все, с пометками (выполнено), (низкий уровень) или (другой класс) — удобно при продаже другим." },
+        { key = "tipDrops", label = "Выпадало вам в подземельях", kind = "check",
+          help = "«Выпало вам: Мёртвые копи, 2 из 14 заходов» — по заходам, которые считает Forever Ledger (/fl runs)." },
+        { key = "tipDisenchant", label = "Распыляется в", kind = "check",
+          help = "Что в среднем даёт зелёный предмет при распылении." },
+        { key = "tipUsedBy", label = "Используется в (ваших рецептах)", kind = "check",
+          help = "В каких рецептах ваших персонажей он используется и сколько их." },
+        { key = "tipCrate", label = "Дешёвое заполнение ящика", kind = "check",
+          help = "У Забытого ящика: самый дешёвый способ заполнить его по сегодняшним ценам." },
+        { key = "tipBagSlot", label = "Цена сумки за слот", kind = "check",
+          help = "У сумки: сколько стоит один слот по сегодняшней минимальной цене (аукцион или торговец) и самая дешёвая сумка за слот сейчас." },
       } },
     } },
 
-  { group = "Professions" },
-  { key = "customers", title = "Customers", icon = "Interface\\Icons\\INV_Letter_15",
-    desc = "Spotting people in chat who want what this character can do.",
+  { group = "Профессии" },
+  { key = "customers", title = "Клиенты", icon = "Interface\\Icons\\INV_Letter_15",
+    desc = "Поиск в чате тех, кому нужно то, что умеет этот персонаж.",
     tabs = {
-      { name = "General", rows = {
-        { sub = "Customer finder" },
-        { key = "customers", label = "Customer finder", kind = "check",
-          help = "Spot people in chat asking for what this character can do (LF enchanter, WTB an item you craft, Mage water)." },
-        { key = "customerWindow", label = "Open the Customers window", kind = "check",
-          help = "Opens on a new request. /fl customers opens it any time." },
-        { key = "customerSound", label = "Sound", kind = "check", help = "The whisper sound with each new request." },
-        { key = "customerChat", label = "Requests in chat too", kind = "check", help = "Also print each request in chat." },
+      { name = "Общие", rows = {
+        { sub = "Поиск клиентов" },
+        { key = "customers", label = "Поиск клиентов", kind = "check",
+          help = "Находит в чате тех, кто просит то, что умеет персонаж (ищет зачарователя, покупает ваш крафт, воду мага)." },
+        { key = "customerWindow", label = "Открывать окно клиентов", kind = "check",
+          help = "Открывается при новой заявке. /fl customers открывает в любой момент." },
+        { key = "customerSound", label = "Звук", kind = "check", help = "Звук шёпота с каждой новой заявкой." },
+        { key = "customerChat", label = "Заявки и в чате", kind = "check", help = "Также печатать каждую заявку в чате." },
       } },
-      { name = "What to look for", rows = {
-        { sub = "Services" },
-        { key = "svcCrafting", label = "Crafting", kind = "check", after = ads,
-          help = "Requests for your professions and for items you craft, and the Advertise crafting button." },
-        { key = "svcFood", label = "Mage food and water", kind = "check", after = ads,
-          help = "On a Mage: requests for water and food, and the Sell food and water button." },
-        { key = "svcPortal", label = "Mage portals", kind = "check", after = ads,
-          help = "On a Mage from level 40: portal requests, and the Sell portals button." },
-        { key = "svcSummon", label = "Warlock summons", kind = "check", after = ads,
-          help = "On a Warlock from level 20: summon requests, and the Offer summons button." },
-        { key = "svcLockpick", label = "Rogue lockpicking", kind = "check", after = ads,
-          help = "On a Rogue from level 16: lockbox requests, and the Offer lockpicking button." },
+      { name = "Что искать", rows = {
+        { sub = "Услуги" },
+        { key = "svcCrafting", label = "Крафт", kind = "check", after = ads,
+          help = "Заявки на ваши профессии и крафт, а также кнопка рекламы крафта." },
+        { key = "svcFood", label = "Еда и вода мага", kind = "check", after = ads,
+          help = "У мага: заявки на воду и еду и кнопка продажи еды и воды." },
+        { key = "svcPortal", label = "Порталы мага", kind = "check", after = ads,
+          help = "У мага с 40 уровня: заявки на порталы и кнопка продажи порталов." },
+        { key = "svcSummon", label = "Призывы чернокнижника", kind = "check", after = ads,
+          help = "У чернокнижника с 20 уровня: заявки на призыв и кнопка предложения призыва." },
+        { key = "svcLockpick", label = "Взлом замков разбойника", kind = "check", after = ads,
+          help = "У разбойника с 16 уровня: заявки на взлом и кнопка предложения взлома." },
       } },
     } },
-  { key = "crates", title = "Waylaid Crates", icon = "Interface\\Icons\\INV_Crate_01",
-    desc = "The Crates tab and the cheapest way to fill each crate.",
+  { key = "crates", title = "Забытые ящики", icon = "Interface\\Icons\\INV_Crate_01",
+    desc = "Вкладка «Ящики» и дешёвое заполнение каждого ящика.",
     rows = {
-      { sub = "Crates" },
-      { key = "crates", label = "Waylaid Crates", kind = "check", after = function() ns:LayoutTabs() end,
-        help = "The Crates tab and the \"cheapest fill\" tooltip line." },
+      { sub = "Ящики" },
+      { key = "crates", label = "Забытые ящики", kind = "check", after = function() ns:LayoutTabs() end,
+        help = "Вкладка «Ящики» и строка подсказки о дешёвом заполнении." },
     } },
 
-  { group = "Your gold" },
-  { key = "sessions", title = "Sessions", icon = "Interface\\Icons\\INV_Misc_PocketWatch_01",
-    desc = "Counting what your play time earns.",
+  { group = "Ваше золото" },
+  { key = "sessions", title = "Сессии", icon = "Interface\\Icons\\INV_Misc_PocketWatch_01",
+    desc = "Подсчёт того, сколько приносит ваше время.",
     rows = {
-      { sub = "Loot" },
-      { key = "sessionValue", label = "Count loot at", kind = "choice", options = {
-          { "best", "Best of auction and vendor" }, { "vendor", "Vendor only" } },
-        help = "What a session counts each looted item as worth. Auction house prices are after the cut; items that bind when picked up always count at vendor price. Start a session with /fl session start or on the Dashboard." },
+      { sub = "Добыча" },
+      { key = "sessionValue", label = "Считать добычу по", kind = "choice", options = {
+          { "best", "Лучшее: аукцион или торговец" }, { "vendor", "Только торговец" } },
+        help = "Сколько сессия считает за каждый добытый предмет. Цены аукциона после комиссии; привязывающиеся при получении предметы всегда считаются по цене торговца. Начать: /fl session start или в Обзоре." },
     } },
 
-  { group = "Other" },
-  { key = "other", title = "Minimap and updates", icon = "Interface\\Icons\\INV_Misc_Map_01",
-    desc = "The minimap button and new version notices.",
+  { group = "Прочее" },
+  { key = "other", title = "Миникарта и обновления", icon = "Interface\\Icons\\INV_Misc_Map_01",
+    desc = "Кнопка у миникарты и сообщения о новых версиях.",
     rows = {
-      { sub = "Minimap" },
-      { key = "minimap", label = "Minimap button", kind = "check", after = function() ns:UpdateMinimapButton() end,
-        help = "The Forever Ledger button on the minimap. /fl opens the window either way." },
-      { sub = "New versions" },
-      { key = "updateNotice", label = "Tell me when a new version is out", kind = "check",
-        help = "Forever Ledger hears it from guildmates and group members who have a newer version, and says so in chat once a session. It only shares the version number." },
+      { sub = "Миникарта" },
+      { key = "minimap", label = "Кнопка у миникарты", kind = "check", after = function() ns:UpdateMinimapButton() end,
+        help = "Кнопка Forever Ledger у миникарты. /fl всё равно открывает окно." },
+      { sub = "Новые версии" },
+      { key = "updateNotice", label = "Сообщать о новой версии", kind = "check",
+        help = "Forever Ledger узнаёт от согильдейцев и участников группы с новой версией и сообщает об этом в чате раз за сессию. Передаётся только номер версии." },
     } },
   -- Every saved character, with Remove (owner, October 5: addons can't see a character
   -- being deleted, and a sync partner's stayed; rare and permanent, so here, not on the
   -- Characters tab).
-  { key = "characters", title = "Characters", custom = true,
-    desc = "Link your other account, see every character Forever Ledger knows about, and remove ones you no longer have." },
+  { key = "characters", title = "Персонажи", custom = true,
+    desc = "Свяжите второй аккаунт, посмотрите всех известных персонажей и удалите тех, кого больше нет." },
 }
 
 -- Every page gets a tab list (one unnamed tab when it has none), and every setting is
@@ -295,8 +295,8 @@ end
 ---------------------------------------------------------------------------
 if StaticPopupDialogs then
   StaticPopupDialogs.FLEDGER_RELOAD = {
-    text = "Forever Ledger: reload now to see the new look?",
-    button1 = "Reload", button2 = "Later",
+    text = "Forever Ledger: перезагрузить, чтобы увидеть новый вид?",
+    button1 = "Перезагрузить", button2 = "Позже",
     OnAccept = function() ReloadUI() end,
     timeout = 0, whileDead = true, hideOnEscape = true, preferredIndex = 3,
   }
@@ -335,7 +335,7 @@ local function accentControl(parent, onChange)
     b.value = value
     f.items[#f.items + 1] = b
   end
-  add(T:Button(f, "Auto", 44, function() f:SetValue(""); onChange("") end, 20), "")
+  add(T:Button(f, "Авто", 44, function() f:SetValue(""); onChange("") end, 20), "")
   for _, hex in ipairs(ACCENTS) do
     local c = T:FromHex(hex)
     local b = T:Button(f, "", 20, function() f:SetValue(hex); onChange(hex) end, 20)
@@ -412,11 +412,11 @@ end
 
 local function cleanName(s)
   s = (s or ""):gsub("^%s+", ""):gsub("%s+$", "")
-  if s == "" then return nil, "Type a name in the box first." end
-  if #s > 30 then return nil, "That name is too long (30 letters at most)." end
-  if s:lower() == ns.DEFAULT_PROFILE:lower() then return nil, "That name is taken by the Default profile." end
+  if s == "" then return nil, "Сначала введите имя в поле." end
+  if #s > 30 then return nil, "Слишком длинное имя (не больше 30 букв)." end
+  if s:lower() == ns.DEFAULT_PROFILE:lower() then return nil, "Это имя занято профилем «По умолчанию»." end
   for n in pairs(ns.db.profiles) do
-    if n:lower() == s:lower() then return nil, ("There's already a profile called %s."):format(n) end
+    if n:lower() == s:lower() then return nil, ("Профиль с именем %s уже есть."):format(n) end
   end
   return s
 end
@@ -433,18 +433,18 @@ local function newProfile(text)
   if not name then return ns:Print(err) end
   ns.db.profiles[name] = snapshot()
   useProfile(name)
-  ns:Print(("New profile %s, a copy of the settings you had. This character uses it now."):format(name))
+  ns:Print(("Новый профиль %s — копия ваших настроек. Этот персонаж теперь использует его."):format(name))
 end
 
 local function renameProfile(text)
   local cur = ns:ProfileOf()
-  if cur == ns.DEFAULT_PROFILE then return ns:Print("The Default profile keeps its name. Make a new profile to name your own.") end
+  if cur == ns.DEFAULT_PROFILE then return ns:Print("Профиль «По умолчанию» сохраняет имя. Создайте новый профиль, чтобы назвать свой.") end
   local name, err = cleanName(text)
   if not name then return ns:Print(err) end
   ns.db.profiles[name], ns.db.profiles[cur] = ns.db.profiles[cur], nil
   for key, n in pairs(ns.db.charProfile) do if n == cur then ns.db.charProfile[key] = name end end
   afterSwitch()
-  ns:Print(("Renamed %s to %s."):format(cur, name))
+  ns:Print(("Профиль %s переименован в %s."):format(cur, name))
 end
 
 local function deleteProfile()
@@ -453,7 +453,7 @@ local function deleteProfile()
   ns.db.profiles[cur] = nil
   for key, n in pairs(ns.db.charProfile) do if n == cur then ns.db.charProfile[key] = nil end end
   afterSwitch()
-  ns:Print(("Deleted the profile %s. Characters that used it are on Default now."):format(cur))
+  ns:Print(("Профиль %s удалён. Персонажи, которые его использовали, теперь на «По умолчанию»."):format(cur))
 end
 
 local function resetProfile()
@@ -462,7 +462,7 @@ local function resetProfile()
     if type(d) ~= "table" then ns.db.settings[k] = d end
   end
   afterSwitch()
-  ns:Print(("The %s profile is back to Forever Ledger's defaults. Global settings weren't touched."):format(ns:ProfileOf()))
+  ns:Print(("Профиль %s сброшен к умолчаниям Forever Ledger. Глобальные настройки не тронуты."):format(ns:ProfileOf()))
 end
 
 -- A value a setting could really have (imports are checked, never trusted).
@@ -492,21 +492,21 @@ local function importProfile(text)
   local data, err = ns.Deserialize(text)
   if not data then return false, err end
   if type(data) ~= "table" or data.kind ~= "profile" or type(data.values) ~= "table" then
-    return false, "That isn't a settings profile. (Data from Export / import on the Characters tab goes in there.)"
+    return false, "Это не профиль настроек. (Данные из «Экспорт / импорт» на вкладке «Персонажи» вставляются туда.)"
   end
   local values, n = {}, 0
   for k, v in pairs(data.values) do
     local d = DEFS[k]
     if d and ns.PER_CHAR_SETTINGS[k] and validValue(d, v) then values[k] = v; n = n + 1 end
   end
-  if n == 0 then return false, "That profile has no settings this version of Forever Ledger knows." end
+  if n == 0 then return false, "В этом профиле нет настроек, известных этой версии Forever Ledger." end
   -- Parts left out of the export start as this character's settings are now.
   local full = snapshot()
   for k, v in pairs(values) do full[k] = v end
   local name = uniqueName(data.name ~= ns.DEFAULT_PROFILE and data.name or "Imported")
   ns.db.profiles[name] = full
   useProfile(name)
-  return true, ("Imported %d settings as the profile %s; this character uses it now. Switch back any time in Settings, Profiles."):format(n, name)
+  return true, ("Импортировано настроек: %d, профиль %s; этот персонаж теперь использует его. Вернуться можно в Настройках, Профилях."):format(n, name)
 end
 
 ---------------------------------------------------------------------------
@@ -521,16 +521,16 @@ local function defaultText(d)
   local v = ns.DEFAULT_SETTINGS and ns.DEFAULT_SETTINGS[d.key]
   if v == nil then return end
   if d.kind == "choice" then
-    for _, o in ipairs(d.options) do if o[1] == v then return "Default: " .. o[2] .. "." end end
+    for _, o in ipairs(d.options) do if o[1] == v then return "По умолчанию: " .. o[2] .. "." end end
   elseif d.kind == "number" then
     local s = d.suffix or ""
-    return ("Default: %g%s."):format(v, s == "" and "" or ((s:sub(1, 1) == "%" and "" or " ") .. s))
+    return ("По умолчанию: %g%s."):format(v, s == "" and "" or ((s:sub(1, 1) == "%" and "" or " ") .. s))
   elseif d.kind == "money" then
-    return "Default: " .. ((v > 0) and ns.MoneyPlain(v) or "off") .. "."
+    return "По умолчанию: " .. ((v > 0) and ns.MoneyPlain(v) or "выкл") .. "."
   elseif d.kind == "accent" then
-    return "Default: Auto."
+    return "По умолчанию: авто."
   elseif d.kind == "slider" then
-    return ("Default: %d%s."):format(v, d.suffix or "")
+    return ("По умолчанию: %d%s."):format(v, d.suffix or "")
   end
 end
 
@@ -553,7 +553,7 @@ local function makeRow(box, d)
   local function changed(v)
     ns.db.settings[d.key] = v
     if d.after then d.after() end
-    if f.rules then f.rules:SetText("Deals are listings " .. ns:DealRules() .. ".") end
+    if f.rules then f.rules:SetText("Сделки — это лоты " .. ns:DealRules() .. ".") end
   end
   if d.kind == "number" then
     r.control = T:Number(box, d, changed)
@@ -735,7 +735,7 @@ local function confirmButton(parent, label, width, fn)
       fn()
     else
       armed[b] = GetTime()
-      b:SetText("Sure? Click again")
+      b:SetText("Точно? Нажмите ещё раз")
       C_Timer.After(4, function() if armed[b] and GetTime() - armed[b] >= 4 then armed[b] = nil; b:SetText(label) end end)
     end
   end, 24)
@@ -746,49 +746,49 @@ local function buildProfiles(box)
   local P = CreateFrame("Frame", nil, box)
   P.intro = T:Text(P, 12, T.dim)
   P.intro:SetJustifyH("LEFT")
-  P.intro:SetText("A profile is a set of settings your characters can share: say no tooltips on one character, no customer finder on another. Each character uses one profile. Global settings aren't in profiles: they're the same for everyone.")
+  P.intro:SetText("Профиль — набор настроек, которым персонажи могут делиться: например, без подсказок у одного, без поиска клиентов у другого. Каждый персонаж использует один профиль. Глобальные настройки в профили не входят: они одинаковы для всех.")
 
-  P.head1 = makeSub(P, "This character")
+  P.head1 = makeSub(P, "Этот персонаж")
   P.pick = T:Dropdown(P, 220, function(v) useProfile(v) end)
   P.pickLabel = T:Text(P, 12)
-  P.pickLabel:SetText("Profile")
+  P.pickLabel:SetText("Профиль")
   P.users = T:Text(P, 11, T.dim)
   P.users:SetJustifyH("LEFT")
 
-  P.head2 = makeSub(P, "Manage")
+  P.head2 = makeSub(P, "Управление")
   P.name = T:EditBox(P, 200, "LEFT")
   local hint = T:Text(P.name, 11, T.section)
   hint:SetPoint("LEFT", 6, 0)
-  hint:SetText("Name for a new profile")
+  hint:SetText("Название нового профиля")
   P.name:SetScript("OnTextChanged", function(self) hint:SetShown(self:GetText() == "" and not self:HasFocus()) end)
   P.name:SetScript("OnEditFocusGained", function() hint:Hide() end)
   P.name:SetScript("OnEditFocusLost", function(self) hint:SetShown(self:GetText() == "") end)
   P.name:SetScript("OnEscapePressed", function(self) self:SetText(""); self:ClearFocus() end)
-  P.new = T:Button(P, "New profile", 110, function()
+  P.new = T:Button(P, "Новый профиль", 110, function()
     newProfile(P.name:GetText())
     if ns:ProfileOf() ~= ns.DEFAULT_PROFILE then P.name:SetText(""); P.name:ClearFocus() end
   end, 24)
-  P.rename = T:Button(P, "Rename", 80, function() renameProfile(P.name:GetText()); P.name:SetText(""); P.name:ClearFocus() end, 24)
+  P.rename = T:Button(P, "Переименовать", 104, function() renameProfile(P.name:GetText()); P.name:SetText(""); P.name:ClearFocus() end, 24)
   P.manageHelp = T:Text(P, 11, T.dim)
   P.manageHelp:SetJustifyH("LEFT")
-  P.manageHelp:SetText("A new profile starts as a copy of the settings this character has now, and this character switches to it. Rename renames the profile this character uses.")
-  P.reset = confirmButton(P, "Reset to defaults", 140, resetProfile)
-  P.delete = confirmButton(P, "Delete profile", 120, deleteProfile)
+  P.manageHelp:SetText("Новый профиль начинается как копия текущих настроек персонажа, и персонаж переключается на него. «Переименовать» меняет имя профиля этого персонажа.")
+  P.reset = confirmButton(P, "Сбросить к умолчаниям", 140, resetProfile)
+  P.delete = confirmButton(P, "Удалить профиль", 120, deleteProfile)
   for _, b in ipairs({ P.reset, P.delete }) do
     b:HookScript("OnEnter", function(self)
       GameTooltip:SetOwner(self, "ANCHOR_TOP")
-      GameTooltip:AddLine(self == P.reset and "Reset to defaults" or "Delete profile", 1, 1, 1)
-      GameTooltip:AddLine(self == P.reset and "Puts every setting in this profile back to Forever Ledger's default. Global settings aren't touched. Click twice."
-        or "Deletes the profile this character uses; characters on it go back to Default. Default can't be deleted. Click twice.", nil, nil, nil, true)
+      GameTooltip:AddLine(self == P.reset and "Сбросить к умолчаниям" or "Удалить профиль", 1, 1, 1)
+      GameTooltip:AddLine(self == P.reset and "Возвращает все настройки профиля к умолчаниям Forever Ledger. Глобальные настройки не тронуты. Нажмите дважды."
+        or "Удаляет профиль этого персонажа; персонажи на нём вернутся на «По умолчанию». Профиль «По умолчанию» удалить нельзя. Нажмите дважды.", nil, nil, nil, true)
       GameTooltip:Show()
     end)
     b:HookScript("OnLeave", function() GameTooltip:Hide() end)
   end
 
-  P.head3 = makeSub(P, "Share")
+  P.head3 = makeSub(P, "Поделиться")
   P.shareHelp = T:Text(P, 11, T.dim)
   P.shareHelp:SetJustifyH("LEFT")
-  P.shareHelp:SetText("Export copies this character's profile as text, with only the parts you tick. Import makes a new profile from someone's text. Only settings travel: never Global settings, gold or any of your data.")
+  P.shareHelp:SetText("Экспорт копирует профиль этого персонажа текстом, только отмеченные части. Импорт создаёт новый профиль из чужого текста. Переносятся только настройки: никогда глобальные настройки, золото или ваши данные.")
   P.parts, P.partChecks = {}, {}
   for _, p in ipairs(PAGES) do
     if p.key and p.tabs and p.key ~= "global" then   -- (pages with settings: not Profiles or Characters)
@@ -804,26 +804,26 @@ local function buildProfiles(box)
   -- Characters tab (owner's test, October 5).
   local showExport, showImport
   local function tabs(current)
-    return { current = current, { "Export", function() showExport() end }, { "Import", function() showImport() end } }
+    return { current = current, { "Экспорт", function() showExport() end }, { "Импорт", function() showImport() end } }
   end
   showExport = function()
     local any = false
     for _, on in pairs(P.parts) do any = any or on end
     if not any then
-      ns:ShowTextWindow("Export / import profile",
-        "Tick at least one part under Share in Settings, Profiles, to export it.", "", nil, nil, tabs(1))
+      ns:ShowTextWindow("Экспорт / импорт профиля",
+        "Отметьте хотя бы одну часть в «Поделиться» в Настройках, Профилях, чтобы экспортировать.", "", nil, nil, tabs(1))
       return
     end
-    ns:ShowTextWindow("Export / import profile",
-      ("Profile %s. Press Ctrl+A, then Ctrl+C to copy. Whoever gets it pastes it into Settings, Profiles, Export / import, Import."):format(ns:ProfileOf()),
+    ns:ShowTextWindow("Экспорт / импорт профиля",
+      ("Профиль %s. Нажмите Ctrl+A, затем Ctrl+C, чтобы скопировать. Получатель вставит его в Настройках, Профилях, «Экспорт / импорт», «Импорт»."):format(ns:ProfileOf()),
       exportProfile(P.parts), nil, nil, tabs(1))
   end
   showImport = function()
-    ns:ShowTextWindow("Export / import profile",
-      "Paste a profile with Ctrl+V, then click Import. It becomes a new profile and this character switches to it; your other profiles stay as they are.",
+    ns:ShowTextWindow("Экспорт / импорт профиля",
+      "Вставьте профиль через Ctrl+V и нажмите «Импорт». Он станет новым профилем, и персонаж переключится на него; остальные профили не изменятся.",
       "", "Import", importProfile, tabs(2))
   end
-  P.export = T:Button(P, "Export / import", 130, function() showExport() end, 24)
+  P.export = T:Button(P, "Экспорт / импорт", 130, function() showExport() end, 24)
   return P
 end
 
@@ -882,7 +882,7 @@ local function refreshProfiles(P)
   P.pick:SetOptions(opts)
   P.pick:SetValue(cur)
   local users = usersOf(cur)
-  P.users:SetText(#users > 0 and ("Used by: " .. table.concat(users, ", ")) or "")
+  P.users:SetText(#users > 0 and ("Используют: " .. table.concat(users, ", ")) or "")
   P.rename:SetEnabled(cur ~= ns.DEFAULT_PROFILE)
   P.delete:SetEnabled(cur ~= ns.DEFAULT_PROFILE)
 end
@@ -902,7 +902,7 @@ local function buildChars(box)
   local C = CreateFrame("Frame", nil, box)
   -- Linking your other account (owner, November 5): chat can't show at a glance whether
   -- the other side is there. /fl pair and /fl unpair still work.
-  C.linkHead = makeSub(C, "Link your other account")
+  C.linkHead = makeSub(C, "Связать второй аккаунт")
   C.linkText = T:Text(C, 12, T.dim)
   C.linkText:SetJustifyH("LEFT")
   local function link()
@@ -915,19 +915,19 @@ local function buildChars(box)
   C.linkBox = T:EditBox(C, 200, "LEFT")
   C.linkBox:SetScript("OnEnterPressed", link)
   C.linkBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
-  C.linkButton = T:Button(C, "Link", 80, link)
+  C.linkButton = T:Button(C, "Связать", 80, link)
   C.linkButton:SetPoint("LEFT", C.linkBox, "RIGHT", 6, 0)
   C.linkButton:SetPrimary(true)
-  C.unlink = confirmButton(C, "Unlink", 130, function()
+  C.unlink = confirmButton(C, "Отвязать", 130, function()
     ns:SyncCommand("unpair")
     ns:RefreshSettings()
   end)
   C.intro = T:Text(C, 12, T.dim)
   C.intro:SetJustifyH("LEFT")
-  C.intro:SetText("Addons can't see a character being deleted or renamed, so it stays here (and on the Characters tab, in Have and in recipes) until you remove it. Remove forgets its level, professions, recipes, bags and bank; prices and gold history stay. One of yours comes back when you log in on it.")
+  C.intro:SetText("Аддон не видит удаление или переименование персонажа, поэтому он остаётся здесь (и на вкладке «Персонажи», в «Есть» и в рецептах), пока вы не удалите его вручную.")
   -- A heading between the explanation and the list (owner's screenshot, October 5: the
   -- top ran straight into the rows), as on the Profiles page.
-  C.head = makeSub(C, "Saved characters")
+  C.head = makeSub(C, "Сохранённые персонажи")
   C.rows = {}
   return C
 end
@@ -937,13 +937,13 @@ local function charRow(C, i)
   local r = CreateFrame("Frame", nil, C)
   r:SetHeight(40)
   r.stripe = T:Fill(r, { 1, 1, 1, 0.025 })
-  r.remove = confirmButton(r, "Remove", 130, function()
+  r.remove = confirmButton(r, "Убрать", 130, function()
     local key = r.key
     local name = (ns.db.chars[key] and ns.db.chars[key].name) or key
     if ns:RemoveCharacter(key) then
       if ns.BuildUsageIndex then ns:BuildUsageIndex() end
       if ns.InvalidateValues then ns:InvalidateValues() end
-      ns:Print(("Removed %s from Forever Ledger. Prices and gold history are kept."):format(name))
+      ns:Print(("%s удалён из Forever Ledger. Цены и история золота сохранены."):format(name))
       ns:RefreshUI()
       ns:RefreshSettings()
     end
@@ -951,7 +951,7 @@ local function charRow(C, i)
   r.remove:SetPoint("RIGHT", -8, 0)
   r.you = T:Text(r, 11, T.dim)
   r.you:SetPoint("RIGHT", -14, 0)
-  r.you:SetText("you're on this one")
+  r.you:SetText("вы сейчас на нём")
   r.name = T:Text(r, 12)
   r.name:SetPoint("TOPLEFT", 10, -5)
   r.name:SetPoint("RIGHT", r.remove, "LEFT", -10, 0)
@@ -973,11 +973,11 @@ local function layoutChars(C, width)
   C.linkText:SetPoint("TOPLEFT", 12, -y)
   C.linkText:SetWidth(width - 24)
   if not partner then
-    C.linkText:SetText("Share prices and recipes with a character on your other account while both are online. Type its first and last name, click Link, then do the same on that character for this one.")
+    C.linkText:SetText("Делитесь ценами и рецептами с персонажем второго аккаунта, пока оба в сети. Введите его имя и фамилию, нажмите «Связать».")
   elseif online then
-    C.linkText:SetText(("Linked to %s: |cff7fd39conline|r. Share gold and sales, or bags and bank, in Global settings, Advanced."):format(partner))
+    C.linkText:SetText(("Связка с %s: |cff7fd39cв сети|r. Обмен золотом и продажами или сумками и банком — в Глобальных, Дополнительно."):format(partner))
   else
-    C.linkText:SetText(("Linked to %s: |cffee8597not seen online yet|r. Both characters need to be online and linked to each other."):format(partner))
+    C.linkText:SetText(("Связка с %s: |cffee8597ещё не видно в сети|r. Оба персонажа должны быть в сети и связаны друг с другом."):format(partner))
   end
   y = y + C.linkText:GetStringHeight() + 8
   C.linkBox:ClearAllPoints()
@@ -1009,13 +1009,13 @@ local function layoutChars(C, width)
     r:SetWidth(width - 8)
     local cc = RAID_CLASS_COLORS and RAID_CLASS_COLORS[c.class or ""]
     local cls = (LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[c.class or ""]) or c.class or ""
-    r.name:SetText(("%s  |cff888888level %s %s|r"):format(
+    r.name:SetText(("%s  |cff888888уровень %s %s|r"):format(
       cc and ("|c" .. (cc.colorStr or "ffffffff") .. (c.name or key) .. "|r") or (c.name or key), c.level or "?", cls))
-    local from = (c.via and ("from your sync partner " .. c.via))
-      or (ns:IsOwnChar(key) and "this account") or "from an import or an earlier sync"
+    local from = (c.via and ("от партнёра по синхронизации " .. c.via))
+      or (ns:IsOwnChar(key) and "этот аккаунт") or "из импорта или прошлой синхронизации"
     local seen = lastSeen(key)
     r.info:SetText(("%s %s, %s, %s"):format(c.realm or "?", c.faction or "", from,
-      me and "playing now" or (seen and ("last seen " .. ns.Age(seen)) or "never seen here")))
+      me and "сейчас в игре" or (seen and ("последний раз " .. ns.Age(seen)) or "здесь не появлялся")))
     r.remove:SetShown(not me)
     r.you:SetShown(me)
     r:Show()
@@ -1051,7 +1051,7 @@ function ns:BuildSettings(parent)
   search:SetPoint("TOPLEFT", 8, -6)
   local hint = T:Text(search, 11, T.section)
   hint:SetPoint("LEFT", 6, 0)
-  hint:SetText("Search settings")
+  hint:SetText("Поиск по настройкам")
   search:SetScript("OnTextChanged", function(self)
     hint:SetShown(self:GetText() == "" and not self:HasFocus())
     local q = self:GetText():lower():gsub("^%s+", ""):gsub("%s+$", "")
@@ -1106,7 +1106,7 @@ function ns:BuildSettings(parent)
   sf:HookScript("OnSizeChanged", function() if f:IsVisible() then ns:RefreshSettings() end end)
   f.noMatch = T:Text(content, 12, T.dim)
   f.noMatch:SetPoint("TOPLEFT", 12, -12)
-  f.noMatch:SetText("No setting matches that. Try another word, like price, sound or tooltip.")
+  f.noMatch:SetText("Ничего не найдено. Попробуйте другое слово, например цена, звук или подсказка.")
 
   -- Each page's tabs, and a box of rows for each tab.
   for _, p in ipairs(PAGES) do
@@ -1177,8 +1177,8 @@ function ns:RefreshSettings()
   -- Header and tabs
   local hasTabs = not q and page.tabButtons and #page.tabButtons > 0
   if q then
-    f.title:SetText("Search")
-    f.desc:SetText(("Settings that mention \"%s\", from every page."):format(q))
+    f.title:SetText("Поиск")
+    f.desc:SetText(("Настройки, где упоминается «%s», со всех страниц."):format(q))
   else
     f.title:SetText(page.title)
     f.desc:SetText(page.desc or "")
@@ -1229,7 +1229,7 @@ function ns:RefreshSettings()
           box.rules:ClearAllPoints()
           box.rules:SetPoint("TOPLEFT", 12, -(by + 4))
           box.rules:SetWidth(width - 24)
-          box.rules:SetText("Deals are listings " .. ns:DealRules() .. ".")
+          box.rules:SetText("Сделки — это лоты " .. ns:DealRules() .. ".")
           by = by + box.rules:GetStringHeight() + 14
         end
       end

@@ -8,154 +8,154 @@ local _, ns = ...
 ---------------------------------------------------------------------------
 -- Each section: { title, { { topic, text }, ... } }.
 ns.HELP = {
-  { "Getting started", {
-    { sub = "First steps" },
-    { "Open this window", "Type /fl, or click the minimap button." },
-    { "Learn your recipes", "Open each profession window once on every character." },
-    { "Price everything", "At the auction house, click Full scan (allowed about every 15 minutes)." },
-    { "Tooltips", "Hover any item to see what it's worth to you. Settings can make it short (today's cheapest price and what it's worth to you), with Shift for more. With 20 or more listed, selling on the auction house is valued from today's prices; with fewer, from this month's usual price if that's lower, so a few hopeful listings don't fool it, and a gray line says so." },
-    { "Bags", "A bag's tooltip shows what one slot costs at today's cheapest price (auction house or vendor), and which bag is the cheapest per slot right now, so you buy the cheapest space first." },
-    { sub = "Settings and look" },
-    { "Search", "Settings and Help each have a search box above their list: type two letters or more to see everything that mentions it, from every section at once." },
-    { "Settings", "A sidebar like EllesmereUI's: Global settings first (the same for every character: the auction house cut, safety margin, price source and what counts as a flip or a deal), then Profiles, then a page per part of the addon, with tabs across the top for its parts." },
-    { "Themes", "Settings, Appearance: FL Clean (flat and quiet), FL Bronze (a bronze edge, gold titles, sections as cards, switches) or FL Gilded (a bronze frame, gold serif titles), and an accent color: Auto uses EllesmereUI's when it's installed, or pick one, or Custom. A new look shows after a reload; it offers one. Size makes the windows smaller or bigger, 75% to 150%: drag, then let go." },
-    { "Profiles", "Settings, Profiles: a profile is a set of settings characters can share, say no tooltips on one character, no customer finder on another. Each character uses one (Default to start). New profile copies your settings now; Rename, Reset to defaults and Delete profile (click twice) work on the one this character uses. Export / import opens one window: Export copies a profile as text with the parts you tick; Import makes a new profile from someone's text. Global settings are never in a profile." },
-    { sub = "Updates" },
-    { "Welcome", "The first time you open the window, a short welcome lists the five things to start with. Show it again with the button at the bottom left of this tab, or /fl welcome." },
-    { "What's new", "After an update, chat lists what's new in that version, once. The What's new button (bottom right of Help and the Dashboard) or /fl new shows it as a card." },
+  { "С чего начать", {
+    { sub = "Первые шаги" },
+    { "Откройте это окно", "Введите /fl или нажмите кнопку у миникарты." },
+    { "Изучите рецепты", "Откройте окно каждой профессии один раз на каждом персонаже." },
+    { "Узнайте цены", "На аукционе нажмите «Полный скан» (разрешается примерно каждые 15 минут)." },
+    { "Подсказки", "Наведите на любой предмет, чтобы увидеть его стоимость для вас. В настройках можно включить короткий вид (сегодняшний минимум и стоимость для вас), Shift — остальное. Если лотов 20 и больше, продажа на аукционе оценивается по сегодняшним ценам; если меньше — по обычной цене месяца, если она ниже, чтобы пара надежд не вводила в заблуждение; серая строка об этом скажет." },
+    { "Сумки", "Подсказка сумки показывает, сколько стоит один слот по сегодняшней минимальной цене (аукцион или торговец), и какая сумка сейчас дешевле всего за слот — чтобы сначала покупать самое дешёвое место." },
+    { sub = "Настройки и вид" },
+    { "Поиск", "В настройках и справке есть поиск над списком: введите две буквы или больше, чтобы увидеть всё, где это упоминается, сразу из всех разделов." },
+    { "Настройки", "Боковая панель, как в EllesmereUI: сначала глобальные настройки (одинаковые для всех персонажей: комиссия аукциона, запас, источник цен и что считается флипом или сделкой), затем профили, затем страница на каждую часть аддона с вкладками сверху." },
+    { "Темы", "Настройки, Внешний вид: FL Clean (плоская и тихая), FL Bronze (бронзовый край, золотые заголовки, секции-карточки, переключатели) или FL Gilded (бронзовая рамка, золотые заголовки с засечками), и цвет акцента: «Авто» берёт цвет EllesmereUI, если он установлен, или выберите свой. Новый вид появляется после перезагрузки; аддон предложит её. «Размер» делает окна меньше или больше, от 75% до 150%: перетащите и отпустите." },
+    { "Профили", "Настройки, Профили: профиль — набор настроек, которым могут делиться персонажи, например без подсказок у одного и без поиска клиентов у другого. Каждый персонаж использует один (сначала «По умолчанию»). «Новый профиль» копирует текущие настройки; «Переименовать», «Сбросить» и «Удалить профиль» (клик дважды) действуют на профиль этого персонажа. «Экспорт и импорт» открывает одно окно: экспорт копирует профиль текстом с отмеченными частями; импорт создаёт новый профиль из чужого текста. Глобальные настройки в профиль не входят." },
+    { sub = "Обновления" },
+    { "Приветствие", "При первом открытии окна короткое приветствие перечисляет пять первых шагов. Показать снова — кнопка внизу слева на этой вкладке или /fl welcome." },
+    { "Что нового", "После обновления чат один раз перечисляет новое в версии. Кнопка «Что нового» (внизу справа в справке и Обзоре) или /fl new покажет это карточкой." },
   } },
-  { "Auction house scans", {
-    { sub = "Scanning" },
-    { "Full scan", "Reads every listing in a few seconds." },
-    { "Scan materials", "Checks just what your recipes use." },
-    { "Watch flips", "On the auction house: keeps scanning while it stays open and chimes when a new vendor flip turns up. It can only scan with the auction house open: it pauses when you close it and picks up again when you come back (Settings, Auction house: Resume the flip watch). It also waits while you're on one item's buy or sell page, so it doesn't change what the page shows; the status line says so, and it carries on when you go back to the list." },
-    { "Quiet mode", "Doing something else while you wait for a chime? /fl quiet turns the game's sound off and plays Forever Ledger's chimes at full volume, even with the game in the background, plus a chime when you win an auction. It stays on for that character, through reloads and logins, until you type /fl quiet again. Quiet mode while the flip watch runs (Settings, Auction house, Alerts) does it by itself, and /fl pair offers to turn that on. Your sound settings come back afterward." },
-    { "Other addons", "If Auctionator or another addon runs a full scan, Forever Ledger reads it too. With Auctionator, TSM or ForeverForge installed, features they already cover (like auction prices in tooltips, or a sound when an auction sells) are switched off once, with a message; turn them back on in Settings." },
-    { "Neutral auction houses", "Booty Bay, Gadgetzan and Everlook keep their own prices and take a 15% cut (your faction's takes 5%), which values, sell protection and the Auctions tab count while you're there. The Auctions tab lists what you have up there apart from your faction's." },
-    { sub = "Selling" },
-    { "Your auctions", "The Auctions tab beside the auction house: All, Up, Undercut and Sold, like the Ledger. Each auction shows how many, your price each, the cheapest now, and undercut (red) or cheapest (green); sold ones show what you get after the cut and when the gold reaches your mailbox. The bottom line says what gold is on the way and what's waiting in your mailbox. Check prices looks them all up; scans and the flip watch check them too, and an undercut gets a chat line and a sound (Settings, Auction house). Cancel next undercut asks once, then each click cancels the next one (each loses its deposit). Opening the auction house says in chat what sold while you were away and the gold it brings (Settings, Auction house)." },
-    { "Sale sound", "A coin sound when one of your auctions sells. Settings, Auction house: Sound when an auction sells." },
-    { "Price helper", "On the Sell tab, under the Create Auction button: your usual price and the cheapest now, with Undercut (1 copper under the cheapest) and Usual buttons that fill in the price. When the cheapest is well below usual it says so, so you can wait. You still click Post (Settings, Auction house)." },
-    { "Sell protection", "On the Sell tab, if a vendor pays more than your listing would bring after the auction house cut, a red line under Post says so and Post is grayed out until you click Post anyway. Settings, Auction house: untick Stop posts below vendor price to keep just the warning." },
+  { "Сканы аукциона", {
+    { sub = "Сканирование" },
+    { "Полный скан", "Читает все лоты за несколько секунд." },
+    { "Скан материалов", "Проверяет только то, что нужно рецептам." },
+    { "Слежение за флипами", "На аукционе: продолжает сканировать, пока он открыт, и звенит при новом флипе у торговца. Сканирует только при открытом аукционе: встаёт на паузу при закрытии и продолжает при возвращении (Настройки, Аукцион: «Возобновлять слежение»). Также ждёт, пока вы на странице покупки или продажи предмета, чтобы не менять её вид; строка состояния об этом скажет, а при возврате к списку работа продолжится." },
+    { "Тихий режим", "Занимаетесь другим, пока ждёте звонка? /fl quiet выключает звук игры и играет звонки Forever Ledger в полную громкость даже в фоне, плюс звонок при выигрыше лота. Держится у этого персонажа через перезагрузки и входы, пока не введёте /fl quiet снова. Тихий режим во время слежения (Настройки, Аукцион, Оповещения) включается сам, а /fl pair предложит это сделать. Настройки звука потом вернутся." },
+    { "Другие аддоны", "Если Auctionator или другой аддон запускает полный скан, Forever Ledger тоже его читает. При установленных Auctionator, TSM или ForeverForge их функции (например, цены аукциона в подсказках или звук продажи) один раз отключаются с сообщением; вернуть можно в настройках." },
+    { "Нейтральные аукционы", "Бухта Боти, Прибамбасск и Круговзор держат свои цены и берут 15% (аукцион вашей фракции — 5%); оценки, защита продажи и вкладка «Аукционы» учитывают это, пока вы там. Вкладка «Аукционы» показывает ваши лоты там отдельно от фракционных." },
+    { sub = "Продажа" },
+    { "Ваши аукционы", "Вкладка «Аукционы» у аукциона: «Все», «Выставлено», «Перебитые» и «Продано», как в Журнале. У каждого лота видно количество, вашу цену, текущий минимум и перебит (красным) или минимум (зелёным); у проданных — сколько вы получите после комиссии и когда золото дойдёт до почты. Нижняя строка говорит, сколько золота в пути и сколько ждёт на почте. «Проверить цены» проверяет все; сканы и слежение тоже, а перебитый лот даёт строку в чате и звук (Настройки, Аукцион). «Отменить следующего» спросит один раз, затем каждый клик отменяет следующий (каждый теряет залог). При открытии аукциона чат сообщает, что продалось без вас и сколько это даёт (Настройки, Аукцион)." },
+    { "Звук продажи", "Звук монет, когда продаётся ваш лот. Настройки, Аукцион: «Звук при продаже лота»." },
+    { "Помощь с ценой", "На вкладке продажи под кнопкой создания лота: ваша обычная цена и текущий минимум, кнопки «Перебить» (на 1 медь ниже минимума) и «Обычная», которые подставляют цену. Если минимум заметно ниже обычного, это будет сказано — можно подождать. «Выставить» нажимаете вы (Настройки, Аукцион)." },
+    { "Защита продажи", "На вкладке продажи, если торговец даёт больше, чем лот после комиссии аукциона, красная строка под «Выставить» сообщит об этом, а кнопка будет недоступна, пока не нажмёте «Всё равно выставить». Настройки, Аукцион: снимите «Не выставлять дешевле цены торговца», чтобы осталось только предупреждение." },
   } },
-  { "Tooltips", {
-    { sub = "Prices" },
-    { "Auction price", "Auction, cheapest: the lowest price listed at your last scan, how many were listed, and (in gray) how long ago. Under it, when different: the average of the 20 cheapest, about what you'd pay buying a few. Values in Forever Ledger use that average, so one odd cheap listing doesn't sway them. With your own prices over 12 hours old, Auctionator's or TSM's price is used if you have them, and named." },
-    { "Worth to you", "The best of selling on the auction house, selling to a vendor, disenchanting, or crafting it into something, with the best few ways listed. Disenchanting counts what the materials sell for, as an average: each disenchant gives one result, and the tooltip shows the chance of each. Hover damaged gear and the vendor way counts what a vendor pays for it as it is. Settings, Tooltips chooses which ways it counts (turn off crafting to leave out what your alts could make); shuffles and the Buy queue still count every way." },
-    { "Auction house deposits", "Selling an item on the auction house (its Worth to you line), resale deals and the Booty Bay view allow for one 8-hour listing that doesn't sell (its deposit is lost). The deposit comes back when a listing sells. Materials further down a chain (dust from disenchanting, a craft's output) don't count it, so the Disenchant finder, shuffles, vendor flips and shopping-list limits are unchanged. If this makes selling to a vendor better, the option says Vendor it instead. Deposits use the auction house's quote when available, otherwise Classic's formula, which matches Forever: 5% of the vendor price per 2 hours (25% at Booty Bay), so 20% for 8 hours. Without a known vendor price, it's zero." },
-    { "Buy at or below", "The most worth paying, after your safety margin. Green when it's already cheaper." },
-    { "Gear versions", "Gear with random stats (of the Eagle) also shows the price of that exact version." },
-    { "Price history", "Hold Ctrl over an item: the cheapest price over the last 14 days, whether it's rising or falling, the usual price this month, how many are usually listed and the lowest price ever seen. It builds up with each scan." },
-    { "Price window", "Alt-click an item in your bags, a link in chat or a listing on the auction house (search results, a gear listing, or the item's picture on its buy page; gear with random stats opens on the version you clicked) for its own window. To look up any item, even one you don't have: Price lookup at the top of this window, or /fl price, then type part of its name in the box at the top right. The window shows the usual price, which way it's heading, the cheapest now and how many are listed, how many you have and have posted; a graph of the cheapest and typical price each day for 2 weeks, 3 months or a year (each scan saves a day, and with sync on your other account's scans count too, with days you missed while offline, up to 14, sent over when the two connect; days are kept 90 days, then as weekly averages for a year), with how many were listed as bars and dashed lines for the vendor price or disenchant value and the cost to craft; hover it for each day. Gear with random stats can show one version (of the Eagle). Beside it: your last 7 days with the item and what it's worth to you. If a recipe makes it: the materials at today's prices, what crafting one costs against what it sells for after the cut and one unsold listing (as Worth to you counts it), and the profit; click a material for its own graph. Choose how many crafts and a list to add the materials to a shopping list. Search on the auction house shows it there while the auction house is open. Settings, Tooltips, General turns the click off or changes it to Ctrl-click or Ctrl+Alt-click (if another addon, such as a disenchanting one, uses Alt-click). Ctrl-click then no longer opens the dressing room; with Ctrl+Alt-click, Ctrl-click still does." },
-    { sub = "Uses and quests" },
-    { "Also", "Disenchant results, which of your recipes use it, and the cheapest crate fill." },
-    { "Quests", "Items quests ask for (Bronze Tube, Spider Ichor, Flask of Oil...) list the quest, its level and how many, for your faction. In yellow with keep it when this character hasn't reached that level yet, so you don't vendor it. Quests this character has done, ones gray for its level and other classes' quests are left out (Settings, Tooltips: Only quests this character still needs; off shows them all, marked). Leveling players buy these once per character, so they sell; the Deals tab's hover says when a deal is one. From original Classic quests: Forever may have changed some." },
-    { "Sells", "How fast an item sells: Fast, Steady, Slow, Rare (seldom listed, goes quickly) or No sales seen, judged against items of the same kind, so ore and swords aren't held to the same bar. It counts listings that vanished before they could have expired, so it builds up as you run full scans (fastest with Watch flips) and shows after 3 hours of scans compared (and, in the first day, at least 3 sales)." },
+  { "Подсказки", {
+    { sub = "Цены" },
+    { "Цена на аукционе", "Аукцион, минимум: самая низкая цена на последнем скане, сколько было лотов и (серым) как давно. Ниже, если отличается: среднее по 20 дешёвым — примерно столько вы заплатите, покупая несколько. Оценки Forever Ledger используют это среднее, чтобы один странный дешёвый лот не сбивал их. Если вашим ценам больше 12 часов, используется цена Auctionator или TSM, если они есть, с названием источника." },
+    { "Стоит для вас", "Лучшее из продажи на аукционе, торговцу, распыления или крафта, с несколькими лучшими способами. Распыление считается по продаже материалов в среднем: каждое распыление даёт один результат, и подсказка показывает шанс каждого. У повреждённого снаряжения способ «торговец» считает цену как есть. Настройки, Подсказки выбирают, что учитывать (отключите крафт, чтобы не учитывать возможности альтов); цепочки и очередь покупок всё равно учитывают всё." },
+    { "Залоги аукциона", "Продажа предмета на аукционе (строка «Стоит для вас»), перепродажа и вид «Бухта Боти» учитывают один непроданный 8-часовой лот (залог теряется). Залог возвращается при продаже. Материалы дальше по цепочке (пыль от распыления, результат крафта) его не учитывают, поэтому поиск распыления, цепочки, флипы и лимиты списков не меняются. Если из-за этого выгоднее продать торговцу, вариант так и называется. Залог берётся из данных аукциона, иначе по формуле Classic, совпадающей с Forever: 5% цены торговца за 2 часа (25% в Бухте Боти), то есть 20% за 8 часов. Без известной цены торговца — ноль." },
+    { "Покупать по или ниже", "Максимум, который стоит платить, после запаса. Зелёное, если уже дешевле." },
+    { "Версии снаряжения", "Снаряжение со случайными характеристиками (например, «орла») показывает цену именно этой версии." },
+    { "История цен", "Удерживайте Ctrl над предметом: минимум за 14 дней, растёт цена или падает, обычная цена месяца, обычное число лотов и исторический минимум. Копится со сканами." },
+    { "Окно цены", "Alt+клик по предмету в сумках, ссылке в чате или лоту на аукционе (результаты поиска, лот снаряжения или картинка предмета на странице покупки; снаряжение со случайными характеристиками открывается на той версии, по которой щёлкнули) — отдельное окно. Найти любой предмет, даже отсутствующий: «Поиск цены» вверху этого окна или /fl price, затем часть названия в поле справа вверху. Окно показывает обычную цену, направление, текущий минимум и число лотов, сколько у вас и сколько выставлено; график минимальной и типичной цены по дням за 2 недели, 3 месяца или год (каждый скан сохраняет день, а при синхронизации сканы второго аккаунта тоже считаются, пропущенные дни — до 14 — приходят при соединении; дни хранятся 90 дней, затем понедельно за год), с числом лотов столбиками и пунктиром цены торговца или распыления и стоимости крафта; наведите для каждого дня. Снаряжение со случайными характеристиками может показать одну версию («орла»). Рядом: ваши последние 7 дней с предметом и стоимость для вас. Если предмет делается по рецепту: материалы по сегодняшним ценам, стоимость крафта против продажи после комиссии и одного непроданного лота (как считает «Стоит для вас») и прибыль; клик по материалу — его график. Выберите число крафтов и список, чтобы добавить материалы в список покупок. «Поиск на аукционе» покажет предмет, пока аукцион открыт. Настройки, Подсказки, Общие отключают клик или меняют его на Ctrl+клик или Ctrl+Alt+клик (если Alt+клик занят другим аддоном, например распыления). Тогда Ctrl+клик больше не открывает примерочную; при Ctrl+Alt+клике Ctrl+клик по-прежнему работает." },
+    { sub = "Применение и задания" },
+    { "Также", "Результаты распыления, в каких ваших рецептах он используется и дешёвое заполнение ящика." },
+    { "Задания", "Предметы, которые просят в заданиях (бронзовая трубка, ихор паука, колба масла...), показывают задание, его уровень и количество для вашей фракции. Жёлтым с «оставьте себе», если персонаж ещё не дорос, чтобы вы его не продали. Выполненные задания, серые по уровню и задания других классов скрываются (Настройки, Подсказки: «Только задания, нужные этому персонажу»; без этого показываются все с пометками). Прокачивающиеся покупают их раз на персонажа, поэтому они продаются; подсказка на вкладке «Сделки» скажет, когда сделка — такое задание. Данные из оригинального Classic: в Forever часть могла измениться." },
+    { "Сбыт", "Как быстро продаётся предмет: быстро, стабильно, медленно, редко (мало лотов, уходит быстро) или продаж не видно — в сравнении с такими же предметами, так что руда и мечи не меряются одной меркой. Считаются лоты, исчезнувшие раньше срока, поэтому показатель копится с полными сканами (быстрее всего со слежением) и появляется после 3 часов сравнения сканов (а в первый день — минимум после 3 продаж)." },
   } },
-  { "Shuffles and vendor flips", {
-    { "Shuffles", "Buy materials, craft, disenchant or convert, and sell, ranked by profit per hour. Click a row for every step. Blizzard nerfed most vendor shuffles, so Sells to a vendor may often be empty." },
-    { "Add to shopping list", "Open a shuffle or vendor flip, pick a regular list or New list, choose how many crafts (or items), then Add to shopping list. Its purchases and price limits are added; an existing item keeps its bought count and any price you typed. A disenchant group uses its cheapest item. Crate lists and lists with Any price are left out. New lists start with buying off: check Want and Up to and tick Buy from this list when ready." },
-    { "Vendor flips", "Things on the auction house for less than a vendor pays. They're in the Buy queue beside the auction house (its Vendor flips view); a full scan that finds some opens it if it's closed, and the flip watch chimes. Settings, Global settings, Flips and deals sets the least profit worth your time, as a share of the vendor price and as an amount." },
-    { "On the auction house", "Listings worth buying get a green bar and a badge saying why (FLIP, DE, CRAFT, USE), and the line above says how many are left." },
+  { "Цепочки и флипы у торговца", {
+    { "Цепочки", "Купить материалы, скрафтить, распылить или переделать и продать — по убыванию прибыли в час. Клик по строке показывает все шаги. Blizzard ослабил большинство цепочек на торговца, поэтому «Продажа торговцу» часто будет пустой." },
+    { "Добавить в список покупок", "Откройте цепочку или флип, выберите обычный список или «Новый список», число крафтов (или предметов) и нажмите «Добавить в список покупок». Его покупки и ценовые лимиты добавляются; у уже имеющегося предмета сохраняются купленное количество и ваша цена. Группа распыления использует самый дешёвый предмет. Списки ящиков и списки с «Любой ценой» не подходят. Новые списки начинают с выключенной покупкой: проверьте «Нужно» и «До» и отметьте «Покупать из этого списка»." },
+    { "Флипы у торговца", "Предметы на аукционе дешевле цены торговца. Они в очереди покупок у аукциона (вид «Флипы у торговца»); полный скан, нашедший их, открывает очередь, если она закрыта, а слежение звенит. Настройки, Глобальные, Флипы и сделки задают минимальную прибыль, ради которой стоит тратить время: долю от цены торговца и сумму." },
+    { "На аукционе", "Лоты, которые стоит купить, получают зелёную полосу и значок с причиной (ФЛИП, РАСП, КРАФТ, ИСП), а строка выше говорит, сколько осталось." },
   } },
-  { "Buy queue and lists", {
-    { sub = "Buy queue" },
-    { "Buy queue", "Click Buy queue on the auction house: a panel beside it lines up vendor flips and your shopping lists. It finds the next one by itself, and a click on Buy (or, with Scroll to buy ticked, a tick of the mouse wheel down over its top strip) buys it. Stacks of materials take a second tick to confirm the final price. Bottom right: what you bought this visit, what it cost and the profit if you vendored it (hover for the numbers). /fl queue." },
-    { "Scanning from the panel", "The panel's bottom row has Watch flips, Full scan and Scan materials (Stop watching and Stop scan while they run), with the scan's progress just above. While the panel is open beside the auction house, the same buttons under the auction house window are hidden." },
-    { "Watched items", "Items you always want checked, each with the most you'd pay (Silk Cloth up to 2s for bandages, say). Watch flips checks them every pass, on top of the items it picks, and anything at or under your price joins Vendor flips, first in the list, and chimes. Leave the price at vendor to buy one only when a vendor pays more. Add one with Watch in its price window, or with the Watched button at the top of Vendor flips (shift-click, drag or type it); change Up to or remove it there. Gear is checked by the full scan, not between scans." },
-    { "Two views", "Vendor flips or Shopping lists, switched at the top of the panel, one at a time; the one you're on is the one that buys, so a list never buys a flip by accident. Each has its own buttons at the bottom. When there is something to buy, the strip at the top glows (gold for Vendor flips, purple for Shopping lists); with Scroll to buy ticked it also shows a mouse wheel: that's where to scroll. A new flip that chimes switches the panel to Vendor flips, unless you're using a shopping list (something on it being looked up or bought, or a click or scroll there in the last 30 seconds); then a gold count on the Vendor flips button (and on the Buy queue tab) says it's there." },
-    { "Safe by design", "It never pays more than the limit shown (checked again on the final price) or more than you have, and every purchase is your own tick or click, as Blizzard requires. Scroll to buy only works with the mouse over the top strip; untick it to buy by clicking only. Right-click an item to skip it. Items you can't afford yet stay at the bottom of the list, grayed and marked can't afford, and are skipped until you have the gold; scroll past the last one you can buy and you get the error sound and a red message, once." },
-    { "Spend at most", "The box near the bottom of the Buy queue caps what it spends this auction house visit (type 50 for 50g; it starts again each time you open the auction house). No limit until you type one; what's left shows beside it. Items over it are marked over limit and skipped. To always keep some gold back for repairs or a mount: Settings, Auction house, Buy queue: always keep." },
-    { sub = "Shopping lists" },
-    { "Shopping lists", "Named lists of items, for example twink gear to watch for or raid consumables to buy. Pick a list from the dropdown at the top; New, Rename and Delete are beside it. With the list open, shift-click an item to add it (or drag it, or type its name: names are suggested as you type, Enter takes the top one). Open them anywhere, to plan before you go to the auction house: the Shopping lists button at the top of this window, Shift-click on the minimap button, or /fl lists." },
-    { "Search all", "Checks the auction house for everything on the list at once. Each item shows when it was checked (checking... and in line while it runs), how many are listed and the cheapest. Click an item to look at it on the auction house." },
-    { "Have", "What you own of each item: this character's bags, bank and auction house purchases still in the mail, and your characters on this ruleset and faction. On a list you buy from it reads 3 (20): 3 bought for the list, 20 owned. Hover the number to see where. It's there to know, it doesn't change what's bought." },
-    { "Buying from a list", "Tick Buy from this list in the Buy queue: the list adds Want (how many to buy) and Up to (the most you'll pay for one: filled in from its source; hover to see where it came from; off means don't buy it), and the Buy queue's Shopping lists view buys them. Want is how many to buy, whatever you already have; Have shows how many are bought so far. It never buys more than Want. Type any in Want to keep buying it whenever it's at or under Up to, with no limit (not with Up to any, which would buy every listing: then it buys one). An item is done once its Want is bought, and stays done; Buy again (bottom right) starts the list over. The bottom line says about what buying the rest would cost." },
-    { "Where Up to comes from", "Hover Up to for its source. From a shuffle: its buying cap, not today's price; if two shuffles use an item, the lower cap wins. Add the shuffle again or use Buy again to refresh it. Added by hand: usual price plus this list's allowance (Pay up to X% over the usual price, starting at 10%); change the percentage on each list, then switch buying on or use Buy again to fill it. Type any price yourself, including off: it always wins and is never changed automatically. Existing limits are treated as yours. A shuffle route that can no longer be valued turns off until refreshed with known prices." },
-    { "Prices", "Type a price any way: 2g 50s 25c, 2 50 25 or 2.50.25 (gold silver copper), 2 50 (gold silver), 25s, 75c, or a plain number for gold; it's tidied up when you press Enter, and a tip shows what it will be. Type any for any price, or tick Any price (bottom of the list) for the whole list (raid prep): the queue then buys the cheapest until it has bought what you want, never more than 3 times the usual price." },
-    { "Vendor supplies", "Unlimited-stock vendor items show vendor under Up to on lists and stay out of the auction house queue, including hand-added items. Settings > Auction house > Buying: Buy vendor items on the auction house too (off by default) permits buying at the vendor price; a lower price or off that you typed is still respected. Your stored price is kept. Right-click an item's Up to box to use its automatic price again; the hover shows the underlying shuffle cap or usual price plus the list allowance while a typed price is in force. Limited-stock vendor items remain ordinary auction house items." },
-    { "Buy or craft", "Items one of your recipes makes have a Buy/Craft button: set Craft and the list shows the materials for the number you want, with Up to for each (usual price plus this list's allowance unless you type one) and how many are bought. Materials a vendor sells are marked vendor. Hover an item one of your recipes makes: what buying it would cost against buying the materials to craft it, and which is cheaper." },
-    { "One version", "Type \"Soldier's Armor of the Monkey\", or shift-click a link of that version, to keep just that version on a list. Search all looks up every version of gear; hover an item for each version's price, yours first." },
-    { "Share and import", "Share / import (top right of the list) opens a window with two tabs. Share copies a list as plain text to paste in Discord or send a friend; Import reads it back (or a plain list of item names, item numbers or Wowhead links, one per line). Imports never change your own lists, and never buy by themselves: tick Buy from this list to buy from one." },
+  { "Очередь покупок и списки", {
+    { sub = "Очередь покупок" },
+    { "Очередь покупок", "Нажмите «Очередь покупок» на аукционе: панель рядом выстроит флипы и ваши списки. Она сама находит следующее, а клик «Купить» (или, с отмеченной «Покупкой колесом», щелчок колеса вниз над верхней полосой) покупает. Стопки материалов требуют второго щелчка для подтверждения итоговой цены. Внизу справа: что куплено за визит, сколько стоило и прибыль, если сдать торговцу (наведите для цифр). /fl queue." },
+    { "Сканирование из панели", "В нижней строке панели: «Следить за флипами», «Полный скан» и «Скан материалов» («Остановить» во время работы), прогресс скана чуть выше. Пока панель открыта рядом с аукционом, такие же кнопки под окном аукциона скрыты." },
+    { "Отслеживаемые предметы", "Предметы, которые нужно проверять всегда, с максимальной ценой (например, шёлковая ткань до 2s на бинты). Слежение проверяет их каждый проход сверх обычных, и всё по вашей цене или дешевле попадает во «Флипы у торговца» первыми и звенит. Оставьте цену «торговец», чтобы покупать только когда торговец даёт больше. Добавить: «Следить» в окне цены или кнопка «Отслеживаемые» вверху флипов (shift-клик, перетаскивание или ввод); там же меняются «До» и удаление. Снаряжение проверяется полным сканом, а не между сканами." },
+    { "Два вида", "«Флипы у торговца» или «Списки покупок» — переключаются вверху панели, по одному; покупает тот, что открыт, поэтому список случайно не купит флип. У каждого свои кнопки внизу. Когда есть что купить, верхняя полоса светится (золотом для флипов, фиолетовым для списков); с «Покупкой колесом» появляется и значок колеса — там и прокручивать. Новый флип со звонком переключает панель на флипы, если вы не работаете со списком (что-то ищется или покупается, либо был клик или прокрутка за последние 30 секунд); тогда золотой счётчик на кнопке флипов (и на вкладке очереди) покажет, что он там." },
+    { "Безопасность по умолчанию", "Она никогда не платит больше показанного лимита (проверяется и на итоговой цене) или больше, чем у вас есть, и каждая покупка — ваш клик, как требует Blizzard. «Покупка колесом» работает только при мыши над верхней полосой; снимите её, чтобы покупать только кнопкой. Правый клик по предмету — пропустить. То, что пока не по карману, остаётся внизу, приглушённым с пометкой «не хватает золота», и пропускается, пока не накопите; прокрутка за последний доступный даёт звук ошибки и красное сообщение один раз." },
+    { "Потратить не более", "Поле внизу очереди ограничивает траты за этот визит на аукцион (введите 50 для 50g; сбрасывается при каждом открытии аукциона). Пока ничего не введено — без предела; остаток показывается рядом. Что дороже — помечается «выше лимита» и пропускается. Чтобы всегда оставлять золото на ремонт или транспорт: Настройки, Аукцион, Очередь покупок: «всегда оставлять»." },
+    { sub = "Списки покупок" },
+    { "Списки покупок", "Именованные списки предметов, например снаряжение для твинка или расходники к рейду. Выберите список в выпадающем меню сверху; рядом «Новый», «Переименовать» и «Удалить». С открытым списком shift-клик по предмету добавляет его (или перетащите, или введите название: подсказки появляются по мере ввода, Enter берёт первое). Открывать можно где угодно, чтобы планировать до аукциона: кнопка «Списки покупок» вверху этого окна, Shift-клик по кнопке у миникарты или /fl lists." },
+    { "Искать всё", "Проверяет на аукционе всё из списка сразу. У каждого предмета видно, когда проверялся («проверяю...» и очередь во время работы), сколько лотов и минимум. Клик по предмету — посмотреть его на аукционе." },
+    { "Есть", "Сколько у вас каждого предмета: сумки и банк этого персонажа, покупки на аукционе ещё на почте и ваши персонажи этого правила и фракции. В списке, из которого вы покупаете, это 3 (20): 3 куплено для списка, 20 есть. Наведите на число, чтобы увидеть где. Это только справка, на покупки не влияет." },
+    { "Покупка из списка", "Отметьте «Покупать из этого списка» в очереди: список задаёт «Нужно» (сколько купить) и «До» (максимум за штуку: подставляется из источника; наведите, чтобы увидеть откуда; «выкл» — не покупать), и вид «Списки покупок» покупает их. «Нужно» — сколько купить, независимо от имеющегося; «Есть» показывает, сколько уже куплено. Больше «Нужно» очередь не покупает. Введите «любая» в «Нужно», чтобы покупать всегда по «До» или дешевле без предела (но не при «До» = «любая»: тогда покупается один). Предмет закрывается, когда «Нужно» набрано, и остаётся закрытым; «Купить снова» внизу справа запускает список заново. Нижняя строка примерно покажет стоимость остального." },
+    { "Откуда берётся «До»", "Наведите на «До», чтобы увидеть источник. От цепочки: её потолок покупки, а не сегодняшняя цена; если предмет нужен двум цепочкам, берётся меньший. Добавьте цепочку снова или нажмите «Купить снова», чтобы обновить. Добавлено вручную: обычная цена плюс допуск списка («Платить до X% к обычной цене», начиная с 10%); меняйте процент в каждом списке, затем включите покупку или нажмите «Купить снова». Своя цена, включая «выкл», всегда важнее и автоматически не меняется. Если маршрут цепочки больше нельзя оценить, он отключается до обновления с известными ценами." },
+    { "Цены", "Вводите цену как удобно: 2g 50s 25c, 2 50 25 или 2.50.25 (золото серебро медь), 2 50 (золото серебро), 25s, 75c или просто число для золота; при Enter всё приводится к виду, а подсказка покажет результат. Введите «любая» для цены или отметьте «Любая цена» внизу списка (подготовка к рейду): очередь купит самое дешёвое до нужного количества, но не дороже трёх обычных цен." },
+    { "Товары торговцев", "Товары торговцев с бесконечным запасом показывают «торговец» в «До» и не попадают в очередь аукциона, включая добавленные вручную. Настройки > Аукцион > Покупка: «Покупать товары торговцев и на аукционе» (по умолчанию выкл) разрешает покупку по цене торговца; ваша цена ниже или «выкл» всё равно соблюдается. Сохранённая цена остаётся. Правый клик по полю «До» возвращает автоматическую цену; подсказка показывает потолок цепочки или обычную цену с допуском, пока действует ваша цена. Товары с ограниченным запасом остаются обычными лотами." },
+    { "Купить или скрафтить", "У предметов из ваших рецептов есть кнопка «Купить/Скрафтить»: выберите «Скрафтить», и список покажет материалы на нужное количество, с «До» для каждого (обычная цена плюс допуск списка, если не ввели свою) и сколько куплено. Материалы, которые продаёт торговец, помечены «торговец». Наведите на предмет из рецепта: сколько стоит купить его против покупки материалов на крафт и что дешевле." },
+    { "Одна версия", "Введите «Soldier's Armor of the Monkey» или сделайте shift-клик по ссылке нужной версии, чтобы оставить в списке только её. «Искать всё» проверяет все версии снаряжения; наведите на предмет — цены каждой версии, ваша первой." },
+    { "Поделиться и импорт", "«Поделиться / импорт» вверху справа открывает окно с двумя вкладками. «Поделиться» копирует список простым текстом для Discord или другу; «Импорт» читает его обратно (или простой список названий, номеров предметов или ссылок Wowhead по одному в строке). Импорт никогда не меняет ваши списки и сам не покупает: отметьте «Покупать из этого списка»." },
   } },
-  { "Deals", {
-    { "Deals tab", "Listings well below the price an item is usually cheapest at, to buy and resell: price now, usual low, how many are worth buying, profit after the cut and one unsold listing, and how sure it is (Good, Fair or Thin)." },
-    { "Booty Bay", "Deals tab, Booty Bay (top right): the neutral auction house against yours, each after its own cut (15% there, 5% here) and one unsold listing. Sells for more there: items worth at least 10% more sold at Booty Bay. Cheaper there: buy at Booty Bay, sell here. Its prices come from scanning there and are kept apart from yours; a tooltip line for big differences is in Settings, Tooltips." },
-    { "Why it's a deal", "Hover a deal: the usual cheapest and typical prices and how many days of your scans they come from, how many are usually listed, and the next listing up. Profit assumes you resell at the usual cheapest price or just under the next listing, whichever is lower. Click to search the auction house." },
-    { "Filter", "All, Materials, Gear or Other, and a search box for names." },
-    { "How sure", "When most of what's listed is that cheap, the price has dropped and it's no bargain: rated Thin. Deals need at least 4 days of scans (or TSM). Thin data (few days, jumpy prices, usually only one listed) is hidden unless you tick Show doubtful deals too." },
-    { "Keep in mind", "The auction house can't tell what actually sold. Buy what you'd be happy to hold for a while." },
+  { "Сделки", {
+    { "Вкладка «Сделки»", "Лоты заметно ниже обычной минимальной цены предмета — для покупки и перепродажи: цена сейчас, обычный минимум, сколько лотов стоит купить, прибыль после комиссии и одного непроданного лота и насколько это надёжно (хорошо, средне или мало данных)." },
+    { "Бухта Боти", "Вкладка «Сделки», «Бухта Боти» (вверху справа): нейтральный аукцион против вашего, каждый после своей комиссии (там 15%, здесь 5%) и одного непроданного лота. «Там продаётся дороже»: предметы минимум на 10% выгоднее при продаже в Бухте Боти. «Там дешевле»: купить там, продать здесь. Цены берутся из сканов там и хранятся отдельно; строка подсказки для больших разниц — в Настройках, Подсказки." },
+    { "Почему это сделка", "Наведите на сделку: обычный минимум и типичная цена с числом дней сканов, обычное число лотов и следующий лот. Прибыль считается при перепродаже по обычному минимуму или чуть ниже следующего лота — что ниже. Клик — поиск на аукционе." },
+    { "Фильтр", "«Все», «Материалы», «Снаряжение» или «Прочее» и поиск по названию." },
+    { "Насколько надёжно", "Если большая часть лотов настолько дешёвая, цена упала и это не выгода: оценка «мало данных». Сделкам нужно минимум 4 дня сканов (или TSM). Слабые данные (мало дней, прыгающие цены, обычно один лот) скрыты, пока не отмечено «Показывать сомнительные сделки»." },
+    { "Учтите", "Аукцион не знает, что реально продалось. Покупайте то, что готовы подержать." },
   } },
-  { "Disenchanting", {
-    { "Disenchant finder", "Beside the auction house (Buy queue button, Disenchant finder tab): green armor and weapons in the item levels you pick (the Item levels dropdown, with Select all and Deselect all), with what each is worth to disenchant, on average, if you sell the materials. Hover a row to see each material's price and how that adds up. Hover a level in that list for the odds and what a bad and a good roll would bring (Settings, Auction house can hide the rolls). Pick a regular shopping list or New list, then Add to shopping list for one of every shown row your Enchanting can disenchant; right-click a row to add only it. Up to uses the disenchant value less the safety margin, refreshed when added again, on Buy again or by right-clicking Up to. Type a lower price for a bigger margin; typed prices stay yours. New lists start with buying off. Any stat version of each item will do." },
+  { "Распыление", {
+    { "Поиск распыления", "Рядом с аукционом (кнопка очереди, вкладка «Поиск распыления»): зелёная броня и оружие выбранных уровней (список уровней с «Выбрать все» и «Снять все») и сколько в среднем даёт их распыление, если продать материалы. Наведите на строку, чтобы увидеть цену каждого материала и сумму. Наведите на уровень в списке — шансы и что даст неудачный и удачный бросок (Настройки, Аукцион могут скрыть броски). Выберите обычный список или «Новый список» и нажмите «В список покупок», чтобы добавить по одному из каждой показанной строки, которую ваше наложение чар может распылить; правый клик по строке — только её. «До» берёт стоимость распыления минус запас и обновляется при повторном добавлении, по «Купить снова» или правым кликом по «До». Введите цену ниже для большего запаса; ваши цены сохраняются. Новые списки начинают с выключенной покупкой. Подойдёт любая версия характеристик." },
   } },
-  { "Recipes and trainers", {
-    { "Recipes tab", "Every recipe of your professions, who knows it, where to get it, the skill needed, and profit per craft. Right-click a recipe to set its type yourself. Click a column heading to sort." },
-    { "Types", "Flip or shuffle, Crafts that sell, Enchant service, Not for sale, Not profitable." },
-    { "Where from", "What you've seen in game first, otherwise original Classic data marked (Classic), or the auction house when its recipe item is listed there. Pin puts a map pin on the vendor, trainer or mob." },
-    { "Trainers view", "Trainers you've visited, Classic ones, and spots city guards mark when you ask them for a profession trainer (marked guard)." },
+  { "Рецепты и тренеры", {
+    { "Вкладка «Рецепты»", "Все рецепты ваших профессий, кто их знает, где взять, нужный навык и прибыль с крафта. Правый клик по рецепту — задать тип вручную. Клик по заголовку столбца — сортировка." },
+    { "Типы", "Флип или цепочка, крафт на продажу, услуги чар, не на продажу, невыгодно." },
+    { "Откуда", "Сначала то, что вы видели в игре, иначе данные оригинального Classic с пометкой (Classic) или аукцион, если там есть предмет-рецепт. «Метка» ставит точку на карте у торговца, тренера или существа." },
+    { "Вид тренеров", "Тренеры, у которых вы были, из Classic и места, которые отмечают городские стражники по вопросу о тренере профессии (с пометкой «стражник»)." },
   } },
-  { "Waylaid Crates", {
-    { "Crates tab", "The cheapest way to fill each crate at today's prices, with the crate's own price and gold per Merchant's Favor. After your first turn-in (a one-time quest), every crate pays 5s and 10 Favor; Net cost takes the 5s off, and shows green if a crate somehow pays for itself. Click a crate for every bundle and what you already have." },
-    { "Shopping list for a crate", "Open a crate and click Add cheapest fill to a shopping list: the crate and its items go on a list named after the crate, with prices high enough to buy them all at your last scan. What you already have counts towards a crate list's Want (only crate lists do this). Tick Buy from this list in the Buy queue on it to buy what you're short. Set the crate's Want to fill several at once: every item's Want follows it. The list is temporary: each crate you fill takes one off, and the list goes with the last one (or after a week)." },
+  { "Забытые ящики", {
+    { "Вкладка «Ящики»", "Самый дешёвый способ заполнить каждый ящик по сегодняшним ценам, с ценой ящика и золотом за награду торговца. После первой сдачи (разовое задание) каждый ящик даёт 5с и 10 наград; чистая стоимость вычитает 5с и зеленеет, если ящик окупается. Клик по ящику — все наборы и то, что у вас есть." },
+    { "Список покупок для ящика", "Откройте ящик и нажмите «Дешёвое заполнение в список покупок»: ящик и его предметы попадут в список с его именем и ценами, достаточными, чтобы купить всё по последнему скану. Имеющееся учитывается в «Нужно» списка ящика (только у таких списков). Отметьте «Покупать из этого списка» в очереди, чтобы докупить недостающее. Задайте «Нужно» у ящика, чтобы заполнить несколько сразу: «Нужно» каждого предмета следует за ним. Список временный: каждый заполненный ящик снимает один, и список исчезает с последним (или через неделю)." },
   } },
-  { "Customers and work", {
-    { "Customers window", "Opens when someone in chat asks for what your character can do, with Whisper and Invite buttons. x hides one request; Clear all (bottom right) hides them all. /fl customers opens it any time." },
-    { "Silence", "The Silence button (bottom right of the Customers window) quiets the alerts: until you're next in a capital city, until you reload, until you log out, or always (that turns the finder off; Turn alerts back on, or /fl customers on, brings it back). While quiet, requests are still listed in the window, with no pop-up, sound or chat line." },
-    { "Class services", "The finder also spots requests for Mage food, water and portals (portals from level 40), Warlock summons (from 20) and Rogue lockpicking (from 16), on those classes. Settings, Customers turns each one (and crafting) on or off." },
-    { "Ads", "Post your crafting (with profession links) to Trade, and on those classes your food and water, portals, summons or lockpicking. Right-click a button to change the text." },
-    { "Work done", "Enchants and paid trades, with today's and this week's earnings. /fl work." },
+  { "Клиенты и работа", {
+    { "Окно клиентов", "Открывается, когда в чате кто-то просит то, что умеет персонаж, с кнопками «Шёпот» и «Пригласить». x скрывает одну заявку; «Скрыть все» внизу справа — все. /fl customers открывает в любой момент." },
+    { "Приглушение", "Кнопка «Приглушить» (внизу справа в окне клиентов) убирает оповещения: до следующего визита в столицу, до перезагрузки, до выхода или навсегда (это выключает поиск; «Включить оповещения» или /fl customers on вернут его). При приглушении заявки всё равно видны в окне, но без всплывающего окна, звука и строки в чате." },
+    { "Услуги классов", "Поиск также замечает заявки на еду и воду мага, порталы (с 40 уровня), призывы чернокнижника (с 20) и взлом замков разбойника (с 16) у этих классов. Настройки, Клиенты включают и выключают каждую услугу (и крафт)." },
+    { "Объявления", "Отправляет ваш крафт (со ссылками на профессии) в «Торговлю», а у этих классов — еду и воду, порталы, призывы или взлом. Правый клик по кнопке — изменить текст." },
+    { "Работы", "Чары и оплаченные сделки с заработком за сегодня и неделю. /fl work." },
   } },
-  { "Your gold", {
-    { sub = "Overview" },
-    { "Dashboard", "Your gold now and how it changed, profit, sales and expenses for the range you pick (Day to All time), the gold graph (hover it for any moment), the most profitable item and the biggest sale and purchase, how much you trade a day, and your sessions as a table. Start a session is next to the character list." },
-    { "Leveling tab", "Below level 20: ways to make gold while leveling, best first, each priced from your scans (skinning, mining, herbs, cloth, bags, wands for casters, disenchanting and more). Lines for a profession you don't have are dimmed (tick Only my professions to hide them; other classes' lines never show), and (Classic) means not yet confirmed in Forever. Hover a line for what to do and why; click to search the auction house. Part of Leveling help: Settings, Global settings, Modules." },
-    { "Training advice", "Open your class trainer: a panel beside it sorts what you can learn now into Must have, Nice to have and Skip while leveling (Dampen Magic, say), with the gold each costs and what you'd save. Spells for another tree than the one your talent points are in go to Skip; a spell you know but haven't cast in a week to Nice to have. Hover a spell for why and when to upgrade. It shows at class and portal trainers, not riding ones, and not once you're 60. Advice only: you train in Blizzard's window. Settings, Global settings, Modules." },
-    { "Riding fund","A strip on the Dashboard until this character knows riding (then epic riding): what it costs (from the riding trainer once you've seen one, else about 100g and 1,000g), your gold toward it and about how many days at your pace. Off everywhere in Settings, Global settings, Modules; Hide here on one character, /fl fund to show it again." },
-    { "Characters", "Your characters on this realm and faction down the left with their gold (the dropdown above them picks another realm or faction, both factions, or all realms). Pick one for its professions and what's in its bags and bank, each item with what it's worth to you (Each: the best of auction house, vendor, disenchanting or crafting) and the best way to get it; All characters adds everyone up. Hover an item for who has it, a character for gold and bags and bank worth, the bottom line for what it's made of. Bags as of each character's last login, bank as of the last bank visit." },
-    { sub = "Ledger" },
-    { "Ledger", "All: every transaction in one list (auction and vendor sales and purchases, repairs, mail, loot, quests...), money in green and out in red. Sales, Purchases, Resale (profit on items bought and sold) and Other show one kind each. Filter by time, character or a word; click a heading to sort; hover a row for the details." },
-    { "Sessions list", "Ledger, Sessions (or See all sessions on the Dashboard): every session with when, length, gold, what you looted, gold an hour and the character; sort by any column. Hover one for where its gold came from and the best loot." },
-    { "Totals of rows", "Select rows to see what they add up to: click one, Shift-click another for everything between, Ctrl-click to add or take one, or press and drag across rows. The bottom line shows the money in, out and net of the selection. Right-click a row or Clear selection to start again." },
-    { sub = "Sessions and runs" },
-    { "Sessions", "Start one (Start a session at the top of the Dashboard, Ctrl-click on the minimap button, or /fl session start) and a small tracker you can drag counts what your time is worth: gold an hour, gold in and out, and what you loot (at the better of auction and vendor price; Settings can make it vendor only). Right-click the tracker to fold it to one line. Stop it to get a summary in chat; it joins the Dashboard's sessions. A session carries on through a logout on the same character." },
-    { "Dungeon runs", "Counted as you go, session or not: each dungeon's runs, time, coin and what dropped for you (going back in within 5 minutes is the same run). /fl runs lists them; item tooltips say \"Dropped for you: Deadmines, 2 in 14 runs\"." },
-    { sub = "Keeping data" },
-    { "How long it's kept", "Sales and purchases one by one for 30 days, then as one line per item per month for a year. Gold and money in and out per day for a year, then per month. Prices per day for 90 days, then weekly for a year. Recipes, vendors, items and your characters are kept for good. Nothing is lost at a reload: only data past these ages is summed up or dropped." },
+  { "Ваше золото", {
+    { sub = "Обзор" },
+    { "Обзор", "Ваше золото сейчас и его изменение, прибыль, продажи и расходы за выбранный период (от дня до всего времени), график золота (наведите для любого момента), самый прибыльный предмет и крупнейшие продажа и покупка, оборот в день и сессии таблицей. «Начать сессию» — рядом со списком персонажей." },
+    { "Вкладка «Прокачка»", "До 20 уровня: способы заработать во время прокачки, лучшее сначала, по ценам ваших сканов (свежевание, горное дело, травы, ткань, сумки, жезлы для кастеров, распыление и другое). Строки профессий, которых у вас нет, приглушены (отметьте «Только мои профессии», чтобы скрыть; чужие классы не показываются), а (Classic) значит «в Forever не подтверждено». Наведите на строку — что делать и почему; клик — поиск на аукционе. Часть помощи в прокачке: Настройки, Глобальные, Модули." },
+    { "Советы тренера", "Откройте классового тренера: панель рядом делит доступное на «Обязательно», «Полезно» и «Пропустить при прокачке» (например, «Ослабление магии»), с ценой и экономией. Заклинания не вашего древа талантов уходят в «Пропустить»; известное, но не применявшееся неделю — в «Полезно». Наведите на заклинание — почему и когда улучшать. Показывается у классовых и портальных тренеров, не у тренеров езды и не на 60 уровне. Только совет: учитесь в окне Blizzard. Настройки, Глобальные, Модули." },
+    { "Сбор на транспорт","Полоса в Обзоре, пока персонаж не выучил транспорт (потом эпический): цена (от тренера езды, как увидите его, иначе около 100g и 1000g), ваше золото и примерное число дней при вашем темпе. Отключается везде в Настройках, Глобальные, Модули; «Скрыть» — у одного персонажа, /fl fund вернёт." },
+    { "Персонажи", "Слева ваши персонажи этого мира и фракции с золотом (меню выше выбирает другой мир или фракцию, обе фракции или все миры). Выберите персонажа, чтобы увидеть профессии, сумки и банк, стоимость каждого предмета для вас («Цена»: лучшее из аукциона, торговца, распыления или крафта) и лучший способ получения; «Все персонажи» суммирует всех. Наведите на предмет — у кого он есть, на персонажа — золото и стоимость сумок и банка, на нижнюю строку — из чего она сложилась. Сумки на момент последнего входа, банк — последнего визита." },
+    { sub = "Журнал" },
+    { "Журнал", "Все: каждая операция в одном списке (продажи и покупки на аукционе и у торговцев, ремонт, почта, добыча, задания...), приход зелёным, расход красным. «Продажи», «Покупки», «Перепродажа» (прибыль по купленным и проданным) и «Прочее» показывают по одному виду. Фильтр по времени, персонажу или слову; клик по заголовку — сортировка; наведите на строку для подробностей." },
+    { "Список сессий", "Журнал, «Сессии» (или «Все сессии» в Обзоре): каждая сессия с временем, длительностью, золотом, добычей, золотом в час и персонажем; сортировка по любому столбцу. Наведите — откуда золото и лучшая добыча." },
+    { "Суммы строк", "Выберите строки, чтобы увидеть сумму: клик по одной, Shift+клик по другой — всё между ними, Ctrl+клик добавляет или убирает, либо протяните мышью. Нижняя строка покажет приход, расход и итог выбранного. Правый клик по строке или «Сбросить выбор» — начать заново." },
+    { sub = "Сессии и заходы" },
+    { "Сессии", "Начните её («Начать сессию» вверху Обзора, Ctrl+клик по кнопке у миникарты или /fl session start), и маленький перетаскиваемый счётчик посчитает, сколько стоит ваше время: золото в час, приход и расход, добыча (по лучшему из аукциона и торговца; в настройках можно оставить только торговца). Правый клик сворачивает счётчик в строку. Остановка даёт итог в чате; сессия попадает в Обзор. Сессия продолжается после выхода тем же персонажем." },
+    { "Заходы в подземелья", "Считаются по ходу, с сессией или без: заходы, время, монеты и что выпало вам (возврат в течение 5 минут — тот же заход). /fl runs покажет список; подсказки предметов говорят «Выпало вам: Мёртвые копи, 2 из 14 заходов»." },
+    { sub = "Хранение данных" },
+    { "Сколько хранится", "Продажи и покупки по одной — 30 дней, затем строкой на предмет в месяц в течение года. Золото и движение денег по дням — год, затем по месяцам. Цены по дням — 90 дней, затем понедельно год. Рецепты, торговцы, предметы и персонажи хранятся всегда. При перезагрузке ничего не теряется: суммируются или удаляются только данные старше этих сроков." },
   } },
-  { "Two accounts", {
-    { "Live sync", "Link your other account in Settings, Characters (or /fl pair First Last, on both characters): prices and recipes go between your two accounts while both are online: your characters first, then the prices (those can take several minutes), then the days of price history the other missed while offline (up to 14, about a minute a day). Pairing asks whether it's your own account: say yes and your gold and sales go too, so both Dashboards and Ledgers match. They include your buyers' names, so say no for a friend. Every new link starts with sharing off and asks again. Change that with \"Share gold and sales\", and share bags and bank with \"Share bags and bank\" (both in Global settings, Advanced). /fl unpair stops it and removes the other side's characters, gold and sales; the prices stay." },
-    { "Removing a character", "Settings, Characters lists every character Forever Ledger knows, when each was last seen and where it came from. Addons can't see a character being deleted, so remove old ones there: click Remove twice. It forgets the level, professions, recipes, bags and bank; prices and gold history stay. Not the one you're on." },
-    { "Export and import", "Export / import on the Characters tab, to copy everything across by hand (and Prices as text)." },
+  { "Два аккаунта", {
+    { "Живая синхронизация", "Свяжите второй аккаунт в Настройках, Персонажи (или /fl pair Имя Фамилия на обоих персонажах): цены и рецепты ходят между аккаунтами, пока оба в сети: сначала персонажи, затем цены (это может занять несколько минут), затем пропущенные дни истории цен (до 14, примерно минута в день). При связке спрашивают, ваш ли это аккаунт: «да» — и золото с продажами тоже идут, чтобы Обзор и Журнал совпадали. В них есть имена покупателей, поэтому для друга отвечайте «нет». Каждая новая связка начинает с выключенным обменом и спрашивает снова. Меняется в «Делиться золотом и продажами», сумки и банк — в «Делиться сумками и банком» (обе в Глобальных, Дополнительно). /fl unpair останавливает и удаляет персонажей, золото и продажи другой стороны; цены остаются." },
+    { "Удаление персонажа", "Настройки, Персонажи показывают всех известных персонажей, когда их видели и откуда. Аддон не видит удаление персонажа, поэтому старых убирают там: нажмите «Удалить» дважды. Забываются уровень, профессии, рецепты, сумки и банк; цены и история золота остаются. Текущего персонажа удалить нельзя." },
+    { "Экспорт и импорт", "«Экспорт и импорт» на вкладке персонажей, чтобы перенести всё вручную (и цены текстом)." },
   } },
-  { "Help and community", {
-    { "New versions", "When a guildmate or group member has a newer Forever Ledger, chat says so once a session, with where to update. Only the version number is shared (Settings, Minimap and updates)." },
-    { "Discord", "discord.gg/WKsCtvupeC: updates, questions, and WoW Forever news." },
-    { "Found a bug?", "Type /bug on the Discord and fill in the short form. Include /fl api output or the BugSack error if you can." },
-    { "Have an idea?", "Type /idea on the Discord. You'll get updates in your post." },
+  { "Справка и сообщество", {
+    { "Новые версии", "Если у согильдейца или участника группы новее Forever Ledger, чат раз за сессию сообщит об этом и где обновиться. Передаётся только номер версии (Настройки, Миникарта и обновления)." },
+    { "Discord", "discord.gg/WKsCtvupeC: обновления, вопросы и новости WoW Forever." },
+    { "Нашли ошибку?", "Введите /bug в Discord и заполните короткую форму. По возможности приложите вывод /fl api или ошибку BugSack." },
+    { "Есть идея?", "Введите /idea в Discord. Отчёты появятся в вашем сообщении." },
   } },
-  { "Your data", {
-    { "Stays on your PC", "Everything Forever Ledger records is kept in its saved file on your computer. Nothing is sent to the author or anyone else." },
-    { "What it keeps", "Prices and their history, vendor and trainer locations you've seen, your characters' recipes, gold, sales and purchases, bags and bank, chat requests it spotted, and your work log." },
-    { "What it sends", "Only live sync to your own paired character (off until /fl pair), ads in Trade when you click an ad button, and your Forever Ledger version number to your guild and group, which can be turned off (Settings, Minimap and updates)." },
+  { "Ваши данные", {
+    { "Остаётся на вашем компьютере", "Всё, что записывает Forever Ledger, хранится в его файле сохранения на вашем компьютере. Автору и кому-либо ещё ничего не отправляется." },
+    { "Что хранится", "Цены и их история, замеченные места торговцев и тренеров, рецепты ваших персонажей, золото, продажи и покупки, сумки и банк, найденные в чате заявки и журнал работ." },
+    { "Что отправляется", "Только живая синхронизация со своим связанным персонажем (выключена до /fl pair), объявления в «Торговлю» по нажатию кнопки и номер версии Forever Ledger согильдейцам и группе, что можно отключить (Настройки, Миникарта и обновления)." },
   } },
-  { "Commands", {
-    { "/fl", "Open or close the window." },
-    { "/fl scan", "Full scan or materials." },
-    { "/fl watch", "Flip watch." },
-    { "/fl quiet", "Quiet mode on this character, until you type it again: game sound off, chimes at full volume." },
-    { "/fl price", "The Price window: look up any item's price history." },
-    { "/fl queue, /fl lists", "The Buy queue or shopping lists." },
-    { "/fl deals", "The Deals tab (/fl deals list in chat)." },
-    { "/fl session", "Sessions: /fl session start or stop." },
-    { "/fl runs", "Your dungeon runs." },
-    { "/fl customers, /fl work", "The Customers window. /fl customers on or off turns the customer finder on or off." },
-    { "/fl de", "Your disenchant results." },
-    { "/fl book", "Recipe data gathered." },
-    { "/fl pair, /fl unpair", "Link or unlink your other account." },
-    { "/fl sync", "Sync status." },
-    { "/fl welcome, /fl new", "The welcome card; what's new in this version." },
-    { "/fl perf, /fl probe", "What takes time; game checks." },
+  { "Команды", {
+    { "/fl", "Открыть или закрыть окно." },
+    { "/fl scan", "Полный скан или материалы." },
+    { "/fl watch", "Слежение за флипами." },
+    { "/fl quiet", "Тихий режим у этого персонажа, пока не введёте снова: звук игры выкл, звонки на полной громкости." },
+    { "/fl price", "Окно цены: история цен любого предмета." },
+    { "/fl queue, /fl lists", "Очередь покупок или списки покупок." },
+    { "/fl deals", "Вкладка «Сделки» (/fl deals list — списком в чате)." },
+    { "/fl session", "Сессии: /fl session start или stop." },
+    { "/fl runs", "Ваши заходы в подземелья." },
+    { "/fl customers, /fl work", "Окно клиентов. /fl customers on или off включает и выключает поиск клиентов." },
+    { "/fl de", "Ваши результаты распыления." },
+    { "/fl book", "Собранные данные рецептов." },
+    { "/fl pair, /fl unpair", "Связать или отвязать второй аккаунт." },
+    { "/fl sync", "Состояние синхронизации." },
+    { "/fl welcome, /fl new", "Приветственная карточка; что нового в версии." },
+    { "/fl perf, /fl probe", "Что отнимает время; проверки игры." },
   } },
 }
 
@@ -165,16 +165,16 @@ ns.HELP = {
 -- ask them; keep the answers short. { question, answer }.
 ---------------------------------------------------------------------------
 ns.HELP_FAQ = {
-  ["Getting started"] = {
-    { "Does it buy or sell anything by itself?", "No. Every purchase and auction is your own click (or wheel tick), as Blizzard requires. Forever Ledger finds, suggests and queues." },
-    { "Why are some things empty on the first day?", "Prices and flips work from your first full scan. Deals and how fast things sell need a few days of scans to know what's usual." },
+  ["С чего начать"] = {
+    { "Покупает или продаёт ли аддон сам?", "Нет. Каждая покупка и лот — ваш клик (или щелчок колеса), как требует Blizzard. Forever Ledger находит, подсказывает и ставит в очередь." },
+    { "Почему в первый день что-то пусто?", "Цены и флипы работают с первого полного скана. Сделкам и скорости продажи нужно несколько дней сканов, чтобы понять, что обычно." },
   },
-  ["Auction house scans"] = {
-    { "What are the 120 items the watch re-checks?", "Between full scans, the likeliest to turn into flips: items priced near what a vendor pays, weighed by how many get posted and bought each day (Linen Cloth before a rare item), with crafted items counting extra since crafters post them in bulk. Gear is left out." },
+  ["Сканы аукциона"] = {
+    { "Что за 120 предметов перепроверяет слежение?", "Между полными сканами — самые вероятные флипы: предметы по цене близко к цене торговца, с весом по тому, сколько их выставляют и покупают в день (лён важнее редкого предмета), а крафтовые ценятся выше, потому что их выставляют пачками. Снаряжение не входит." },
   },
-  ["Buy queue and lists"] = {
-    { "Do I click the big button or a row?", "Either. The big button (or the wheel over its strip, with Scroll to buy ticked) buys the next one. Clicking a row buys that one next." },
-    { "Why did items disappear from the queue?", "Someone else bought them first, or their price is too old: finds over 15 minutes old are left out until a scan finds them again." },
+  ["Очередь покупок и списки"] = {
+    { "Нажимать большую кнопку или строку?", "Любое. Большая кнопка (или колесо над полосой при отмеченной «Покупке колесом») покупает следующее. Клик по строке покупает её следующей." },
+    { "Почему предметы исчезли из очереди?", "Их купили раньше или цена слишком старая: находки старше 15 минут не учитываются, пока скан не найдёт их снова." },
   },
 }
 
@@ -190,11 +190,11 @@ local hv
 
 -- The sidebar's groups, like Settings'; Getting started stands on its own.
 local HELP_GROUPS = {
-  ["Auction house scans"] = "Gold making", ["Tooltips"] = "Gold making", ["Shuffles and vendor flips"] = "Gold making",
-  ["Buy queue and lists"] = "Gold making", ["Deals"] = "Gold making", ["Disenchanting"] = "Gold making",
-  ["Recipes and trainers"] = "Professions", ["Waylaid Crates"] = "Professions", ["Customers and work"] = "Professions",
-  ["Your gold"] = "Your gold",
-  ["Two accounts"] = "Other", ["Help and community"] = "Other", ["Your data"] = "Other", ["Commands"] = "Other",
+  ["Сканы аукциона"] = "Заработок", ["Подсказки"] = "Заработок", ["Цепочки и флипы у торговца"] = "Заработок",
+  ["Очередь покупок и списки"] = "Заработок", ["Сделки"] = "Заработок", ["Распыление"] = "Заработок",
+  ["Рецепты и тренеры"] = "Профессии", ["Забытые ящики"] = "Профессии", ["Клиенты и работа"] = "Профессии",
+  ["Ваше золото"] = "Ваше золото",
+  ["Два аккаунта"] = "Прочее", ["Справка и сообщество"] = "Прочее", ["Ваши данные"] = "Прочее", ["Команды"] = "Прочее",
 }
 
 local function topicIndex()
@@ -228,7 +228,7 @@ function ns:BuildHelp(parent)
   search:SetPoint("TOPLEFT", 8, -6)
   local hint = T:Text(search, 11, T.section)
   hint:SetPoint("LEFT", 6, 0)
-  hint:SetText("Search help")
+  hint:SetText("Поиск по справке")
   search:SetScript("OnTextChanged", function(self)
     hint:SetShown(self:GetText() == "" and not self:HasFocus())
     local q = self:GetText():lower():gsub("^%s+", ""):gsub("%s+$", "")
@@ -334,15 +334,15 @@ function ns:RefreshHelp()
 
   local section = ns.HELP[cur]
   if q then
-    hv.title:SetText("Search")
-    hv.desc:SetText(("Help that mentions \"%s\", from every topic."):format(q))
+    hv.title:SetText("Поиск")
+    hv.desc:SetText(("Справка, где упоминается «%s», из всех разделов."):format(q))
   else
     hv.title:SetText(section[1])
     local faq = ns.HELP_FAQ[section[1]]
     local count = 0
     for _, e in ipairs(section[2]) do if not e.sub then count = count + 1 end end
-    hv.desc:SetText(("%d things to know%s. Search finds anything in Help."):format(count,
-      (faq and #faq > 0) and (", and common questions") or ""))
+    hv.desc:SetText(("%d материалов%s. Поиск найдёт всё в справке."):format(count,
+      (faq and #faq > 0) and (", и частые вопросы") or ""))
   end
   local width = math.max(hv.sf:GetWidth() - 12, 280)
   hv.content:SetWidth(width)
@@ -429,8 +429,8 @@ function ns:RefreshHelp()
       end
     end
     if not any then
-      heading("Nothing found")
-      entry("Try another word", "Like price, flip, list, scan or sound. Or pick a topic on the left.")
+      heading("Ничего не найдено")
+      entry("Попробуйте другое слово", "Например цена, флип, список, скан или звук. Или выберите раздел слева.")
     end
   else
     -- A topic's named groups each get a card; entries before the first are under the
@@ -447,12 +447,12 @@ function ns:RefreshHelp()
     end
     local faq = ns.HELP_FAQ[section[1]]
     if faq and #faq > 0 then
-      heading("Questions")
+      heading("Вопросы")
       for _, fq in ipairs(faq) do entry(fq[1], fq[2], true) end
     end
     if cur == 1 then
-      heading("More")
-      entry("Full guide", "docs/GUIDE.md on the addon's GitHub page, with pictures.")
+      heading("Ещё")
+      entry("Полное руководство", "docs/GUIDE.md на странице аддона в GitHub, с картинками.")
     end
   end
   close()
@@ -478,12 +478,12 @@ local AUCTION_ADDONS = {
   { name = "ForeverForge", alt = { "ForeverForge_Core" } },
 }
 ns.OVERLAPS = {
-  { setting = "tipPrice", label = "Auction and vendor prices in tooltips",
+  { setting = "tipPrice", label = "Цены аукциона и торговцев в подсказках",
     addons = { Auctionator = true, TradeSkillMaster = true, ForeverForge_Auction = true } },
-  { setting = "saleSound", label = "A sound when an auction sells", addons = { ForeverForge = true } },
-  { setting = "undercutAlerts", label = "Undercut alerts", addons = { Auctionator = true, TradeSkillMaster = true } },
-  { setting = "priceHelper", label = "Price helper on the Sell tab", addons = { Auctionator = true, TradeSkillMaster = true } },
-  { setting = "soldSummary", label = "What sold while you were away", addons = { TradeSkillMaster = true } },
+  { setting = "saleSound", label = "Звук при продаже лота", addons = { ForeverForge = true } },
+  { setting = "undercutAlerts", label = "Оповещения о перебитых лотах", addons = { Auctionator = true, TradeSkillMaster = true } },
+  { setting = "priceHelper", label = "Помощь с ценой на вкладке продажи", addons = { Auctionator = true, TradeSkillMaster = true } },
+  { setting = "soldSummary", label = "Что продалось без вас", addons = { TradeSkillMaster = true } },
 }
 
 local function loaded(a)
@@ -498,10 +498,10 @@ end
 StaticPopupDialogs["FOREVER_LEDGER_OVERLAP"] = {
   text = "%s",
   button1 = OKAY or "OK",
-  button2 = "Keep them on",
+  button2 = "Оставить включёнными",
   OnCancel = function(_, turnedOff)
     for _, key in ipairs(turnedOff or {}) do ns.db.settings[key] = true end
-    ns:Print("Kept them on. You can change this any time in Settings.")
+    ns:Print("Оставлено включённым. Изменить можно в любой момент в настройках.")
   end,
   timeout = 0, whileDead = true, hideOnEscape = false, preferredIndex = 3,
 }
@@ -533,8 +533,8 @@ ns:On("PLAYER_ENTERING_WORLD", function()
       end
     end
     if #turnedOff == 0 then return end
-    local text = ("%s is installed. So you don't see things twice, Forever Ledger turned off:\n\n%s\n\nEverything else stays on. You can turn these back on any time in Settings."):format(
-      table.concat(names, " and "), table.concat(lines, "\n"))
+    local text = ("%s установлен. Чтобы не видеть всё дважды, Forever Ledger отключил:\n\n%s\n\nОстальное остаётся. Вернуть можно в любой момент в настройках."):format(
+      table.concat(names, " и "), table.concat(lines, "\n"))
     local dialog = StaticPopup_Show("FOREVER_LEDGER_OVERLAP", text)
     if dialog then dialog.data = turnedOff end
   end)

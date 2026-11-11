@@ -13,78 +13,78 @@ local DAY = 86400
 local ROW_HEIGHT = 20
 local MAX_ROWS = 500
 local RANGES = {
-  { key = "week", label = "Week", secs = 7 * DAY },
-  { key = "month", label = "Month", secs = 30 * DAY },
-  { key = "3months", label = "3 months", secs = 91 * DAY },
-  { key = "year", label = "Year", secs = 365 * DAY },
-  { key = "all", label = "All" },
+  { key = "week", label = "Неделя", secs = 7 * DAY },
+  { key = "month", label = "Месяц", secs = 30 * DAY },
+  { key = "3months", label = "3 месяца", secs = 91 * DAY },
+  { key = "year", label = "Год", secs = 365 * DAY },
+  { key = "all", label = "Все" },
 }
 local SUBTABS = {
-  { key = "all", label = "All" },
-  { key = "sales", label = "Sales" },
-  { key = "purchases", label = "Purchases" },
-  { key = "resale", label = "Resale" },
-  { key = "other", label = "Other" },
-  { key = "sessions", label = "Sessions" },   -- (owner, October 4: a home for every session)
+  { key = "all", label = "Все" },
+  { key = "sales", label = "Продажи" },
+  { key = "purchases", label = "Покупки" },
+  { key = "resale", label = "Перепродажа" },
+  { key = "other", label = "Прочее" },
+  { key = "sessions", label = "Сессии" },   -- (owner, October 4: a home for every session)
 }
 local OTHER = {
-  ahFee = "Auction house fees", ahDepositBack = "Auction deposits back", repair = "Repairs", mailIn = "Mail received", mailOut = "Mail sent",
-  tradeIn = "Trade received", tradeOut = "Trade given", loot = "Loot", quest = "Quests",
-  training = "Training", flight = "Flights", otherIn = "Other income", otherOut = "Other spending",
+  ahFee = "Сборы аукциона", ahDepositBack = "Возврат залогов", repair = "Ремонт", mailIn = "Почта получена", mailOut = "Почта отправлена",
+  tradeIn = "Обмен получен", tradeOut = "Обмен отдан", loot = "Добыча", quest = "Задания",
+  training = "Обучение", flight = "Полёты", otherIn = "Прочий доход", otherOut = "Прочие расходы",
 }
 local OTHER_IN = { ahDepositBack = true, mailIn = true, tradeIn = true, loot = true, quest = true, otherIn = true }
 
 local COLUMNS = {
   all = {
-    { key = "t", label = "Time", width = 96 },
-    { key = "kind", label = "Type", width = 118 },
-    { key = "item", label = "Item" },
-    { key = "qty", label = "Qty", width = 40, right = true },
-    { key = "each", label = "Each", width = 86, right = true },
-    { key = "amount", label = "Amount", width = 100, right = true },
-    { key = "char", label = "Character", width = 108 },
+    { key = "t", label = "Время", width = 96 },
+    { key = "kind", label = "Тип", width = 118 },
+    { key = "item", label = "Предмет" },
+    { key = "qty", label = "Кол-во", width = 40, right = true },
+    { key = "each", label = "Цена", width = 86, right = true },
+    { key = "amount", label = "Сумма", width = 100, right = true },
+    { key = "char", label = "Персонаж", width = 108 },
   },
   sales = {
-    { key = "t", label = "Time", width = 96 },
-    { key = "item", label = "Item" },
-    { key = "qty", label = "Qty", width = 40, right = true },
-    { key = "each", label = "Each", width = 86, right = true },
-    { key = "total", label = "Total", width = 96, right = true },
-    { key = "where", label = "Where", width = 60 },
-    { key = "who", label = "Buyer", width = 88 },
-    { key = "char", label = "Character", width = 108 },
+    { key = "t", label = "Время", width = 96 },
+    { key = "item", label = "Предмет" },
+    { key = "qty", label = "Кол-во", width = 40, right = true },
+    { key = "each", label = "Цена", width = 86, right = true },
+    { key = "total", label = "Итого", width = 96, right = true },
+    { key = "where", label = "Где", width = 60 },
+    { key = "who", label = "Покупатель", width = 88 },
+    { key = "char", label = "Персонаж", width = 108 },
   },
   purchases = {
-    { key = "t", label = "Time", width = 96 },
-    { key = "item", label = "Item" },
-    { key = "qty", label = "Qty", width = 40, right = true },
-    { key = "each", label = "Each", width = 86, right = true },
-    { key = "total", label = "Total", width = 96, right = true },
-    { key = "where", label = "Where", width = 60 },
-    { key = "char", label = "Character", width = 108 },
+    { key = "t", label = "Время", width = 96 },
+    { key = "item", label = "Предмет" },
+    { key = "qty", label = "Кол-во", width = 40, right = true },
+    { key = "each", label = "Цена", width = 86, right = true },
+    { key = "total", label = "Итого", width = 96, right = true },
+    { key = "where", label = "Где", width = 60 },
+    { key = "char", label = "Персонаж", width = 108 },
   },
   resale = {
-    { key = "item", label = "Item" },
-    { key = "bought", label = "Bought", width = 56, right = true },
-    { key = "avgBuy", label = "Avg buy", width = 90, right = true },
-    { key = "sold", label = "Sold", width = 50, right = true },
-    { key = "avgSell", label = "Avg sell", width = 90, right = true },
-    { key = "profit", label = "Profit", width = 100, right = true },
+    { key = "item", label = "Предмет" },
+    { key = "bought", label = "Куплено", width = 56, right = true },
+    { key = "avgBuy", label = "Ср. покупка", width = 90, right = true },
+    { key = "sold", label = "Продано", width = 50, right = true },
+    { key = "avgSell", label = "Ср. продажа", width = 90, right = true },
+    { key = "profit", label = "Прибыль", width = 100, right = true },
   },
   sessions = {
-    { key = "t", label = "When", width = 96 },
-    { key = "item", label = "Session" },
-    { key = "length", label = "Length", width = 76, right = true },
-    { key = "total", label = "Gold", width = 96, right = true },
-    { key = "loot", label = "Looted", width = 90, right = true },
-    { key = "rate", label = "An hour", width = 90, right = true },
-    { key = "char", label = "Character", width = 108 },
+    { key = "t", label = "Когда", width = 96 },
+    { key = "item", label = "Сессия" },
+    { key = "length", label = "Длительность", width = 76, right = true },
+    { key = "total", label = "Золото", width = 96, right = true },
+    { key = "loot", label = "Добыто", width = 90, right = true },
+    { key = "rate", label = "В час", width = 90, right = true },
+    { key = "char", label = "Персонаж", width = 108 },
   },
   other = {
-    { key = "t", label = "Day", width = 96 },
-    { key = "item", label = "Type" },
-    { key = "total", label = "Amount", width = 110, right = true },
-    { key = "char", label = "Character", width = 108 },
+    { key = "t", label = "День", width = 96 },
+    { key = "item", label = "Тип" },
+    { key = "total", label = "Сумма", width = 110, right = true },
+    { key = "char", label = "Персонаж", width = 108 },
   },
 }
 
@@ -106,7 +106,7 @@ local function charName(key)
   return (c and c.name) or (key and key:match("^[^-]+")) or "?"
 end
 
-local function nameOf(id) return id and ns.ItemName(id) or "Unknown item" end
+local function nameOf(id) return id and ns.ItemName(id) or "Неизвестный предмет" end
 
 -- An item's icon from its ID or name (names only work once the game knows the item).
 local function iconOf(idOrName)
@@ -157,21 +157,21 @@ local function records(tab, from, charOK, match)
     for _, e in ipairs(ns.db.sales) do
       if keep(e) then
         sales[#sales + 1] = { t = e.t, item = e.n or "?", icon = iconOf(e.n), qty = e.q, total = e.a,
-          where = "Auction", who = e.b, char = e.c, kind = "Auction sale" }
+          where = "Аукцион", who = e.b, char = e.c, kind = "Продажа на аукционе" }
       end
     end
     for _, e in ipairs(ns.db.purchases) do
       if keep(e) then
         -- No quantity means a non-commodity purchase, which is always one item.
         buys[#buys + 1] = { t = e.t, id = e.id, item = nameOf(e.id), icon = iconOf(e.id), qty = e.q or 1, total = e.a,
-          where = "Auction", char = e.c, kind = "Auction purchase" }
+          where = "Аукцион", char = e.c, kind = "Покупка на аукционе" }
       end
     end
     for _, e in ipairs(ns.db.vendorLog) do
       if keep(e) and e.id then
         local sold = e.s == "sell"
-        local r = { t = e.t, id = e.id, item = nameOf(e.id), icon = iconOf(e.id), qty = e.q, total = e.a, where = "Vendor",
-          char = e.c, kind = sold and "Sold to vendor" or "Bought from vendor" }
+        local r = { t = e.t, id = e.id, item = nameOf(e.id), icon = iconOf(e.id), qty = e.q, total = e.a, where = "Торговец",
+          char = e.c, kind = sold and "Продано торговцу" or "Куплено у торговца" }
         if sold then sales[#sales + 1] = r else buys[#buys + 1] = r end
       end
     end
@@ -181,8 +181,8 @@ local function records(tab, from, charOK, match)
         local auction = m.k == "sale" or m.k == "buy"
         local sold = m.k == "sale" or m.k == "vsell"
         local r = { t = m.t, month = true, id = m.id, item = m.id and nameOf(m.id) or m.n or "?", icon = iconOf(m.id or m.n),
-          qty = m.q, total = m.a, where = auction and "Auction" or "Vendor", char = m.c,
-          kind = auction and (sold and "Auction sales" or "Auction purchases") or (sold and "Sold to vendors" or "Bought from vendors") }
+          qty = m.q, total = m.a, where = auction and "Аукцион" or "Торговец", char = m.c,
+          kind = auction and (sold and "Продажи на аукционе" or "Покупки на аукционе") or (sold and "Продано торговцам" or "Куплено у торговцев") }
         if sold then sales[#sales + 1] = r else buys[#buys + 1] = r end
       end
     end
@@ -224,8 +224,8 @@ local function records(tab, from, charOK, match)
       if (e.t or 0) >= from and (not e.c or charOK(e.c)) then
         local secs = e.secs or ((e.stop or e.t) - e.t)
         local gained = (e.earned or 0) - (e.spent or 0)
-        out[#out + 1] = { t = e.t, session = e, item = e.kind == "general" and "Session" or (e.name or "Shuffle"),
-          kind = "Session", length = secs, total = gained, amount = gained, loot = e.kind == "general" and (e.loot or 0) or nil,
+        out[#out + 1] = { t = e.t, session = e, item = e.kind == "general" and "Сессия" or (e.name or "Shuffle"),
+          kind = "Сессия", length = secs, total = gained, amount = gained, loot = e.kind == "general" and (e.loot or 0) or nil,
           rate = secs >= 120 and gained / secs * 3600 or nil, char = e.c }
       end
     end
@@ -310,19 +310,19 @@ local function updateSummary()
   f.clear:SetShown(n > 0)
   if n > 0 then
     local net = inn - out
-    f.summary:SetText(("%s%d selected:|r in %s, out %s, net %s"):format(T:AccentCode(), n,
+    f.summary:SetText(("%sвыбрано: %d|r приход %s, расход %s, итог %s"):format(T:AccentCode(), n,
       "|cff7fd39c+" .. ns.Money(math.floor(inn + 0.5)) .. "|r", "|cffee8597-" .. ns.Money(math.floor(out + 0.5)) .. "|r",
       "|cff" .. (net >= 0 and "7fd39c+" or "ee8597-") .. ns.Money(math.floor(math.abs(net) + 0.5)) .. "|r"))
     return
   end
   local total = 0
   for _, rec in ipairs(f.list or {}) do total = total + signedOf(rec, s.tab) end
-  local words = { all = "entries", sales = "sales", purchases = "purchases", resale = "items bought and sold", other = "entries", sessions = "sessions" }
-  local label = (s.tab == "resale" and "profit") or (s.tab == "sessions" and "gold") or ((s.tab == "other" or s.tab == "all") and "net") or "total"
+  local words = { all = "записей", sales = "продаж", purchases = "покупок", resale = "предметов куплено и продано", other = "записей", sessions = "сессий" }
+  local label = (s.tab == "resale" and "прибыль") or (s.tab == "sessions" and "золото") or ((s.tab == "other" or s.tab == "all") and "итог") or "всего"
   local shownTotal = s.tab == "purchases" and -total or total
-  local extra = (f.list and #f.list > MAX_ROWS) and dim((" (showing the first %d)"):format(MAX_ROWS)) or ""
-  f.summary:SetText(("%d %s, %s %s%s   %s"):format(f.list and #f.list or 0, words[s.tab] or "entries", label,
-    money(math.floor(shownTotal + 0.5)), extra, dim("Click, Shift-click or drag rows to total them.")))
+  local extra = (f.list and #f.list > MAX_ROWS) and dim((" (показаны первые %d)"):format(MAX_ROWS)) or ""
+  f.summary:SetText(("%d %s, %s %s%s   %s"):format(f.list and #f.list or 0, words[s.tab] or "записей", label,
+    money(math.floor(shownTotal + 0.5)), extra, dim("Клик, Shift+клик или перетаскивание строк — сумма.")))
 end
 
 -- Selected rows get the accent tint.
@@ -371,7 +371,7 @@ function ns:BuildLedger(parent)
 
   f.searchLabel = T:Text(f, 12, T.dim)
   f.searchLabel:SetPoint("TOPLEFT", 4, -40)
-  f.searchLabel:SetText("Search")
+  f.searchLabel:SetText("Поиск")
   f.search = T:EditBox(f, 180, "LEFT")
   f.search:SetPoint("LEFT", f.searchLabel, "RIGHT", 8, 0)
   -- Redraw once typing pauses (code review, October 4: every key rebuilt every record).
@@ -386,7 +386,7 @@ function ns:BuildLedger(parent)
   f.search:SetScript("OnEscapePressed", function(self) self:SetText(""); self:ClearFocus() end)
   f.charLabel = T:Text(f, 12, T.dim)
   f.charLabel:SetPoint("LEFT", f.search, "RIGHT", 18, 0)
-  f.charLabel:SetText("Characters")
+  f.charLabel:SetText("Персонажи")
 
   f.header = CreateFrame("Frame", nil, f)
   f.header:SetPoint("TOPLEFT", 0, -66)
@@ -407,7 +407,7 @@ function ns:BuildLedger(parent)
   f.summary:SetJustifyH("LEFT")
   f.summary:SetWordWrap(false)
   -- Clear the selection (right-clicking a row does the same).
-  f.clear = T:Button(f, "Clear selection", 110, function() clearSelection(); paint() end, 20)
+  f.clear = T:Button(f, "Сбросить выбор", 110, function() clearSelection(); paint() end, 20)
   f.clear:SetPoint("BOTTOMRIGHT", 0, 2)
   f.clear:Hide()
   f.summary:SetPoint("RIGHT", f.clear, "LEFT", -8, 0)
@@ -444,7 +444,7 @@ end
 local function show(rec, key)
   local v = rec[key]
   if rec.session then
-    if key == "length" then local m = math.floor((v or 0) / 60); return m < 1 and "< 1 min" or (m < 60 and (m .. " min") or ("%d h %02d min"):format(math.floor(m / 60), m % 60)) end
+    if key == "length" then local m = math.floor((v or 0) / 60); return m < 1 and "< 1 мин" or (m < 60 and (m .. " мин") or ("%d ч %02d мин"):format(math.floor(m / 60), m % 60)) end
     if key == "total" or key == "rate" then
       if not v then return dim("-") end
       v = math.floor(v + 0.5)
@@ -454,7 +454,7 @@ local function show(rec, key)
     if key == "loot" then return v and ns.Money(v) or dim("-") end
     if key == "char" and not v then return dim("-") end
   end
-  if key == "t" then return dim(date((rec.month and "%B %Y") or (rec.day and "%b %d") or "%b %d %H:%M", v)) end
+  if key == "t" then return dim(date((rec.month and "%m.%Y") or (rec.day and "%d.%m") or "%d.%m %H:%M", v)) end
   if key == "char" then return charName(v) end
   if key == "qty" or key == "bought" or key == "sold" then return v and tostring(v) or dim(rec.day and "" or "?") end
   if key == "each" or key == "avgBuy" or key == "avgSell" then return v and ns.Money(math.floor(v + 0.5)) or dim(rec.day and "" or "?") end
@@ -485,20 +485,20 @@ local function rowTooltip(r)
   if session then
     -- A session: where its gold came from and what it looted best.
     local function line(a, b, r, g, bl) GameTooltip:AddDoubleLine(a, b, 0.7, 0.7, 0.7, r or 1, g or 1, bl or 1) end
-    GameTooltip:AddLine(("%s, %s"):format(rec.item, date("%b %d %H:%M", rec.t or 0)), 1, 1, 1)
-    line("Length", show(rec, "length"))
+    GameTooltip:AddLine(("%s, %s"):format(rec.item, date("%d.%m %H:%M", rec.t or 0)), 1, 1, 1)
+    line("Длительность", show(rec, "length"))
     local function gold(v, r, g, bl) if (v or 0) > 0 then return ns.Money(v), r, g, bl end return ns.Money(0), 0.6, 0.6, 0.6 end
-    if session.earned then line("Gold in", gold(session.earned, 0.5, 0.83, 0.61)) end
-    if session.spent then line("Gold out", gold(session.spent, 0.93, 0.52, 0.59)) end
-    if rec.rate then line("Gold an hour", show(rec, "rate")) end
-    if rec.loot then line("Looted, worth about", ns.Money(rec.loot)) end
-    if session.runs and session.runs > 0 then line(session.kind == "general" and "Dungeon runs" or "Runs", tostring(session.runs)) end
+    if session.earned then line("Приход золота", gold(session.earned, 0.5, 0.83, 0.61)) end
+    if session.spent then line("Расход золота", gold(session.spent, 0.93, 0.52, 0.59)) end
+    if rec.rate then line("Золото в час", show(rec, "rate")) end
+    if rec.loot then line("Добыто, примерно на", ns.Money(rec.loot)) end
+    if session.runs and session.runs > 0 then line(session.kind == "general" and "Забеги в подземелья" or "Забеги", tostring(session.runs)) end
     local by = {}
     for src, v in pairs(session.money or {}) do if v ~= 0 then by[#by + 1] = { src, v } end end
     table.sort(by, function(a, b) return math.abs(a[2]) > math.abs(b[2]) end)
     if #by > 0 then
       GameTooltip:AddLine(" ")
-      GameTooltip:AddLine("Gold by where it came from", 1, 0.82, 0)
+      GameTooltip:AddLine("Золото по источникам", 1, 0.82, 0)
       for k = 1, math.min(6, #by) do
         local v = by[k][2]
         line("  " .. ((ns.MONEY_LABELS and ns.MONEY_LABELS[by[k][1]]) or by[k][1]), (v > 0 and "+" or "-") .. ns.Money(math.abs(v)),
@@ -507,32 +507,32 @@ local function rowTooltip(r)
     end
     if session.top and #session.top > 0 then
       GameTooltip:AddLine(" ")
-      GameTooltip:AddLine("Best loot", 1, 0.82, 0)
+      GameTooltip:AddLine("Лучшая добыча", 1, 0.82, 0)
       for _, it in ipairs(session.top) do
         line(("  %d x %s"):format(it[2] or 1, nameOf(it[1])), it[3] and ns.Money(it[3]) or "")
       end
     end
     if #by == 0 and not (session.top and #session.top > 0) then
       GameTooltip:AddLine(" ")
-      GameTooltip:AddLine((session.money or session.top) and "Nothing earned, spent or looted in it."
-        or "No breakdown saved for this session (older ones kept only totals).", 0.6, 0.6, 0.6, true)
+      GameTooltip:AddLine((session.money or session.top) and "Ничего не заработано, не потрачено и не добыто."
+        or "Разбивка этой сессии не сохранена (у старых остались только итоги).", 0.6, 0.6, 0.6, true)
     end
-    if rec.char then line("Character", charName(rec.char)) end
-    GameTooltip:AddLine("Click to select; Shift-click or drag for several to total them.", 0.5, 0.5, 0.5, true)
+    if rec.char then line("Персонаж", charName(rec.char)) end
+    GameTooltip:AddLine("Клик — выбрать; Shift+клик или перетаскивание — несколько для суммы.", 0.5, 0.5, 0.5, true)
     GameTooltip:Show()
     return
   end
   if rec.id then GameTooltip:SetItemByID(rec.id); GameTooltip:AddLine(" ")
   else GameTooltip:AddLine(rec.item ~= "" and rec.item or (rec.kind or "?"), 1, 1, 1) end
   local function line(a, b) if b then GameTooltip:AddDoubleLine(a, b, 0.7, 0.7, 0.7, 1, 1, 1) end end
-  line("When", date((rec.month and "%B %Y, month total") or (rec.day and "%b %d, day total") or "%b %d %H:%M", rec.t or 0))
-  line("Type", rec.kind)
-  if rec.qty and rec.each then line("Quantity", ("%d x %s"):format(rec.qty, ns.Money(math.floor(rec.each + 0.5)))) end
-  if rec.amount or rec.total then line("Amount", show(rec, rec.amount and "amount" or "total")) end
-  if rec.profit then line("Profit", show(rec, "profit")) end
-  line("Buyer", rec.who)
-  if rec.char then line("Character", charName(rec.char)) end
-  GameTooltip:AddLine("Click to select; Shift-click or drag for several, Ctrl-click to add one. Right-click clears.", 0.5, 0.5, 0.5, true)
+  line("Когда", date((rec.month and "%m.%Y, итог за месяц") or (rec.day and "%d.%m, итог за день") or "%d.%m %H:%M", rec.t or 0))
+  line("Тип", rec.kind)
+  if rec.qty and rec.each then line("Количество", ("%d x %s"):format(rec.qty, ns.Money(math.floor(rec.each + 0.5)))) end
+  if rec.amount or rec.total then line("Сумма", show(rec, rec.amount and "amount" or "всего")) end
+  if rec.profit then line("Прибыль", show(rec, "прибыль")) end
+  line("Покупатель", rec.who)
+  if rec.char then line("Персонаж", charName(rec.char)) end
+  GameTooltip:AddLine("Клик — выбрать; Shift+клик или перетаскивание — несколько, Ctrl+клик — добавить. Правый клик — сбросить.", 0.5, 0.5, 0.5, true)
   GameTooltip:Show()
 end
 
@@ -601,12 +601,12 @@ end
 
 -- What each view says when it's empty, and how to fill it.
 local EMPTY = {
-  all = "Nothing recorded for these filters yet. Auction sales are logged when you take the money from the mailbox; purchases, vendor trades and other money as they happen.",
-  sales = "No sales for these filters yet. Auction sales are logged when you take the money from the mailbox; vendor sales as you sell.",
-  purchases = "No purchases for these filters yet. Auction and vendor purchases are logged as you buy.",
-  resale = "No items both bought and sold for these filters yet. Once you've bought and sold the same item, its profit shows here.",
-  other = "No other money for these filters yet: repairs, mail, trades, loot, quests, training and flights show here by day.",
-  sessions = "No sessions for these filters yet. Start one with Start a session on the Dashboard (or /fl session start); it's listed here when you stop it.",
+  all = "По этим фильтрам пока ничего нет. Продажи на аукционе записываются, когда вы забираете золото из почты; покупки, сделки с торговцами и прочее — по мере событий.",
+  sales = "По этим фильтрам продаж пока нет. Продажи на аукционе записываются, когда вы забираете золото из почты; продажи торговцам — при продаже.",
+  purchases = "По этим фильтрам покупок пока нет. Покупки на аукционе и у торговцев записываются при покупке.",
+  resale = "По этим фильтрам пока нет предметов, купленных и проданных. Когда купите и продадите один предмет, здесь появится прибыль.",
+  other = "По этим фильтрам прочих денег пока нет: ремонт, почта, обмен, добыча, задания, обучение и полёты показываются здесь по дням.",
+  sessions = "По этим фильтрам сессий пока нет. Начните сессию кнопкой на Обзоре (или /fl session start); она появится здесь после остановки.",
 }
 
 function ns:RefreshLedger()
@@ -636,7 +636,7 @@ function ns:RefreshLedger()
   f.list = list
 
   local cols = COLUMNS[s.tab]
-  local sort = s.sort[s.tab] or { key = s.tab == "resale" and "profit" or "t", desc = true }
+  local sort = s.sort[s.tab] or { key = s.tab == "resale" and "прибыль" or "t", desc = true }
   table.sort(list, function(a, b)
     local va, vb = a[sort.key], b[sort.key]
     if type(va) == "string" then va = va:lower() end

@@ -57,7 +57,7 @@ ns:On("OWNED_AUCTIONS_UPDATED", function() answered = GetTime() end)
 
 -- Gear checked by Check prices: looked up by name like Search all, each version on its
 -- own (a plain item search finds nothing for gear: owner's test, October 4, the
--- leggings went "not priced"). [itemID .. version] = { t, min } for your version.
+-- leggings went "нет цены"). [itemID .. version] = { t, min } for your version.
 local gearChecked = {}
 local GEAR_FRESH = 1800
 local function gearKey(e)
@@ -120,7 +120,7 @@ local function readOwned()
     for _, e in ipairs((mine() or {}).list or {}) do
       if not e.sold then
         emptyRetried = true
-        ns:Debug("Your auctions: the list came back empty; asking again before believing it.")
+        ns:Debug("Ваши аукционы: список пришёл пустым; переспрашиваю, прежде чем верить.")
         C_Timer.After(2, function() query() end)
         return false
       end
@@ -203,7 +203,7 @@ local function readOwned()
       unseen[#unseen + 1] = { id = e.id, q = e.q, each = e.each, dep = e.dep }
     end
   end
-  ns:Debug(("Your auctions: %d listed, %d before, %d newly sold, %d waiting to be told (auction house %s)."):format(
+  ns:Debug(("Ваши аукционы: выставлено %d, было %d, продано %d, ждут сообщения %d (аукцион %s)."):format(
     #list, (function() local c = 0; for _ in pairs(before) do c = c + 1 end; return c end)(), #newlySold, #unseen,
     ahOpen and "open" or "closed"))
   store()[listKey()] = { t = now, list = list, alerts = (mine() or {}).alerts, unseen = unseen }
@@ -307,14 +307,14 @@ local function checkAlerts()
     local k = key(e)
     local a = alerted[k]
     if now and (not a or now < a.p) then
-      ns:Debug(("Undercut alert for %s: %s"):format(k, a and ("cheaper again, was " .. a.p) or "not alerted since login"))
+      ns:Debug(("Перебит лот %s: %s"):format(k, a and ("снова дешевле, было " .. a.p) or "без оповещений с входа"))
       alerted[k] = { p = now, t = nowT }
       news[#news + 1] = e
     end
   end
   if #news == 0 then return end
   for _, e in ipairs(news) do
-    ns:Print(("Undercut: %s x%d, yours %s each, cheapest now %s. The Auctions tab beside the auction house lists them."):format(
+    ns:Print(("Перебито: %s x%d, ваш по %s, минимум сейчас %s. Вкладка «Аукционы» у аукциона покажет их."):format(
       ns.ItemName(e.id), e.q, ns.Money(e.each), ns.Money(undercutBy(e))))
   end
   if ns.db.settings.undercutSound ~= false and PlaySound then
@@ -333,8 +333,8 @@ local function soldSummary(list)
     if i <= 4 then names[#names + 1] = ("%s x%d"):format(ns.ItemName(e.id) or "?", e.q or 1) end
     total = total + proceeds(e)
   end
-  if #list > 4 then names[#names + 1] = ("and %d more"):format(#list - 4) end
-  ns:Print(("Sold since you were last here: %s. About %s with deposits back, in your mail or on the way (the Auctions tab, Sold)."):format(
+  if #list > 4 then names[#names + 1] = ("и ещё %d"):format(#list - 4) end
+  ns:Print(("Продано с прошлого визита: %s. Около %s с возвратом залогов — на почте или в пути (вкладка «Аукционы», «Продано»)."):format(
     table.concat(names, ", "), ns.Money(total)))
 end
 
@@ -365,7 +365,7 @@ ns:On("PLAYER_ENTERING_WORLD", function(isLogin, isReload)
   local m = mine()
   local n = 0
   for _ in pairs(m and m.alerts or {}) do n = n + 1 end
-  ns:Debug(("Your auctions: entering the world, login %s, reload %s, %d undercut alerts remembered."):format(
+  ns:Debug(("Ваши аукционы: вход в мир, логин %s, перезагрузка %s, перебитых запомнено: %d."):format(
     tostring(isLogin), tostring(isReload), n))
   if isLogin == true and not isReload then
     for _, k in ipairs({ ns.CharKey(), ns.CharKey() .. " (neutral)" }) do
@@ -390,8 +390,8 @@ end)
 -- Look up every item you have listed (prices saved like any scan), then check.
 function ns:CheckMyAuctions()
   local m = mine()
-  if not (m and #m.list > 0) then ns:Print("You have no auctions up on this character (or the list isn't loaded yet)."); return end
-  if not ns:IsAHOpen() then ns:Print("Open the auction house first."); return end
+  if not (m and #m.list > 0) then ns:Print("У этого персонажа нет выставленных лотов (или список ещё не загружен)."); return end
+  if not ns:IsAHOpen() then ns:Print("Сначала откройте аукцион."); return end
   -- A list like a shopping list's: Search all looks up gear by name, each version
   -- apart (yours: its "of the ..."), and the rest with an ordinary search.
   local items, seen = {}, {}
@@ -404,8 +404,8 @@ function ns:CheckMyAuctions()
       end
     end
   end
-  if #items == 0 then ns:Print("Nothing to check: everything you listed has sold."); return end
-  ns.myAuctionCheck = { name = "your auctions", items = items, on = false }
+  if #items == 0 then ns:Print("Проверять нечего: всё выставленное продано."); return end
+  ns.myAuctionCheck = { name = "ваши аукционы", items = items, on = false }
   ns:SearchAllList(ns.myAuctionCheck)
 end
 
@@ -431,7 +431,7 @@ local ROW = 22
 -- The status gets the rest (it was cut off); Yours and Cheapest apart (they touched on
 -- Gilded, owner's screenshot, October 5).
 local X = { name = 24, q = 178, each = 238, now = 312 }
-local VIEWS = { { "all", "All" }, { "up", "Up" }, { "undercut", "Undercut" }, { "sold", "Sold" } }
+local VIEWS = { { "all", "Все" }, { "up", "Выставлены" }, { "undercut", "Перебивают" }, { "sold", "Проданы" } }
 local view = "all"
 local cancelState     -- nil, "asking" (first click, until asked = time), or "on" (each click cancels one)
 local askedAt = 0
@@ -445,11 +445,11 @@ end
 
 -- When a sale's gold reaches the mailbox: "in 34m", or "in your mailbox".
 -- By the clock, not by the sale leaving the list: Forever drops a sale from your list
--- before its gold arrives (owner's test, October 4: "gold mailed", mailbox empty).
+-- before its gold arrives (owner's test, October 4: "золото на почте", mailbox empty).
 local function mailText(e)
   local left = (e.soldAt or time()) + SALE_MAIL_SECONDS - time()
-  if left <= 0 then return "gold mailed" end
-  return "mail in " .. shortLeft(left)
+  if left <= 0 then return "золото на почте" end
+  return "письмо через " .. shortLeft(left)
 end
 
 -- The undercut ones, in the order shown, not already being cancelled.
@@ -465,7 +465,7 @@ local function cancelOne(e)
   if not (e and e.a and AH and AH.CancelAuction) then return end
   pending[e.a] = GetTime()
   local ok, err = pcall(AH.CancelAuction, e.a)
-  if not ok then pending[e.a] = nil; ns:Print("Couldn't cancel that auction: " .. tostring(err)) end
+  if not ok then pending[e.a] = nil; ns:Print("Не удалось отменить лот: " .. tostring(err)) end
 end
 
 local function getRow(i)
@@ -503,15 +503,15 @@ local function getRow(i)
       cancelOne(e)
     else
       armed[e.a] = GetTime()
-      self:SetText("Sure?")
+      self:SetText("Точно?")
     end
   end, 18)
   r.cancel:SetPoint("RIGHT", -4, 0)
   r.cancel:GetFontString():SetFont(T.font, 11, "")
   r.cancel:HookScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_LEFT")
-    GameTooltip:AddLine("Cancel this auction", 1, 1, 1)
-    GameTooltip:AddLine("Click twice: the items come back by mail and the deposit is lost. Cancel next undercut at the bottom does them one after another.", nil, nil, nil, true)
+    GameTooltip:AddLine("Отменить лот", 1, 1, 1)
+    GameTooltip:AddLine("Нажмите дважды: предметы вернутся почтой, залог пропадёт. «Отменить следующего» внизу делает так по очереди.", nil, nil, nil, true)
     GameTooltip:Show()
   end)
   r.cancel:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -521,16 +521,16 @@ local function getRow(i)
     GameTooltip:SetOwner(self, "ANCHOR_LEFT")
     if e.link then GameTooltip:SetHyperlink(e.link) else GameTooltip:SetItemByID(e.id) end
     GameTooltip:AddLine(" ")
-    GameTooltip:AddDoubleLine("Yours", e.each and (ns.Money(e.each) .. " each") or "?", 0.7, 0.7, 0.7, 1, 1, 1)
+    GameTooltip:AddDoubleLine("Ваш лот", e.each and (ns.Money(e.each) .. " за шт.") or "?", 0.7, 0.7, 0.7, 1, 1, 1)
     if e.sold then
-      GameTooltip:AddDoubleLine("You get", ns.Money(proceeds(e)), 0.7, 0.7, 0.7, 0.5, 0.83, 0.61)
-      GameTooltip:AddLine(e.dep and ("The sale after the cut, plus your %s deposit back."):format(ns.Money(e.dep))
-        or "The sale after the cut (plus the deposit, if it was posted before this was counted).", 0.6, 0.6, 0.6, true)
-      GameTooltip:AddDoubleLine("Gold", mailText(e), 0.7, 0.7, 0.7, 1, 1, 1)
+      GameTooltip:AddDoubleLine("Вы получите", ns.Money(proceeds(e)), 0.7, 0.7, 0.7, 0.5, 0.83, 0.61)
+      GameTooltip:AddLine(e.dep and ("Продажа после комиссии плюс возврат залога %s."):format(ns.Money(e.dep))
+        or "Продажа после комиссии (плюс залог, если лот выставлен до подсчёта).", 0.6, 0.6, 0.6, true)
+      GameTooltip:AddDoubleLine("Золото", mailText(e), 0.7, 0.7, 0.7, 1, 1, 1)
     else
       local _, rec = cheapestNow(e)
-      if rec and rec.t then GameTooltip:AddDoubleLine("Prices checked", ns.Age(rec.t), 0.7, 0.7, 0.7, 1, 1, 1) end
-      if e.left then GameTooltip:AddDoubleLine("Time left (when read)", shortLeft(e.left), 0.7, 0.7, 0.7, 1, 1, 1) end
+      if rec and rec.t then GameTooltip:AddDoubleLine("Цены проверены", ns.Age(rec.t), 0.7, 0.7, 0.7, 1, 1, 1) end
+      if e.left then GameTooltip:AddDoubleLine("Осталось (на момент чтения)", shortLeft(e.left), 0.7, 0.7, 0.7, 1, 1, 1) end
     end
     GameTooltip:Show()
   end)
@@ -604,35 +604,35 @@ refresh = function()
     local by = undercutBy(e)
     if e.sold then
       r.now:SetText("|cff7fd39c+" .. ns.MoneyPlain(proceeds(e)) .. "|r")
-      r.status:SetText("|cff888888sold, " .. mailText(e) .. "|r")
+      r.status:SetText("|cff888888продано, " .. mailText(e) .. "|r")
     else
       local stale = now and not priceFresh(rec)
       r.now:SetText(now and ((stale and "|cff888888" or by and "|cffee8597" or "|cff7fd39c") .. ns.MoneyPlain(now) .. "|r") or "|cff888888?|r")
-      if e.a and pending[e.a] then r.status:SetText("|cff888888canceling...|r")
-      elseif by then r.status:SetText("|cffee8597undercut|r")
-      elseif stale then r.status:SetText("|cff888888check prices|r")
-      elseif now then r.status:SetText("|cff7fd39ccheapest|r")
-      else r.status:SetText("|cff888888not priced|r") end
+      if e.a and pending[e.a] then r.status:SetText("|cff888888отменяю...|r")
+      elseif by then r.status:SetText("|cffee8597перебивают|r")
+      elseif stale then r.status:SetText("|cff888888проверить цены|r")
+      elseif now then r.status:SetText("|cff7fd39cминимум|r")
+      else r.status:SetText("|cff888888нет цены|r") end
     end
     local canCancel = by ~= nil and e.a ~= nil and not pending[e.a]
     r.cancel:SetShown(canCancel)
     r.tint:SetShown(by ~= nil)
     -- The status runs to the edge, or up to the Cancel button.
     r.status:SetPoint("RIGHT", r, "RIGHT", canCancel and -60 or -4, 0)
-    r.cancel:SetText((e.a and armed[e.a] and GetTime() - armed[e.a] < 4) and "Sure?" or "Cancel")
+    r.cancel:SetText((e.a and armed[e.a] and GetTime() - armed[e.a] < 4) and "Точно?" or "Отменить")
     r:Show()
   end
   for i = #shown + 1, #rows do rows[i]:Hide() end
   frame.content:SetHeight(math.max(#shown * ROW, 20))
   frame.sf.UpdateScrollBar()
   frame.empty:SetShown(#shown == 0)
-  frame.empty:SetText((#order == 0 and (ns:IsAHOpen() and "Nothing listed on this character. What you put up on the auction house shows here."
-    or "Open the auction house to see your auctions."))
-    or (view == "undercut" and "None undercut at the last check.") or (view == "sold" and "Nothing sold lately.")
-    or "Nothing here.")
+  frame.empty:SetText((#order == 0 and (ns:IsAHOpen() and "У этого персонажа ничего не выставлено. Здесь появятся ваши лоты."
+    or "Откройте аукцион, чтобы увидеть свои лоты."))
+    or (view == "undercut" and "На последней проверке перебитых нет.") or (view == "sold" and "Давно ничего не продавалось.")
+    or "Здесь пусто.")
   frame.check:SetEnabled(ns:IsAHOpen() and counts.up > 0 and not (ns.Scan.active and not ns.Scan.quiet))
-  frame.where:SetText(ns.neutralAH and "|cffffd100Neutral auction house|r"
-    or ((UnitFactionGroup("player") or "Your") .. " auction house"))
+  frame.where:SetText(ns.neutralAH and "|cffffd100Нейтральный аукцион|r"
+    or ((UnitFactionGroup("player") or "Ваш") .. " аукцион"))
 
   -- Cancel next undercut: asks once, then each click cancels the next one.
   local todo = undercutList(order)
@@ -640,25 +640,25 @@ refresh = function()
   if cancelState == "asking" and GetTime() - askedAt > 8 then cancelState = nil end
   if #todo == 0 then cancelState = nil end
   frame.cancelNext:SetEnabled(#todo > 0 and ns:IsAHOpen())
-  frame.cancelNext:SetText(cancelState == "asking" and ("Yes, cancel %d"):format(#todo)
-    or (#todo > 0 and ("Cancel next undercut (%d)"):format(#todo)) or "Cancel next undercut")
+  frame.cancelNext:SetText(cancelState == "asking" and ("Да, отменить %d"):format(#todo)
+    or (#todo > 0 and ("Отменить следующего (%d)"):format(#todo)) or "Отменить следующего")
   frame.cancelNext:SetSelected(cancelState == "asking")
 
   -- The bottom lines: what's next to cancel, or the gold on its way and in the mailbox.
   local box = (ns.db.mailbox or {})[ns.CharKey()]
   local gold = {}
-  if onWay > 0 then gold[#gold + 1] = ("On the way: |cff7fd39c%s|r%s"):format(ns.MoneyPlain(onWay), nextIn and (" (next in " .. shortLeft(nextIn) .. ")") or "") end
-  if box and box.money and box.money > 0 then gold[#gold + 1] = ("In your mailbox: |cff7fd39c%s|r (%s)"):format(ns.MoneyPlain(box.money), ns.Age(box.t)) end
+  if onWay > 0 then gold[#gold + 1] = ("В пути: |cff7fd39c%s|r%s"):format(ns.MoneyPlain(onWay), nextIn and (" (следующее через " .. shortLeft(nextIn) .. ")") or "") end
+  if box and box.money and box.money > 0 then gold[#gold + 1] = ("На почте: |cff7fd39c%s|r (%s)"):format(ns.MoneyPlain(box.money), ns.Age(box.t)) end
   frame.gold:SetText(table.concat(gold, "   "))
   if cancelState == "asking" then
-    frame.info:SetText(("|cffffd100Cancel %d undercut %s and lose %s?|r Click again."):format(
-      #todo, #todo == 1 and "auction" or "auctions", #todo == 1 and "its deposit" or "their deposits"))
+    frame.info:SetText(("|cffffd100Отменить перебитых: %d (%s) и потерять %s?|r Нажмите ещё раз."):format(
+      #todo, ns.Plural(#todo, "аукцион", "аукциона", "аукционов"), #todo == 1 and "его залог" or "их залоги"))
   elseif #todo > 0 then
     local e = todo[1]
-    frame.info:SetText(("Next: %s x%d, yours %s, cheapest %s.%s"):format(ns.ItemName(e.id), e.q or 1, ns.MoneyPlain(e.each), ns.MoneyPlain(undercutBy(e)),
-      cancelState == "on" and "" or " |cff888888(First click asks, then one click each.)|r"))
+    frame.info:SetText(("Следующий: %s x%d, ваш %s, минимум %s.%s"):format(ns.ItemName(e.id), e.q or 1, ns.MoneyPlain(e.each), ns.MoneyPlain(undercutBy(e)),
+      cancelState == "on" and "" or " |cff888888(Первый клик спросит, дальше по одному.)|r"))
   elseif counts.up > 0 then
-    frame.info:SetText(("%d up, none undercut at the last check%s."):format(counts.up, m and m.t and (" (" .. ns.Age(m.t) .. ")") or ""))
+    frame.info:SetText(("%d выставлено, на последней проверке перебитых нет%s."):format(counts.up, m and m.t and (" (" .. ns.Age(m.t) .. ")") or ""))
   else
     frame.info:SetText("")
   end
@@ -719,18 +719,18 @@ function ns:YourAuctionsFrame(side)
   frame.empty:SetPoint("RIGHT", frame.content, "RIGHT", -8, 0)
   frame.empty:SetJustifyH("LEFT")
 
-  frame.check = T:Button(frame, "Check prices", 110, function() ns:CheckMyAuctions() end, 22)
+  frame.check = T:Button(frame, "Проверить цены", 110, function() ns:CheckMyAuctions() end, 22)
   frame.check:SetPoint("BOTTOMLEFT", 10, 8)
   frame.check:HookScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
-    GameTooltip:AddLine("Check prices", 1, 1, 1)
-    GameTooltip:AddLine("Looks up everything you have listed on the auction house now, one item at a time, and marks the ones that have been undercut. Full scans and the flip watch check them too.", nil, nil, nil, true)
+    GameTooltip:AddLine("Проверить цены", 1, 1, 1)
+    GameTooltip:AddLine("Проверяет все ваши лоты на аукционе по одному и отмечает перебитые. Полные сканы и слежение за флипами тоже их проверяют.", nil, nil, nil, true)
     GameTooltip:Show()
   end)
   frame.check:HookScript("OnLeave", function() GameTooltip:Hide() end)
   -- One button, always in the same place: asks once, then each click cancels the next
   -- undercut auction (owner, October 4: fewer clicks; Blizzard needs one per cancel).
-  frame.cancelNext = T:Button(frame, "Cancel next undercut", 190, function()
+  frame.cancelNext = T:Button(frame, "Отменить следующего", 190, function()
     -- The list on screen (code review, October 4: the game's order cancelled a different
     -- auction from the one the line named).
     local todo = frame.todo or {}
@@ -750,15 +750,15 @@ function ns:YourAuctionsFrame(side)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
     -- Short lines under headings (owner's test, October 4: one block was hard to read).
     local A = T.accent
-    GameTooltip:AddLine("Cancel next undercut", 1, 1, 1)
+    GameTooltip:AddLine("Отменить следующего", 1, 1, 1)
     GameTooltip:AddLine(" ")
-    GameTooltip:AddLine("How it works", A[1], A[2], A[3])
-    GameTooltip:AddLine("First click asks to confirm. After that, each click cancels one.", 0.9, 0.9, 0.9, true)
-    GameTooltip:AddLine("The line above says which one is next.", 0.9, 0.9, 0.9, true)
+    GameTooltip:AddLine("Как это работает", A[1], A[2], A[3])
+    GameTooltip:AddLine("Первый клик просит подтверждения. Дальше каждый клик отменяет один лот.", 0.9, 0.9, 0.9, true)
+    GameTooltip:AddLine("Строка выше показывает, какой следующий.", 0.9, 0.9, 0.9, true)
     GameTooltip:AddLine(" ")
-    GameTooltip:AddLine("What happens", A[1], A[2], A[3])
-    GameTooltip:AddLine("The items come back by mail. Each loses its deposit.", 0.9, 0.9, 0.9, true)
-    GameTooltip:AddLine("Repost them just under the cheapest.", 0.9, 0.9, 0.9, true)
+    GameTooltip:AddLine("Что произойдёт", A[1], A[2], A[3])
+    GameTooltip:AddLine("Предметы вернутся почтой. Каждый теряет залог.", 0.9, 0.9, 0.9, true)
+    GameTooltip:AddLine("Выставьте их чуть ниже минимума.", 0.9, 0.9, 0.9, true)
     GameTooltip:Show()
   end)
   frame.cancelNext:HookScript("OnLeave", function() GameTooltip:Hide() end)

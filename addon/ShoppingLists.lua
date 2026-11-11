@@ -97,9 +97,9 @@ ns:OnReady(function()
   end
   if converted > 0 then
     C_Timer.After(10, function()
-      ns:Print("Shopping lists are one kind now: tick Buy from this list in the Buy queue to buy from one. Want is how many to buy; Have shows what you own. What you already had counts as bought, so nothing extra gets bought.")
+      ns:Print("Списки покупок теперь одного вида: отметьте «Покупать из этого списка» в очереди покупок, чтобы покупать из него. «Нужно» — сколько купить; «Есть» показывает, что у вас есть. Уже имеющееся считается купленным, поэтому лишнее не покупается.")
       if #paused > 0 then
-        ns:Print(("Buying is paused on %s (it crafts things): check its Want and tick Buy from this list again."):format(table.concat(paused, ", ")))
+        ns:Print(("Покупка приостановлена для %s (он крафтит): проверьте «Нужно» и снова отметьте «Покупать из этого списка»."):format(table.concat(paused, ", ")))
       end
     end)
   end
@@ -153,23 +153,23 @@ end
 function ns:ShuffleToShoppingList(s, list, runs)
   runs = tonumber(runs) or 1
   if not s or runs ~= runs or runs == math.huge or runs < 1 or runs > 10000 or runs ~= math.floor(runs) then
-    return nil, "Choose a whole amount from 1 to 10000."
+    return nil, "Выберите целое количество от 1 до 10000."
   end
   if list then
     local exists = false
     for _, l in ipairs(ns:ShoppingLists()) do if l == list then exists = true end end
-    if not exists then return nil, "That list was removed. Choose another one." end
-    if list.countHave or list.temp or list.crateID then return nil, "Choose a regular shopping list, or make a new one." end
-    if list.anyPrice then return nil, "Turn off Any price on that list, or make a new one, to keep the shuffle's limits." end
+    if not exists then return nil, "Тот список удалён. Выберите другой." end
+    if list.countHave or list.temp or list.crateID then return nil, "Выберите обычный список покупок или создайте новый." end
+    if list.anyPrice then return nil, "Отключите «Любая цена» в том списке или создайте новый, чтобы сохранить лимиты цепочки." end
   end
   local buys = ns:ShuffleShoppingItems(s, runs)
-  if #buys == 0 then return nil, "No purchases found for this shuffle." end
+  if #buys == 0 then return nil, "Покупок для этой цепочки не найдено." end
   -- Validate before creating or changing anything.
   for _, b in ipairs(buys) do
-    if not b.max or b.max < 1 then return nil, "A buying limit is missing for " .. (ns.ItemName(b.id) or ("item " .. b.id)) .. ". Refresh shuffles, then try again." end
+    if not b.max or b.max < 1 then return nil, "Не хватает лимита покупки для " .. (ns.ItemName(b.id) or ("item " .. b.id)) .. ". Обновите цепочки и попробуйте снова." end
     for _, e in ipairs(list and list.items or {}) do
       if e.id == b.id and not e.suffix and e.mode == "craft" then
-        return nil, "This list crafts one of these materials. Choose another list, or make a new one."
+        return nil, "В этом списке крафтится один из этих материалов. Выберите другой список или создайте новый."
       end
     end
   end
@@ -191,8 +191,8 @@ function ns:ShuffleToShoppingList(s, list, runs)
     e.done = nil   -- explicit additional purchases; bought and typed off stay
   end
   for i, l in ipairs(ns:ShoppingLists()) do if l == list then ns:SelectShoppingList(i); break end end
-  ns:Print(("Added %d %s for %s to shopping list \"%s\". Check Want and Up to there; the Buy queue buys from the list while Buy from this list in the Buy queue is ticked (/fl lists)."):format(
-    #buys, #buys == 1 and "item" or "items", ns:ShuffleName(s), list.name))
+  ns:Print(("Добавлено %d %s за %s в список покупок «%s». Проверьте там «Нужно» и «До»; очередь покупает из списка, пока отмечено «Покупать из этого списка» (/fl lists)."):format(
+    #buys, ns.Plural(#buys, "предмет", "предмета", "предметов"), ns:ShuffleName(s), list.name))
   if ns.RefreshListsView then ns:RefreshListsView() end
   return list
 end
@@ -200,13 +200,13 @@ end
 -- One purchase of each finder row. Validate everything before changing the list;
 -- filters choose the items, not a rule that silently adds future scan results.
 function ns:DisenchantToShoppingList(rows, list, name)
-  if not rows or #rows == 0 then return nil, "No items shown: choose filters and scan first." end
+  if not rows or #rows == 0 then return nil, "Предметы не показаны: выберите фильтры и сначала просканируйте." end
   if list then
     local exists = false
     for _, l in ipairs(ns:ShoppingLists()) do if l == list then exists = true end end
-    if not exists then return nil, "That list was removed. Choose another one." end
+    if not exists then return nil, "Тот список удалён. Выберите другой." end
     if list.countHave or list.temp or list.crateID or list.anyPrice then
-      return nil, "Choose a regular list without Any price, or make a new one."
+      return nil, "Выберите обычный список без «Любой цены» или создайте новый."
     end
   end
   if ns.InvalidateValues then ns:InvalidateValues(true) end
@@ -215,10 +215,10 @@ function ns:DisenchantToShoppingList(rows, list, name)
     local id = row.id
     local cap, worth, yield
     if id then cap, worth, yield = ns:DisenchantBuyLimit(id) end
-    if not cap then return nil, "A disenchant buying limit is missing for " .. (id and ns.ItemName(id) or "this item") .. ". Check Enchanting and material prices, then refresh the finder." end
+    if not cap then return nil, "Не хватает лимита покупки для распыления: " .. (id and ns.ItemName(id) or "этот предмет") .. ". Проверьте наложение чар и цены материалов, затем обновите поиск." end
     for _, e in ipairs(list and list.items or {}) do
       if e.id == id and not e.suffix and e.mode == "craft" then
-        return nil, "This list crafts one of these items. Choose another list, or make a new one."
+        return nil, "В этом списке крафтится один из этих предметов. Выберите другой список или создайте новый."
       end
     end
     if not seen[id] then
@@ -241,8 +241,8 @@ function ns:DisenchantToShoppingList(rows, list, name)
     e.done = nil
   end
   for i, l in ipairs(ns:ShoppingLists()) do if l == list then ns:SelectShoppingList(i); break end end
-  ns:Print(("Added %d %s to shopping list \"%s\" for disenchanting. Check Want and Up to there; the Buy queue buys from the list while Buy from this list in the Buy queue is ticked (/fl lists)."):format(
-    #buys, #buys == 1 and "item" or "items", list.name))
+  ns:Print(("Добавлено %d %s в список покупок «%s» для распыления. Проверьте там «Нужно» и «До»; очередь покупает из списка, пока отмечено «Покупать из этого списка» (/fl lists)."):format(
+    #buys, ns.Plural(#buys, "предмет", "предмета", "предметов"), list.name))
   if ns.RefreshListsView then ns:RefreshListsView() end
   return list
 end
@@ -254,19 +254,19 @@ end
 function ns:CraftToShoppingList(id, crafts, list)
   crafts = tonumber(crafts) or 1
   if crafts ~= crafts or crafts < 1 or crafts > 10000 or crafts ~= math.floor(crafts) then
-    return nil, "Choose a whole number of crafts from 1 to 10000."
+    return nil, "Выберите целое число крафтов от 1 до 10000."
   end
   local recipe = id and ns:RecipeFor(id)
-  if not (recipe and recipe.r and #recipe.r > 0) then return nil, "No recipe known for this item." end
+  if not (recipe and recipe.r and #recipe.r > 0) then return nil, "Для этого предмета нет известного рецепта." end
   if list then
     local exists = false
     for _, l in ipairs(ns:ShoppingLists()) do if l == list then exists = true end end
-    if not exists then return nil, "That list was removed. Choose another one." end
-    if list.countHave or list.temp or list.crateID then return nil, "Choose a regular shopping list, or make a new one." end
+    if not exists then return nil, "Тот список удалён. Выберите другой." end
+    if list.countHave or list.temp or list.crateID then return nil, "Выберите обычный список покупок или создайте новый." end
     for _, e in ipairs(list.items) do
       for _, r in ipairs(recipe.r) do
         if e.id == r[1] and not e.suffix and e.mode == "craft" then
-          return nil, "This list crafts one of these materials. Choose another list, or make a new one."
+          return nil, "В этом списке крафтится один из этих материалов. Выберите другой список или создайте новый."
         end
       end
     end
@@ -285,8 +285,8 @@ function ns:CraftToShoppingList(id, crafts, list)
     e.done = nil
   end
   for i, l in ipairs(ns:ShoppingLists()) do if l == list then ns:SelectShoppingList(i); break end end
-  ns:Print(("Added the materials for %d %s of %s to shopping list \"%s\". Check Want and Up to there (/fl lists)."):format(
-    crafts, crafts == 1 and "craft" or "crafts", ns.ItemName(id) or "?", list.name))
+  ns:Print(("Материалы на %d %s из %s добавлены в список покупок «%s». Проверьте «Нужно» и «До» (/fl lists)."):format(
+    crafts, ns.Plural(crafts, "крафт", "крафта", "крафтов"), ns.ItemName(id) or "?", list.name))
   if ns.RefreshListsView then ns:RefreshListsView() end
   return list
 end
@@ -296,7 +296,7 @@ end
 function ns:QuickAddToShoppingList(id, suffix)
   local list = ns:CurrentShoppingList()
   if list and (list.countHave or list.temp or list.crateID) then list = nil end
-  list = list or ns:NewShoppingList("Shopping list")
+  list = list or ns:NewShoppingList("Список покупок")
   -- (The window knows a version by its number; lists by its name, where the game has one.)
   if type(suffix) == "number" then suffix = ns:VersionName(suffix) or suffix end
   local e = ns:AddToShoppingList(list, id, nil, nil, suffix)
@@ -309,7 +309,7 @@ end
 
 -- A saved version as words: a number only until the game has named that version.
 function ns:VersionLabel(suffix)
-  if type(suffix) == "number" then return ns:VersionName(suffix) or "(other stats)" end
+  if type(suffix) == "number" then return ns:VersionName(suffix) or "(др. характеристики)" end
   return suffix
 end
 
@@ -469,7 +469,7 @@ function ns:FindItemsByName(text, max)
   end
   return out
 end
-ns.FindItemsByName = ns.Timed("Item name search", ns.FindItemsByName)
+ns.FindItemsByName = ns.Timed("Поиск по названию", ns.FindItemsByName)
 
 ---------------------------------------------------------------------------
 -- Sharing lists (Magic, October 2: "share shopping lists with each other via the
@@ -512,7 +512,7 @@ function ns:ImportShoppingLists(text)
   local buying = false   -- a shared list someone bought from: say how to buy from it too
   local function newList(name)
     name = (name or ""):gsub("^%s+", ""):gsub("%s+$", "")
-    if name == "" then name = "Imported list" end
+    if name == "" then name = "Импортированный список" end
     -- Don't overwrite a list you have: "Raid prep (2)".
     local taken = {}
     for _, l in ipairs(ns:ShoppingLists()) do taken[l.name] = true end
@@ -535,7 +535,7 @@ function ns:ImportShoppingLists(text)
     elseif lower == "any price" then
       if not list then newList() end
       list.anyPrice = true
-    elseif lower == "buy this many" or lower == "keep this many" then
+    elseif lower == "buy this many" or lower == "оставить столько" then
       -- (Want is always how many to buy now.)
       if not list then newList() end
     elseif line:find("|Hitem:", 1, true) then
@@ -579,11 +579,11 @@ function ns:ImportShoppingLists(text)
   end
   local names = {}
   for _, l in ipairs(made) do names[#names + 1] = l.name end
-  local msg = ("Imported %d %s (%s) with %d items."):format(#made, #made == 1 and "list" or "lists", table.concat(names, ", "), items)
+  local msg = ("Импортировано %d %s (%s), предметов: %d."):format(#made, ns.Plural(#made, "список", "списка", "списков"), table.concat(names, ", "), items)
   if #unknown > 0 then
-    msg = msg .. (" Couldn't find %d: %s."):format(#unknown, table.concat(unknown, ", "):sub(1, 200))
+    msg = msg .. (" Не найдено: %d (%s)."):format(#unknown, table.concat(unknown, ", "):sub(1, 200))
   end
-  if buying then msg = msg .. " To buy from it, tick Buy from this list in the Buy queue." end
+  if buying then msg = msg .. " Чтобы покупать из него, отметьте «Покупать из этого списка» в очереди покупок." end
   return true, msg
 end
 
@@ -918,30 +918,30 @@ function ns:UseAutomaticListItemPrice(list, e)
 end
 function ns:AutomaticListItemPriceText(list, e)
   local value, source = ns:AutomaticListItemPrice(list, e)
-  return source == "disenchant" and ("disenchant " .. ns.Money(value))
-    or source == "shuffle" and ("shuffle " .. ns.Money(value))
-    or ("usual + %g%%: %s"):format(ns:ListAllowance(list), ns.Money(value))
+  return source == "disenchant" and ("распыление " .. ns.Money(value))
+    or source == "shuffle" and ("цепочка " .. ns.Money(value))
+    or ("обычная + %g%%: %s"):format(ns:ListAllowance(list), ns.Money(value))
 end
 
 function ns:ListPriceSourceText(list, e)
   local src = sourceOf(e)
-  if src == "you" then return "Set by you. This price is never changed automatically. Automatic: " .. ns:AutomaticListItemPriceText(list, e) .. ". Right-click Up to to use the automatic price." end
+  if src == "you" then return "Задано вами. Эта цена никогда не меняется автоматически. Автоматически: " .. ns:AutomaticListItemPriceText(list, e) .. ". Правый клик по «До» — использовать автоматическую цену." end
   if src == "disenchant" then
     local s = e.disenchant or {}
     local band
     for _, b in ipairs(ns.DISENCHANT_BANDS or {}) do if b.key == s.band then band = b.label; break end end
-    return ("From disenchanting: item level %s %s. Uses the finder's disenchant buying limit after the safety margin, not this list's usual-price allowance. Refreshed when added again, on Buy again or by right-clicking Up to. Type a lower price for a bigger margin."):format(band or "?", s.kind == "weapon" and "weapons" or "armor")
+    return ("От распыления: уровень предмета %s %s. Использует лимит покупки для распыления после запаса, а не допуск обычной цены этого списка. Обновляется при повторном добавлении, по «Купить снова» или правым кликом по «До». Введите цену ниже для большего запаса."):format(band or "?", s.kind == "weapon" and "weapons" or "armor")
   end
   if src == "shuffle" then
     local details = {}
     for _, s in pairs(e.shuffles or {}) do
-      details[#details + 1] = ("%s: %s each (%s; main input %s)"):format(s.name or "shuffle", ns.Money(s.cap or 0),
-        s.id == e.id and "route cap" or "extra material cost", ns.ItemName(s.id))
+      details[#details + 1] = ("%s: %s за штуку (%s; основной ресурс %s)"):format(s.name or "shuffle", ns.Money(s.cap or 0),
+        s.id == e.id and "потолок маршрута" or "доп. стоимость материалов", ns.ItemName(s.id))
     end
     table.sort(details)
-    return table.concat(details, "; ") .. ". From shuffle: " .. (e.shuffleName or "unknown") .. ". Uses the route's buying cap; the lower cap when two shuffles use this item. Refreshed when added again or on Buy again."
+    return table.concat(details, "; ") .. ". От цепочки: " .. (e.shuffleName or "unknown") .. ". Использует потолок покупки маршрута; при двух цепочках — меньший. Обновляется при повторном добавлении или по «Купить снова»."
   end
-  return ("Usual price + %g%% (this list's allowance). Refreshed when buying is switched on or on Buy again."):format(e.usualAllowance or ns:ListAllowance(list))
+  return ("Обычная цена + %g%% (допуск этого списка). Обновляется при включении покупки или по «Купить снова»."):format(e.usualAllowance or ns:ListAllowance(list))
 end
 
 -- Materials for the list's Craft items: { { id, need, have, buy, vendor, limit, own } }
@@ -1177,7 +1177,7 @@ end
 nextGear = function()
   local r = runner
   if not r then return end
-  if not (ns.IsAHOpen and ns:IsAHOpen()) then runner = nil; ns:Print("Search all stopped: the auction house closed."); return end
+  if not (ns.IsAHOpen and ns:IsAHOpen()) then runner = nil; ns:Print("Поиск всех остановлен: аукцион закрыт."); return end
   -- The auction house takes one search at a time: wait for its go-ahead, and for the
   -- buy queue's own lookups.
   if (AH.IsThrottledMessageSystemReady and not AH.IsThrottledMessageSystemReady())
@@ -1192,7 +1192,7 @@ nextGear = function()
     if #r.rest > 0 then
       ns.Scan:StartList(r.rest, r.list.name)   -- the flip watch carries on when it ends
     else
-      ns:Print(("Searched %s."):format(r.list.name))
+      ns:Print(("Найдено: %s."):format(r.list.name))
       if ns.FlipWatchNext then ns.FlipWatchNext() end
     end
     return
@@ -1235,16 +1235,16 @@ ns:On("AUCTION_HOUSE_BROWSE_RESULTS_UPDATED", function()
 end)
 
 function ns:SearchAllList(list)
-  if not list or #list.items == 0 then ns:Print("That list has no items yet."); return end
-  if not (ns.IsAHOpen and ns:IsAHOpen()) then ns:Print("Open the auction house first."); return end
-  if runner then ns:Print("Already searching " .. runner.list.name .. "."); return end
+  if not list or #list.items == 0 then ns:Print("В том списке пока нет предметов."); return end
+  if not (ns.IsAHOpen and ns:IsAHOpen()) then ns:Print("Сначала откройте аукцион."); return end
+  if runner then ns:Print("Уже ищется " .. runner.list.name .. "."); return end
   local scan = ns.Scan
   if scan.active then
     if scan.quiet then
       -- The flip watch's quick checks give way, and carry on afterwards.
-      scan:Stop("Paused the flip watch's checks for Search all.")
+      scan:Stop("Проверки слежения за флипами приостановлены на время поиска всех.")
     else
-      ns:Print("A scan is running: Search all can start when it's done.")
+      ns:Print("Идёт скан: поиск всех можно запустить после него.")
       return
     end
   end
@@ -1270,9 +1270,9 @@ function ns:SearchAllList(list)
       if (not m.vendor or m.vendorAH) and not seen[m.id] then seen[m.id] = true; r.rest[#r.rest + 1] = m.id end
     end
   end
-  if #r.gear == 0 and #r.rest == 0 then ns:Print("Nothing on that list to look up."); return end
+  if #r.gear == 0 and #r.rest == 0 then ns:Print("В том списке нечего искать."); return end
   local n = #r.gear + #r.rest
-  ns:Print(("Searching %d %s from %s."):format(n, n == 1 and "item" or "items", list.name))
+  ns:Print(("Ищу %d %s в %s."):format(n, ns.Plural(n, "предмет", "предмета", "предметов"), list.name))
   runner = r
   nextGear()
 end

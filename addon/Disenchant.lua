@@ -66,10 +66,10 @@ end
 
 ns:On("UNIT_SPELLCAST_SUCCEEDED", function(unit, _, spellID)
   local name = unit == "player" and ns.SpellName and ns.SpellName(spellID)
-  if name and name:find("Arcane Salvager", 1, true) then
+  if name and (name:find("Arcane Salvager", 1, true) or name:find("Тайный утилизатор", 1, true)) then
     salvagerPlaced = GetTime()
     -- Which buff it gives isn't known yet: show them once, for checking (/fl debug).
-    C_Timer.After(2, function() ns:Debug("Arcane Salvager placed. Your buffs now:", table.concat(buffNames(), ", ")) end)
+    C_Timer.After(2, function() ns:Debug("Тайный утилизатор установлен. Ваши эффекты:", table.concat(buffNames(), ", ")) end)
   end
 end)
 
@@ -137,7 +137,7 @@ local function onLoot()
     while #log > LOG_SIZE do table.remove(log, 1) end
     local parts = {}
     for m, n in pairs(mats) do parts[#parts + 1] = n .. " " .. ns:DisenchantMaterialName(m) end
-    ns:Debug("Disenchanted", id and ((ns.GetItemInfo(id)) or id) or "unknown item", "item level", ilvl or "?",
+    ns:Debug("Disenchanted", id and ((ns.GetItemInfo(id)) or id) or "неизвестный предмет", "уровень предмета", ilvl or "?",
       "->", table.concat(parts, ", "))
   end)
 end
@@ -149,13 +149,13 @@ ns:On("LOOT_OPENED", onLoot)
 ---------------------------------------------------------------------------
 local function groupFor(e)
   -- With an Arcane Salvager up, a group of its own, next to the same items without.
-  local salv = e.salv == "buff" and " |cff66bbffwith Arcane Salvager|r"
-    or e.salv == "placed" and " |cff66bbffwith Arcane Salvager (placed nearby, no buff seen)|r" or ""
+  local salv = e.salv == "buff" and " |cff66bbffс Тайным утилизатором|r"
+    or e.salv == "placed" and " |cff66bbffс Тайным утилизатором (рядом, эффект не виден)|r" or ""
   local yield = e.id and ns:DisenchantYield(e.id)
   if yield then return yield.label .. salv, yield end
   local kind = e.cls == 2 and "weapons" or "armor"
   local quality = e.q == 3 and "blue" or (e.q == 4 and "purple" or "green")
-  return ("Item level %s %s %s (not in the table)"):format(e.ilvl or "?", quality, kind) .. salv, nil
+  return ("Уровень предмета %s %s %s (нет в таблице)"):format(e.ilvl or "?", quality, kind) .. salv, nil
 end
 
 -- Your own results for one row of the table (label like "Item level 16-20 green armor"),
@@ -176,11 +176,11 @@ function ns:PrintDisenchants(reset)
   local log = ns.db.disenchants
   if reset then
     wipe(log)
-    ns:Print("Disenchant log cleared. Disenchant as usual, then /fl de to see the totals.")
+    ns:Print("Журнал распыления очищен. Распыляйте как обычно, затем /fl de покажет итоги.")
     return
   end
   if #log == 0 then
-    ns:Print("No disenchants recorded yet. Disenchant some items, then /fl de. (/fl de reset starts a fresh count.)")
+    ns:Print("Распылений пока нет. Распылите что-нибудь, затем /fl de. (/fl de reset начинает счёт заново.)")
     return
   end
   local groups, order = {}, {}
@@ -192,18 +192,18 @@ function ns:PrintDisenchants(reset)
     for m, c in pairs(e.mats) do g.mats[m] = (g.mats[m] or 0) + c end
   end
   table.sort(order)
-  ns:Print(("Disenchant log: %d items since %s."):format(#log, date("%b %d %H:%M", log[1].t)))
+  ns:Print(("Журнал распыления: %d предметов с %s."):format(#log, date("%d.%m %H:%M", log[1].t)))
   for _, label in ipairs(order) do
     local g = groups[label]
-    print(("  |cffffffff%s|r: %d items"):format(label, g.n))
+    print(("  |cffffffff%s|r: предметов %d"):format(label, g.n))
     local expected = {}
     for _, y in ipairs(g.yield or {}) do expected[y[1]] = y[2] end
     local seen = {}
     local function line(m)
       local got = g.mats[m] or 0
       local exp = expected[m]
-      print(("      %s: %d (%.2f each%s)"):format(ns:DisenchantMaterialName(m), got, got / g.n,
-        exp and (", table says %.2f"):format(exp) or ""))
+      print(("      %s: %d (%.2f за штуку%s)"):format(ns:DisenchantMaterialName(m), got, got / g.n,
+        exp and (", таблица: %.2f"):format(exp) or ""))
       seen[m] = true
     end
     for _, y in ipairs(g.yield or {}) do line(y[1]) end

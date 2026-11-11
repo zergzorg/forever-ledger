@@ -15,7 +15,7 @@ local T = {
   text = { 1, 1, 1, 1 },
   dim = { 1, 1, 1, 0.53 },
   section = { 1, 1, 1, 0.41 },
-  font = STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF",
+  font = STANDARD_TEXT_FONT or ns.FontPath("Fonts\\FRIZQT__.TTF"),
 }
 ns.Theme = T
 
@@ -52,12 +52,12 @@ T.THEMES = {
   gilded = { name = "FL Gilded", accent = TEAL,
     bg = { 0.078, 0.069, 0.059, 0.97 }, header = { 0.118, 0.094, 0.071, 1 },
     button = { 0.125, 0.106, 0.086, 0.95 }, border = { BRONZE[1], BRONZE[2], BRONZE[3], 0.55 },
-    font = "Fonts\\FRIZQT__.TTF", dimAlpha = 0.5,
+    font = ns.FontPath("Fonts\\FRIZQT__.TTF"), dimAlpha = 0.5,
     frame = BRONZE, topLine = BRONZE, title = GOLD, heading = GOLD, serif = true,
     cards = true, cardEdge = BRONZE, toggles = true, footer = true },
 }
 T.THEME_ORDER = { "clean", "default", "gilded" }
-T.SERIF = "Fonts\\FRIZQT__.TTF"   -- WoW's own Friz Quadrata (Morpheus read oddly at heading size)
+T.SERIF = ns.FontPath("Fonts\\FRIZQT__.TTF")   -- WoW's own Friz Quadrata (Morpheus read oddly at heading size)
 T.theme = T.THEMES.default
 
 -- "0cd29d" -> { r, g, b } (nil if it isn't a colour).
@@ -436,14 +436,14 @@ function T:MoneyPreview(eb, plainUnit)
     local v = ns.ParseMoneyLoose(self:GetText(), plainUnit)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
     if v == -1 then
-      GameTooltip:AddLine("= any price", 1, 1, 1)
+      GameTooltip:AddLine("= любая цена", 1, 1, 1)
     elseif v then
-      GameTooltip:AddLine("= " .. (v > 0 and ns.Money(v) or "off"), 1, 1, 1)
+      GameTooltip:AddLine("= " .. (v > 0 and ns.Money(v) or "выкл"), 1, 1, 1)
     else
-      GameTooltip:AddLine("Not a price yet", 1, 0.5, 0.5)
+      GameTooltip:AddLine("Это пока не цена", 1, 0.5, 0.5)
     end
-    GameTooltip:AddLine(("Enter saves. Examples: 2g 50s 25c, 2 50 25 or 2.50.25 (gold silver copper), 2 50 (gold silver), 25s, 75c%s%s."):format(
-      plainUnit == "g" and ", or 3 for 3g" or "", self.allowAny and ", any" or ""), 0.7, 0.7, 0.7, true)
+    GameTooltip:AddLine(("Enter — сохранить. Примеры: 2g 50s 25c, 2 50 25 или 2.50.25 (золото серебро медь), 2 50 (золото серебро), 25s, 75c%s%s."):format(
+      plainUnit == "g" and ", или 3 = 3g" or "", self.allowAny and ", любая" or ""), 0.7, 0.7, 0.7, true)
     GameTooltip:Show()
   end)
   eb:HookScript("OnEditFocusLost", function() GameTooltip:Hide() end)
@@ -505,7 +505,7 @@ function T:MoneyBox(parent, onChange, plainUnit, allowAny, offText)
       if s > 0 and g > 0 then texts[#texts + 1] = shortPrice(g * 10000) end
       fit(texts)
     else
-      fit({ (v < 0 and "any") or (v > 0 and ns.MoneyPlain(v)) or offText or "off" })
+      fit({ (v < 0 and "любая") or (v > 0 and ns.MoneyPlain(v)) or offText or "выкл" })
     end
   end
   function eb:SetValue(v) self.value = v; show(v, self:HasFocus()) end
@@ -535,7 +535,7 @@ function T:MoneyBox(parent, onChange, plainUnit, allowAny, offText)
     local v = ns.ParseMoneyLoose(self:GetText(), plainUnit)
     if v == -1 and not allowAny then v = nil end
     if not v then
-      ns:Print(("Couldn't read that price. Try 2g 50s 25c, 2 50 25, 2.50.25, 25s or 75c%s."):format(allowAny and ", or any" or ""))
+      ns:Print(("Не удалось прочитать цену. Попробуйте 2g 50s 25c, 2 50 25, 2.50.25, 25s или 75c%s."):format(allowAny and ", или «любая»" or ""))
     elseif v ~= self.value or (self.confirmSame and self.priceEdited) then
       self.value = v
       onChange(v)
@@ -759,7 +759,7 @@ function T:Dropdown(parent, width, onChange)
     -- "Aukshaun Vondrizzle (Classic Beta PvP 2)" was cut off).
     local w = d:GetWidth()
     for _, o in ipairs(d.options) do
-      measure:SetText(o.label .. ((d.default ~= nil and o.value == d.default) and " (default)" or ""))
+      measure:SetText(o.label .. ((d.default ~= nil and o.value == d.default) and " (по умолчанию)" or ""))
       w = math.max(w, measure:GetStringWidth() + 32)
     end
     w = math.min(w, 420)
@@ -792,7 +792,7 @@ function T:Dropdown(parent, width, onChange)
       r:SetPoint("TOPLEFT", 0, -(top or 0))
       top = (top or 0) + r:GetHeight()
       r:SetPoint("RIGHT", 0, 0)
-      local label = o.label .. ((d.default ~= nil and o.value == d.default) and " |cff888888(default)|r" or "")
+      local label = o.label .. ((d.default ~= nil and o.value == d.default) and " |cff888888(по умолчанию)|r" or "")
       r.text:SetText(o.value == d.value and (T:AccentCode() .. o.label .. "|r" .. label:sub(#o.label + 1)) or label)
       r:Show()
     end
@@ -863,12 +863,12 @@ function T:MultiDropdown(parent, width, onChange)
     if onChange then onChange() end
   end
 
-  local all = T:Button(menu, "Select all", 80, function()
+  local all = T:Button(menu, "Выбрать все", 92, function()
     for _, o in ipairs(d.options) do d.selected[o.value] = true end
     changed()
   end, 20)
   all:SetPoint("TOPLEFT", 6, -6)
-  local none = T:Button(menu, "Deselect all", 90, function()
+  local none = T:Button(menu, "Снять все", 92, function()
     for k in pairs(d.selected) do d.selected[k] = nil end
     changed()
   end, 20)

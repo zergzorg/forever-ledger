@@ -79,7 +79,7 @@ end
 ---------------------------------------------------------------------------
 function ns:Print(...) print(ns.PREFIX, ...) end
 function ns:Debug(...)
-  if ns.db and ns.db.settings.debug then print("|cff888888Ledger debug:|r", ...) end
+  if ns.db and ns.db.settings.debug then print("|cff888888Ledger, отладка:|r", ...) end
 end
 
 function ns.Money(copper)
@@ -88,18 +88,18 @@ function ns.Money(copper)
   if GetCoinTextureString then return GetCoinTextureString(copper) end
   local g, s, c = math.floor(copper / 10000), math.floor(copper % 10000 / 100), copper % 100
   local out = {}
-  if g > 0 then out[#out + 1] = g .. "g" end
-  if s > 0 then out[#out + 1] = s .. "s" end
-  if c > 0 or #out == 0 then out[#out + 1] = c .. "c" end
+  if g > 0 then out[#out + 1] = g .. "з" end
+  if s > 0 then out[#out + 1] = s .. "с" end
+  if c > 0 or #out == 0 then out[#out + 1] = c .. "м" end
   return table.concat(out, " ")
 end
 
 function ns.Age(t)
   if not t or t == 0 then return "" end
   local d = time() - t
-  if d < 3600 then return math.max(1, math.floor(d / 60)) .. "m ago" end
-  if d < 86400 then return math.floor(d / 3600) .. "h ago" end
-  return math.floor(d / 86400) .. "d ago"
+  if d < 3600 then return math.max(1, math.floor(d / 60)) .. " мин назад" end
+  if d < 86400 then return math.floor(d / 3600) .. " ч назад" end
+  return math.floor(d / 86400) .. " дн назад"
 end
 
 -- Money as plain text without coin icons, for text boxes: "1g 50s", "75c".
@@ -107,15 +107,22 @@ function ns.MoneyPlain(copper)
   copper = math.floor((copper or 0) + 0.5)
   local g, s, c = math.floor(copper / 10000), math.floor(copper % 10000 / 100), copper % 100
   local out = {}
-  if g > 0 then out[#out + 1] = g .. "g" end
-  if s > 0 then out[#out + 1] = s .. "s" end
-  if c > 0 or #out == 0 then out[#out + 1] = c .. "c" end
+  if g > 0 then out[#out + 1] = g .. "з" end
+  if s > 0 then out[#out + 1] = s .. "с" end
+  if c > 0 or #out == 0 then out[#out + 1] = c .. "м" end
   return table.concat(out, " ")
 end
 
--- "1g50s", "25s", "75c" or plain copper ("75") to copper. nil if it isn't money.
+-- "1g50s", "25s", "75c", "1з50с", "25с", "75м" or plain copper ("75") to copper.
+-- nil if it isn't money.
+local RU_UNITS = { ["з"] = "g", ["г"] = "g", ["с"] = "s", ["м"] = "c" }
+function ns.MoneyUnit(s)
+  for ru, en in pairs(RU_UNITS) do s = s:gsub(ru, en) end
+  return s
+end
+
 function ns.ParseMoney(s)
-  s = (s or ""):lower():gsub("%s+", "")
+  s = ns.MoneyUnit((s or ""):lower():gsub("%s+", ""))
   if s:match("^%d+$") then return tonumber(s) end
   if s == "" or s:gsub("%d+[gsc]", "") ~= "" then return nil end
   local total = 0
@@ -131,9 +138,9 @@ end
 -- ("g", "s" or "c", default copper), "off" or empty (0), and "any" (-1).
 -- nil if it can't be read.
 function ns.ParseMoneyLoose(s, plainUnit)
-  s = (s or ""):lower():gsub(",", "."):gsub("^%s+", ""):gsub("%s+$", "")
-  if s == "" or s == "off" or s == "none" or s == "0" then return 0 end
-  if s == "any" or s == "*" then return -1 end
+  s = ns.MoneyUnit((s or ""):lower():gsub(",", "."):gsub("^%s+", ""):gsub("%s+$", ""))
+  if s == "" or s == "off" or s == "none" or s == "выкл" or s == "нет" or s == "0" then return 0 end
+  if s == "any" or s == "любая" or s == "*" then return -1 end
   -- Numbers in a row, by spaces or dots: gold silver ("12 50", "12.50") or gold silver
   -- copper ("12 50 25", "12.50.25") (owner, October 3). A lone number is plainUnit.
   if s:find("^%d+[%s%.]+%d+$") or s:find("^%d+[%s%.]+%d+[%s%.]+%d+$") then
@@ -543,14 +550,14 @@ frame:SetScript("OnEvent", function(_, event, ...)
 end)
 
 function ns:PrintPerf(reset)
-  if reset then ns.perf, ns.perfSince = {}, GetTime(); ns:Print("Timing reset. Play for a minute, then /fl perf."); return end
+  if reset then ns.perf, ns.perfSince = {}, GetTime(); ns:Print("Счётчики сброшены. Поиграйте минуту и повторите /fl perf."); return end
   local rows = {}
   for label, p in pairs(ns.perf) do rows[#rows + 1] = { label = label, p = p } end
   table.sort(rows, function(a, b) return a.p.max > b.p.max end)
-  ns:Print(("Time used by Forever Ledger over the last %d seconds, slowest single moment first:"):format(GetTime() - ns.perfSince))
+  ns:Print(("Время Forever Ledger за последние %d с, сначала самые медленные места:"):format(GetTime() - ns.perfSince))
   for i = 1, math.min(12, #rows) do
     local r = rows[i]
-    print(("  %s: slowest %.0f ms, %d times, %.0f ms total"):format(r.label, r.p.max, r.p.n, r.p.ms))
+    print(("  %s: худший %.0f мс, вызовов %d, всего %.0f мс"):format(r.label, r.p.max, r.p.n, r.p.ms))
   end
   -- Memory and loading, to see whether the data files (ClassicItems.lua) cost much.
   local update = (C_AddOns and C_AddOns.UpdateAddOnMemoryUsage) or UpdateAddOnMemoryUsage
@@ -564,7 +571,7 @@ function ns:PrintPerf(reset)
     pcall(update)
     local ok2, after = pcall(usage, ADDON)
     if ok and ok2 and before and after then
-      print(("  Memory: %.1f MB in use, %.1f MB before clearing leftovers."):format(after / 1024, before / 1024))
+      print(("  Память: %.1f МБ занято, %.1f МБ до очистки остатков."):format(after / 1024, before / 1024))
     end
   end
   -- The biggest parts of the saved data, roughly (entries, and KB of text where it's text).
@@ -591,9 +598,9 @@ function ns:PrintPerf(reset)
   table.sort(parts, function(a, b) return a.kb > b.kb end)
   local out = {}
   for i = 1, math.min(6, #parts) do out[i] = ("%s %.0f KB"):format(parts[i].key, parts[i].kb) end
-  print("  Biggest saved data (rough): " .. table.concat(out, ", "))
+  print("  Крупнейшие сохранённые данные (примерно): " .. table.concat(out, ", "))
   if ns.loadMs then
-    print(("  Loading the addon's files took %.0f ms, setting up saved data %.0f ms."):format(ns.loadMs, ns.readyMs or 0))
+    print(("  Загрузка файлов аддона заняла %.0f мс, подготовка сохранённых данных — %.0f мс."):format(ns.loadMs, ns.readyMs or 0))
   end
 end
 
@@ -764,7 +771,7 @@ local function ser(v, out)
 end
 
 local function des(s, i)
-  if i > #s then error("Import text ends early. Make sure you copied all of it.") end
+  if i > #s then error("Текст импорта обрывается. Убедитесь, что скопировали его весь.") end
   local c = s:sub(i, i)
   if c == "n" then
     local j = s:find(";", i, true)
@@ -784,12 +791,12 @@ local function des(s, i)
       local k, v
       k, i = des(s, i)
       v, i = des(s, i)
-      if k == nil then error("Import text is damaged.") end
+      if k == nil then error("Текст импорта повреждён.") end
       t[k] = v
     end
     return t, i + 1
   end
-  error("Import text is damaged near character " .. i .. ".")
+  error("Текст импорта повреждён около символа " .. i .. ".")
 end
 
 function ns.Serialize(v)
@@ -800,7 +807,7 @@ end
 
 function ns.Deserialize(s)
   s = (s or ""):match("^%s*(.-)%s*$")
-  if s:sub(1, 4) ~= "FL1:" then return nil, "That isn't a Forever Ledger export." end
+  if s:sub(1, 4) ~= "FL1:" then return nil, "Это не экспорт Forever Ledger." end
   local ok, v = pcall(function() return (des(s, 5)) end)
   if not ok then return nil, tostring(v) end
   return v
@@ -821,10 +828,10 @@ end
 function ns:Import(text)
   local data, err = ns.Deserialize(text)
   if not data then return false, err end
-  if type(data) ~= "table" then return false, "That isn't a Forever Ledger export." end
-  if data.kind == "profile" then return false, "That's a settings profile: import it in Settings, Profiles." end
+  if type(data) ~= "table" then return false, "Это не экспорт Forever Ledger." end
+  if data.kind == "profile" then return false, "Это профиль настроек: импортируйте его в Настройках, Профилях." end
   local nChars, nPrices = ns:MergeData(data)
-  return true, ("Imported %d characters and %d prices."):format(nChars, nPrices)
+  return true, ("Импортировано: %d %s и %d %s."):format(nChars, ns.Plural(nChars, "персонаж", "персонажа", "персонажей"), nPrices, ns.Plural(nPrices, "цена", "цены", "цен"))
 end
 
 -- A character played on this account: the one you're on, or one whose bags were saved
@@ -995,18 +1002,18 @@ function ns:ApiReport()
     "GetTrainerServiceLevelReq", "GetTrainerServiceTypeFilter", "GetNumTalentTabs", "GetTalentTabInfo",
     "GetTalentInfo", "IsPlayerSpell", "IsSpellKnown", "GetSkillLineInfo", "C_SpellBook.IsSpellKnown",
   }
-  ns:Print("API check (include this in a bug report if something isn't working):")
+  ns:Print("Проверка API (приложите это к отчёту об ошибке):")
   for _, path in ipairs(checks) do
-    print(("  %s %s"):format(has(path) and "|cff7fd39cyes|r" or "|cffee8597no|r ", path))
+    print(("  %s %s"):format(has(path) and "|cff7fd39cда|r" or "|cffee8597нет|r ", path))
   end
-  print("  Market: " .. ns.MarketKey())
-  print(("  %s GLOBAL_MOUSE_DOWN event (Buy queue panel comes to the front)"):format(
-    ns:EventKnown("GLOBAL_MOUSE_DOWN") and "|cff7fd39cyes|r" or "|cffee8597no|r "))
+  print("  Рынок: " .. ns.MarketKey())
+  print(("  %s событие GLOBAL_MOUSE_DOWN (панель очереди покупок выходит вперёд)"):format(
+    ns:EventKnown("GLOBAL_MOUSE_DOWN") and "|cff7fd39cда|r" or "|cffee8597нет|r "))
   -- Which ruleset the character is on (owner, October 3: group characters by ruleset,
   -- not by server name, if the game says it). Each is tried safely and printed.
   local function try(label, fn)
     local ok, a, b = pcall(fn)
-    print(("  %s: %s"):format(label, ok and (tostring(a) .. (b ~= nil and (", " .. tostring(b)) or "")) or "not available"))
+    print(("  %s: %s"):format(label, ok and (tostring(a) .. (b ~= nil and (", " .. tostring(b)) or "")) or "недоступно"))
   end
   try("Realm", function() return GetRealmName(), GetNormalizedRealmName and GetNormalizedRealmName() end)
   try("Realm ID", function() return GetRealmID and GetRealmID() end)
@@ -1056,23 +1063,23 @@ function ns:ApiReport()
   -- "how to get it" text (the 12th value), to see what a pet module could show.
   if C_PetJournal and C_PetJournal.GetNumPets then
     local ok, total, owned = pcall(C_PetJournal.GetNumPets)
-    print(("  Pet journal: %s pets listed, %s owned"):format(ok and tostring(total) or "error", ok and tostring(owned) or "?"))
+    print(("  Журнал питомцев: %s всего, %s получено"):format(ok and tostring(total) or "error", ok and tostring(owned) or "?"))
     if ok and (total or 0) > 0 and C_PetJournal.GetPetInfoByIndex then
       local ok2, _, species, isOwned, _, _, _, _, name, _, _, _, source, _, _, _, tradeable = pcall(C_PetJournal.GetPetInfoByIndex, 1)
       if ok2 then
-        print(("  Sample: %s (species %s), owned %s, tradeable %s, source: %s"):format(tostring(name), tostring(species),
+        print(("  Пример: %s (вид %s), получен %s, можно продать %s, источник: %s"):format(tostring(name), tostring(species),
           tostring(isOwned), tostring(tradeable), tostring(source):gsub("|", "||"):sub(1, 120)))
       end
     end
   end
   if GetNumCompanions then
     local ok, n = pcall(GetNumCompanions, "CRITTER")
-    print("  Companion pets known (old list): " .. (ok and tostring(n) or "error"))
+    print("  Известные спутники (старый список): " .. (ok and tostring(n) or "error"))
   end
   -- Mount journal: how many mounts it knows, and one sample with its source text.
   if C_MountJournal and C_MountJournal.GetMountIDs then
     local ok, ids = pcall(C_MountJournal.GetMountIDs)
-    print(("  Mount journal: %s mounts listed"):format(ok and type(ids) == "table" and #ids or "error"))
+    print(("  Журнал транспорта: %s"):format(ok and type(ids) == "table" and #ids or "error"))
     if ok and type(ids) == "table" and ids[1] and C_MountJournal.GetMountInfoByID then
       local ok2, name, _, _, _, _, _, _, _, faction, _, collected = pcall(C_MountJournal.GetMountInfoByID, ids[1])
       local source
@@ -1081,14 +1088,14 @@ function ns:ApiReport()
         source = ok3 and src or nil
       end
       if ok2 then
-        print(("  Mount sample: %s, collected %s, faction %s, source: %s"):format(tostring(name), tostring(collected),
+        print(("  Пример транспорта: %s, получен %s, фракция %s, источник: %s"):format(tostring(name), tostring(collected),
           tostring(faction), tostring(source):gsub("|", "||"):sub(1, 120)))
       end
     end
   end
   if C_ToyBox and C_ToyBox.GetNumToys then
     local ok, n = pcall(C_ToyBox.GetNumToys)
-    print("  Toy box: " .. (ok and tostring(n) or "error") .. " toys listed")
+    print("  Игрушки: " .. (ok and tostring(n) or "error") .. " шт.")
   end
   -- The journal listed 0 pets for an owner with none (September 30). Asking for pets by
   -- their item shows whether the data is there anyway: Cat Carrier (Bombay) 8485,
@@ -1096,7 +1103,7 @@ function ns:ApiReport()
   if C_PetJournal and C_PetJournal.GetPetInfoByItemID then
     for _, item in ipairs({ 8485, 8490, 8492, 275682 }) do
       local ok, name, _, _, _, source, _, _, _, tradeable, _, _, _, species = pcall(C_PetJournal.GetPetInfoByItemID, item)
-      print(("  Pet item %d: %s"):format(item, not ok and "error" or not name and "no data" or
+      print(("  Предмет-питомец %d: %s"):format(item, not ok and "error" or not name and "нет данных" or
         ("%s (species %s), tradeable %s, source: %s"):format(name, tostring(species), tostring(tradeable),
           tostring(source):gsub("|", "||"):sub(1, 120))))
     end
@@ -1169,17 +1176,17 @@ SlashCmdList.FOREVERLEDGER = function(msg)
       qty, hours = msg:match("|h|r%s*(%d*)%s*(%d*)%s*$")
     end
     local duration = ({ [2] = 1, [8] = 2, [24] = 3 })[tonumber(hours) or 8]
-    if not id or not duration then ns:Print("Use /fl deposit <item ID or shift-clicked item> [quantity] [2/8/24 hours].")
+    if not id or not duration then ns:Print("Использование: /fl deposit <ID предмета или предмет с Shift> [количество] [2/8/24 часа].")
     else ns:DepositReport(tonumber(id), tonumber(qty) or 1, duration) end
   elseif msg == "api" then
     ns:ApiReport()
   elseif msg == "debug" then
     ns.db.settings.debug = not ns.db.settings.debug
-    ns:Print("Debug messages " .. (ns.db.settings.debug and "on." or "off."))
+    ns:Print("Отладочные сообщения " .. (ns.db.settings.debug and "вкл." or "выкл."))
   elseif msg == "sellcheck" then
     -- The saved sell speed check lines (Prices.lua), for testing.
     local log = ns.db.sellCheckLog or {}
-    if #log == 0 then ns:Print("No sell speed checks yet: they appear after two full scans.") end
+    if #log == 0 then ns:Print("Проверок скорости продажи пока нет: они появятся после двух полных сканов.") end
     for _, line in ipairs(log) do print("  " .. line) end
   elseif msg:match("^deals") then
     local set = ns.db.settings
@@ -1191,24 +1198,24 @@ SlashCmdList.FOREVERLEDGER = function(msg)
       ns:PrintDeals()
     elseif cmd == "sound" then
       set.dealSound = not set.dealSound
-      ns:Print("Deal alert sound " .. (set.dealSound and "on." or "off."))
+      ns:Print("Звук оповещения о сделках " .. (set.dealSound and "вкл." or "выкл."))
     elseif cmd == "usual" and pct and pct < 100 then
       set.dealUsualPct = pct
-      ns:Print("Deals are now listings " .. ns:DealRules() .. ".")
+      ns:Print("Сделки — это лоты " .. ns:DealRules() .. ".")
     elseif cmd == "period" and ns.PRICE_WINDOWS[arg] then
       set.dealWindow = arg
-      ns:Print("Deals are now listings " .. ns:DealRules() .. ".")
+      ns:Print("Сделки — это лоты " .. ns:DealRules() .. ".")
     elseif cmd == "history" and ns.HISTORY_SOURCES[arg] then
       set.dealHistory = arg
-      ns:Print("Deals are now listings " .. ns:DealRules() .. ".")
+      ns:Print("Сделки — это лоты " .. ns:DealRules() .. ".")
     elseif cmd == "vendor" and arg:match("%%$") and pct and pct < 100 then
       set.dealVendorPct = pct
-      ns:Print("Deals are now listings " .. ns:DealRules() .. ".")
+      ns:Print("Сделки — это лоты " .. ns:DealRules() .. ".")
     elseif cmd == "vendor" and ns.ParseMoney(arg) then
       set.dealVendorMin = ns.ParseMoney(arg)
-      ns:Print("Deals are now listings " .. ns:DealRules() .. ".")
+      ns:Print("Сделки — это лоты " .. ns:DealRules() .. ".")
     else
-      ns:Print("/fl deals opens the Deals tab, /fl deals list lists them in chat. Deal settings: /fl deals usual 20 (percent below usual price), /fl deals period week/month/3months/6months/year/all, /fl deals history auto/local/tsm (where usual prices come from), /fl deals vendor 10% (percent below vendor price), /fl deals vendor 1s (least profit each), /fl deals sound.")
+      ns:Print("/fl deals открывает вкладку «Сделки», /fl deals list выводит их в чат. Настройки: /fl deals usual 20 (процент ниже обычной цены), /fl deals period week/month/3months/6months/year/all, /fl deals history auto/local/tsm (откуда обычные цены), /fl deals vendor 10% (процент ниже цены торговца), /fl deals sound on/off.")
     end
   elseif msg:match("^pair") or msg == "unpair" then
     ns:SyncCommand(msg:gsub("^pair%s*", "pair "))
@@ -1223,12 +1230,12 @@ SlashCmdList.FOREVERLEDGER = function(msg)
     -- the Sell page in Forever, October 4). Type it with the mouse over the thing.
     local foci = GetMouseFoci and GetMouseFoci() or { GetMouseFocus and GetMouseFocus() }
     local fr = foci and foci[1]
-    if not fr then ns:Print("Nothing under the mouse.") end
+    if not fr then ns:Print("Под мышью ничего нет.") end
     local depth = 0
     while fr and depth < 8 do
       local name = fr.GetName and fr:GetName() or nil
       local key = fr.GetParentKey and fr:GetParentKey() or nil
-      ns:Print(("%s%s%s (%s, shown %s)"):format(("  "):rep(depth), name or "unnamed", key and (" ." .. key) or "",
+      ns:Print(("%s%s%s (%s, shown %s)"):format(("  "):rep(depth), name or "без имени", key and (" ." .. key) or "",
         fr.GetObjectType and fr:GetObjectType() or "?", tostring(fr.IsVisible and fr:IsVisible())))
       fr = fr.GetParent and fr:GetParent() or nil
       depth = depth + 1
@@ -1256,25 +1263,25 @@ SlashCmdList.FOREVERLEDGER = function(msg)
     ns:StopGeneralSession()
   elseif msg == "session" then
     -- (It opened the Work it window, removed October 4.)
-    if ns:GeneralSessionRunning() then ns:Print("A session is running: /fl session stop ends it.")
-    else ns:Print("/fl session start begins a session (or Start a session on the Dashboard).") end
+    if ns:GeneralSessionRunning() then ns:Print("Идёт сессия: /fl session stop завершает её.")
+    else ns:Print("/fl session start начинает сессию (или кнопка «Начать сессию» в Обзоре).") end
   elseif msg == "money" then
     ns:PrintMoney()
   elseif msg == "minimap" then
     ns.db.settings.minimap = not ns.db.settings.minimap
     ns:UpdateMinimapButton()
-    ns:Print("Minimap button " .. (ns.db.settings.minimap and "shown." or "hidden. Type /fl minimap to bring it back."))
+    ns:Print("Кнопка у миникарты " .. (ns.db.settings.minimap and "показана." or "скрыта. Введите /fl minimap, чтобы вернуть."))
   elseif msg == "tooltip" then
     ns.db.settings.tooltip = not ns.db.settings.tooltip
-    ns:Print("Tooltip lines " .. (ns.db.settings.tooltip and "on." or "off."))
+    ns:Print("Строки подсказки " .. (ns.db.settings.tooltip and "вкл." or "выкл."))
   elseif msg:match("^source") then
     local s = msg:match("^source%s+(%S+)")
     local map = { auto = "auto", own = "own", auctionator = "Auctionator", tsm = "TSM", auctioneer = "Auctioneer" }
     if s and map[s] then
       ns.db.settings.source = map[s]
-      ns:Print("Price source set to " .. map[s] .. ".")
+      ns:Print("Источник цен: " .. map[s] .. ".")
     else
-      ns:Print("Use /fl source auto, own, auctionator, tsm or auctioneer.")
+      ns:Print("Используйте /fl source auto, own, auctionator, tsm или auctioneer.")
     end
   elseif msg == "shuffles" or msg == "shuffles all" then
     ns:PrintShuffles(msg == "shuffles all")
@@ -1282,28 +1289,28 @@ SlashCmdList.FOREVERLEDGER = function(msg)
     local n = tonumber(msg:match("^margin%s+(%S+)"))
     if n and n >= 0 and n < 100 then
       ns.db.settings.margin = n
-      ns:Print(("Safety margin set to %g%%."):format(n))
+      ns:Print(("Запас установлен: %g%%."):format(n))
     else
-      ns:Print(("Safety margin is %g%%. Shuffles only count if you can buy at least this much below the item's worth. Change it with /fl margin 10"):format(ns.db.settings.margin or 10))
+      ns:Print(("Запас: %g%%. Цепочки считаются, только если купить хотя бы на столько ниже стоимости предмета. Изменить: /fl margin 10"):format(ns.db.settings.margin or 10))
     end
   elseif msg:match("^seconds") then
     local n = tonumber(msg:match("^seconds%s+(%S+)"))
     if n and n > 0 then
       ns.db.settings.actionSeconds = n
-      ns:Print(("Profit per hour now assumes %g seconds per craft, disenchant or split."):format(n))
+      ns:Print(("Прибыль в час теперь считается из %g с на крафт, распыление или разбор."):format(n))
     else
-      ns:Print(("Profit per hour assumes %g seconds per craft, disenchant or split. Change it with /fl seconds 3"):format(ns.db.settings.actionSeconds or 3))
+      ns:Print(("Прибыль в час считается из %g с на крафт, распыление или разбор. Изменить: /fl seconds 3"):format(ns.db.settings.actionSeconds or 3))
     end
   elseif msg:match("^cut") then
     local n = tonumber(msg:match("^cut%s+(%S+)"))
     if n and n >= 0 and n < 100 then
       ns.db.settings.ahCut = n
       ns:InvalidateValues(true)
-      ns:Print(("Auction house cut set to %g%%."):format(n))
+      ns:Print(("Комиссия аукциона: %g%%."):format(n))
     else
-      ns:Print(("Auction house cut is %g%%. Change it with /fl cut 5"):format(ns.db.settings.ahCut or 5))
+      ns:Print(("Комиссия аукциона: %g%%. Изменить: /fl cut 5"):format(ns.db.settings.ahCut or 5))
     end
   else
-    ns:Print("Commands: /fl (window), /fl scan, /fl scan full, /fl scan materials, /fl stop, /fl watch, /fl quiet, /fl price, /fl queue, /fl lists, /fl pull, /fl export, /fl csv, /fl import, /fl source <auto/own/auctionator>, /fl shuffles, /fl shuffles all, /fl cut <percent>, /fl margin <percent>, /fl seconds <n>, /fl deals, /fl deals settings, /fl minimap, /fl money, /fl session start, /fl session stop, /fl runs, /fl de, /fl pair <name>, /fl sync, /fl tooltip, /fl welcome, /fl new, /fl api, /fl debug")
+    ns:Print("Команды: /fl (окно), /fl scan, /fl scan full, /fl scan materials, /fl stop, /fl watch, /fl quiet, /fl price, /fl queue, /fl lists, /fl pull, /fl export, /fl csv, /fl import, /fl source <auto/own/auctionator>, /fl shuffles, /fl shuffles all, /fl cut <процент>, /fl margin <процент>, /fl seconds <n>, /fl deals, /fl deals settings, /fl minimap, /fl money, /fl session start, /fl session stop, /fl runs, /fl de, /fl pair <имя>, /fl sync, /fl tooltip, /fl welcome, /fl new, /fl api, /fl debug")
   end
 end

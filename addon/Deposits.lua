@@ -58,7 +58,7 @@ ns:On("AUCTION_HOUSE_CLOSED", clear)
 -- faction quote for Booty Bay, or guess that stackable means commodity.
 function ns:AuctionDeposit(id, quantity, duration, neutral)
   quantity, duration = quantity or 1, duration or ns.DEPOSIT_DURATION
-  if type(id) ~= "number" or id < 1 or type(quantity) ~= "number" or quantity < 1 or quantity == math.huge or quantity ~= math.floor(quantity) or not ({ [1] = true, [2] = true, [3] = true })[duration] then return nil, "invalid request" end
+  if type(id) ~= "number" or id < 1 or type(quantity) ~= "number" or quantity < 1 or quantity == math.huge or quantity ~= math.floor(quantity) or not ({ [1] = true, [2] = true, [3] = true })[duration] then return nil, "неверный запрос" end
   if neutral == nil then neutral = not not ns.neutralAH end
   local AH = C_AuctionHouse
   if AH and ns.IsAHOpen and ns:IsAHOpen() and neutral == (not not ns.neutralAH) then
@@ -68,9 +68,9 @@ function ns:AuctionDeposit(id, quantity, duration, neutral)
     if ok and info and type(info.isCommodity) == "boolean" then
       local fn, arg, source
       if info.isCommodity then
-        fn, arg, source = AH.CalculateCommodityDeposit, id, "commodity API"
+        fn, arg, source = AH.CalculateCommodityDeposit, id, "API товаров"
       else
-        fn, arg, source = AH.CalculateItemDeposit, bagLocation(id), "item API"
+        fn, arg, source = AH.CalculateItemDeposit, bagLocation(id), "API предмета"
       end
       if fn and arg then
         local success, amount = pcall(fn, arg, duration, quantity)
@@ -82,7 +82,7 @@ function ns:AuctionDeposit(id, quantity, duration, neutral)
   end
   local vendor = ns:GetSellPrice(id)
   local estimate = ns:DepositEstimate(vendor or 0, duration, quantity, neutral)
-  return estimate or 0, vendor and "Classic estimate" or "no vendor price: estimate 0"
+  return estimate or 0, vendor and "Оценка Classic" or "нет цены торговца: оценка 0"
 end
 
 -- The deposit for one unit, as part of a full stack: Forever charges at least 1s per
@@ -100,10 +100,10 @@ end
 function ns:DepositReport(id, quantity, duration)
   quantity, duration = quantity or 1, duration or ns.DEPOSIT_DURATION
   local amount, source = ns:AuctionDeposit(id, quantity, duration)
-  if not amount then ns:Print("Use /fl deposit <item ID or shift-clicked item> [quantity] [2/8/24 hours]."); return end
+  if not amount then ns:Print("Использование: /fl deposit <ID предмета или предмет с Shift> [количество] [2/8/24 часа]."); return end
   local hours = DURATION_HOURS[duration]
   local estimate = ns:DepositEstimate(ns:GetSellPrice(id) or 0, duration, quantity, ns.neutralAH)
-  ns:Print(("Deposit: item %d, quantity %d, %d hours: %s (%s); Classic estimate %s. Values allow for one unsold 8-hour listing."):format(id, quantity, hours, ns.Money(amount), source, ns.Money(estimate)))
+  ns:Print(("Залог: предмет %d, количество %d, %d ч: %s (%s); оценка Classic %s. Значения учитывают один непроданный 8-часовой лот."):format(id, quantity, hours, ns.Money(amount), source, ns.Money(estimate)))
 end
 
 -- Reserve carried by one input unit of a route, including multi-output crafts and DE.

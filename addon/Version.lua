@@ -44,7 +44,7 @@ ns:On("CHAT_MSG_ADDON", function(prefix, msg)
   if not parts(mine) then return end   -- dev builds: you're ahead of any release
   if newer(msg, mine) then
     told = true
-    ns:Print(("Version %s is available (you have %s). Update on CurseForge or Wago."):format(msg, mine))
+    ns:Print(("Доступна версия %s (у вас %s). Обновите на CurseForge или Wago."):format(msg, mine))
   elseif newer(mine, msg) then
     -- They're behind: answer once, so they hear about it too.
     announce()

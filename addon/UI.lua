@@ -104,18 +104,18 @@ local main
 local setView, layoutShuffles, buildTable
 
 local TABS = {
-  { key = "dashboard", label = "Dashboard" },
-  { key = "shuffles", label = "Shuffles" },
+  { key = "dashboard", label = "Обзор" },
+  { key = "shuffles", label = "Цепочки" },
   -- Vendor flips moved to the Buy queue beside the auction house (owner, October 2).
-  { key = "deals", label = "Deals" },
-  { key = "ledger", label = "Ledger" },
-  { key = "crates", label = "Crates", setting = "crates" },
-  { key = "recipes", label = "Recipes" },
-  { key = "characters", label = "Characters" },
+  { key = "deals", label = "Сделки" },
+  { key = "ledger", label = "Журнал" },
+  { key = "crates", label = "Ящики", setting = "crates" },
+  { key = "recipes", label = "Рецепты" },
+  { key = "characters", label = "Персонажи" },
   -- Levelling help module, under level 20 (Levelling.lua; owner, October 7).
-  { key = "levelling", label = "Leveling", show = function() return ns.LevellingTabShown and ns:LevellingTabShown() end },
-  { key = "settings", label = "Settings" },
-  { key = "help", label = "Help" },
+  { key = "levelling", label = "Прокачка", show = function() return ns.LevellingTabShown and ns:LevellingTabShown() end },
+  { key = "settings", label = "Настройки" },
+  { key = "help", label = "Справка" },
 }
 
 -- A scroll area filling the content area, with one text block in it.
@@ -154,15 +154,15 @@ local function buildMain()
   main = themedWindow("ForeverLedgerFrame", 880, 620,
     T:TitleCode() .. "Forever Ledger|r  " .. dim(ns.VERSION), 46)
   -- Shopping lists away from the auction house, to plan ahead (owner, October 3).
-  local lists = T:Button(main.bar, "Shopping lists", 110, function() ns:ShowSidePanel("lists") end, 22)
+  local lists = T:Button(main.bar, "Списки покупок", 110, function() ns:ShowSidePanel("lists") end, 22)
   lists:SetPoint("RIGHT", main.bar, "RIGHT", -36, 0)
   -- Any item's price window, looked up by name (owner, November 8).
-  local prices = T:Button(main.bar, "Price lookup", 100, function() ns:ShowPriceWindow() end, 22)
+  local prices = T:Button(main.bar, "Поиск цены", 100, function() ns:ShowPriceWindow() end, 22)
   prices:SetPoint("RIGHT", lists, "LEFT", -6, 0)
   prices:HookScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
-    GameTooltip:AddLine("Price lookup", 1, 1, 1)
-    GameTooltip:AddLine("Any item's price graph and numbers: type its name. " .. ns:PriceClickName() .. " on an item in your bags, a chat link or an auction house listing opens it too.", 0.8, 0.8, 0.8, true)
+    GameTooltip:AddLine("Поиск цены", 1, 1, 1)
+    GameTooltip:AddLine("График и цифры цены любого предмета: введите название. " .. ns:PriceClickName() .. " по предмету в сумках, ссылке в чате или лоту на аукционе тоже открывает его.", 0.8, 0.8, 0.8, true)
     GameTooltip:Show()
   end)
   prices:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -196,14 +196,14 @@ local function buildMain()
   main.views.shuffles, main.views.flips = main.table, main.table
 
   -- Footer buttons. Scan buttons show on Dashboard and Characters.
-  local full = T:Button(main, "Full scan", 140, function() ns.Scan:Start("full") end)
+  local full = T:Button(main, "Полный скан", 140, function() ns.Scan:Start("full") end)
   full:SetPoint("BOTTOMLEFT", 12, 12)
   full:SetPrimary(true)
-  local scan = T:Button(main, "Scan materials", 120, function() ns.Scan:Start("watch") end)
+  local scan = T:Button(main, "Скан материалов", 132, function() ns.Scan:Start("watch") end)
   scan:SetPoint("LEFT", full, "RIGHT", 6, 0)
   -- One button for copying data across (owner's test, October 4: like the shopping
   -- lists' Share/import); Export, Import and Prices as text are tabs in its window.
-  local dataBtn = T:Button(main, "Export / import", 120, function() ns:ShowExport() end)
+  local dataBtn = T:Button(main, "Экспорт и импорт", 120, function() ns:ShowExport() end)
   dataBtn:SetPoint("LEFT", scan, "RIGHT", 18, 0)
   main.scanBtn, main.fullBtn = scan, full
   -- Away from the auction house they can't be clicked: say why (UI pass, November 9).
@@ -211,16 +211,16 @@ local function buildMain()
     b:HookScript("OnEnter", function(self)
       GameTooltip:SetOwner(self, "ANCHOR_TOP")
       GameTooltip:AddLine(title, 1, 1, 1)
-      GameTooltip:AddLine(ns:IsAHOpen() and text or "Works while the auction house is open.", nil, nil, nil, true)
+      GameTooltip:AddLine(ns:IsAHOpen() and text or "Работает, пока открыт аукцион.", nil, nil, nil, true)
       GameTooltip:Show()
     end)
     b:HookScript("OnLeave", function() GameTooltip:Hide() end)
   end
-  scanHover(full, "Full scan", "Reads every listing at once. The game allows one about every 15 minutes.")
-  scanHover(scan, "Scan materials", "Looks up the materials your recipes use, one item at a time.")
+  scanHover(full, "Полный скан", "Читает все лоты сразу. Игра разрешает примерно раз в 15 минут.")
+  scanHover(scan, "Скан материалов", "Ищет материалы ваших рецептов по одному предмету.")
   -- Help: the first-run welcome again (Welcome.lua), bottom left like the other tabs'
   -- buttons (owner, October 5: not under the topic list).
-  local welcomeBtn = T:Button(main, "Show the welcome again", 170, function()
+  local welcomeBtn = T:Button(main, "Показать «Что нового»", 180, function()
     if ns.ShowWelcome then ns:ShowWelcome() end
   end)
   welcomeBtn:SetPoint("BOTTOMLEFT", 12, 12)
@@ -316,7 +316,7 @@ function ns:RefreshFlipsIfShown()
     if not (main:IsShown() and main.view == "flips") then return end
     if not main.shuffles then ns:RefreshShuffles(); return end
     main.shuffles.flips = ns:FindVendorFlips()
-    main.shuffleInfo:SetText(("%d shuffles, %d vendor flips (%s). Click to search the AH, right-click for details."):format(
+    main.shuffleInfo:SetText(("Цепочек: %d, флипов у торговца: %d (%s). Клик — поиск на аукционе, правый клик — подробности."):format(
       #main.shuffles.vendor + #main.shuffles.ah + #main.shuffles.oneOff, #main.shuffles.flips, date("%H:%M")))
     layoutShuffles()
   end)
@@ -455,11 +455,11 @@ local function buildMinimapButton()
   mm:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_LEFT")
     GameTooltip:AddLine("Forever Ledger")
-    GameTooltip:AddLine("Click to open or close.", 1, 1, 1)
-    GameTooltip:AddLine("Right-click for shuffles.", 1, 1, 1)
-    GameTooltip:AddLine("Shift-click for shopping lists.", 1, 1, 1)
-    GameTooltip:AddLine(ns:GeneralSessionRunning() and "Ctrl-click to stop the session." or "Ctrl-click to start a session.", 1, 1, 1)
-    GameTooltip:AddLine("Drag to move. /fl minimap hides it.", 0.7, 0.7, 0.7)
+    GameTooltip:AddLine("Клик — открыть или закрыть.", 1, 1, 1)
+    GameTooltip:AddLine("Правый клик — цепочки.", 1, 1, 1)
+    GameTooltip:AddLine("Shift+клик — списки покупок.", 1, 1, 1)
+    GameTooltip:AddLine(ns:GeneralSessionRunning() and "Ctrl+клик — остановить сессию." or "Ctrl+клик — начать сессию.", 1, 1, 1)
+    GameTooltip:AddLine("Перетащите, чтобы переместить. /fl minimap скрывает.", 0.7, 0.7, 0.7)
     GameTooltip:Show()
   end)
   mm:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -485,26 +485,26 @@ local MAX_ROWS = 60
 local SUBTABS = {
   -- Sells on the auction house first: Blizzard nerfed most vendor shuffles at launch
   -- (owner, November 5). If none turn up for a few weeks, the vendor tab may go.
-  { key = "ah", label = "Sells on the auction house" },
-  { key = "vendor", label = "Sells to a vendor" },
-  { key = "oneOff", label = "Limited supply" },
+  { key = "ah", label = "Продажа на аукционе" },
+  { key = "vendor", label = "Продажа торговцу" },
+  { key = "oneOff", label = "Ограниченный запас" },
 }
 local COLUMNS = {
   shuffles = {
-    { key = "route", label = "Route", width = 116, tip = "An icon for each step. Hover an icon to read that step." },
-    { key = "name", label = "Shuffle", tip = "What you buy or craft first. Click a row for what to buy and every step." },
-    { key = "steps", label = "Steps", width = 44, tip = "How many steps, including the sale." },
-    { key = "profit", label = "Profit", width = 90, tip = "Profit each time you do it (per craft, or per item bought)." },
-    { key = "ret", label = "Return", width = 58, tip = "Profit as a share of what you spend." },
-    { key = "hour", label = "Per hour", width = 96, tip = "Rough profit per hour, counting only crafting time (see Seconds per craft in Settings)." },
-    { key = "runs", label = "Runs", width = 62, tip = "How many times you could do it profitably with what's listed now: only listings cheap enough count, and the scarcest thing you buy on the auction house sets the limit. \"no limit\" when everything comes from vendors." },
+    { key = "route", label = "Путь", width = 116, tip = "Значок на каждый шаг. Наведите на значок, чтобы прочитать шаг." },
+    { key = "name", label = "Цепочка", tip = "Что покупаете или крафтите первым. Клик по строке — что купить и все шаги." },
+    { key = "steps", label = "Шаги", width = 44, tip = "Сколько шагов, включая продажу." },
+    { key = "profit", label = "Прибыль", width = 90, tip = "Прибыль за один раз (за крафт или за купленный предмет)." },
+    { key = "ret", label = "Доход", width = 58, tip = "Прибыль в процентах от затрат." },
+    { key = "hour", label = "В час", width = 96, tip = "Примерная прибыль в час, только время крафта (см. «Секунд на крафт» в настройках)." },
+    { key = "runs", label = "Раз", width = 62, tip = "Сколько раз это выгодно повторить при текущих лотах: считаются только достаточно дешёвые, а лимит задаёт самый дефицитный предмет с аукциона. \\\"без предела\\\", когда всё у торговцев." },
   },
   flips = {
-    { key = "name", label = "Item", tip = "Listed for less than a vendor pays." },
-    { key = "profit", label = "Profit each", width = 90, tip = "What a vendor pays, minus what it costs." },
-    { key = "ret", label = "Return", width = 58, tip = "Profit as a share of what you spend." },
-    { key = "runs", label = "Listed", width = 62, tip = "How many are listed cheaply enough to make a profit." },
-    { key = "total", label = "If all bought", width = 110, tip = "Profit each times the number listed cheaply enough: about the most you could make." },
+    { key = "name", label = "Предмет", tip = "Выставлено дешевле, чем платит торговец." },
+    { key = "profit", label = "Прибыль/шт", width = 90, tip = "Сколько платит торговец минус затраты." },
+    { key = "ret", label = "Доход", width = 58, tip = "Прибыль в процентах от затрат." },
+    { key = "runs", label = "Лотов", width = 62, tip = "Сколько лотов достаточно дешёвы для прибыли." },
+    { key = "total", label = "Если купить всё", width = 110, tip = "Прибыль за штуку на число дешёвых лотов: примерный максимум заработка." },
   },
 }
 local SORT_VALUE = {
@@ -569,7 +569,7 @@ buildTable = function()
   -- faction (owner's test, October 4: a row of boxes grows with every alt, and it listed
   -- a character from another realm, whose recipes don't count anyway).
   f.charLabel = T:Text(f, 12, T.dim)
-  f.charLabel:SetText("Recipes from")
+  f.charLabel:SetText("Рецепты от")
   f.charBtn = T:Button(f, "", 220, function() f.charMenu:SetShown(not f.charMenu:IsShown()) end, 22)
   f.charBtn:GetFontString():ClearAllPoints()
   f.charBtn:GetFontString():SetPoint("LEFT", 8, 0)
@@ -599,12 +599,12 @@ buildTable = function()
   f.sf, f.content = T:Scroll(f)
   f.empty = T:Text(f.content, 12, T.dim)
   f.empty:SetPoint("TOPLEFT", 8, -8)
-  f.empty:SetText("None at current prices. Scan the auction house, then click Refresh.")
+  f.empty:SetText("При текущих ценах ничего нет. Просканируйте аукцион и нажмите «Обновить».")
   f.vendorNote = T:Text(f, 12, T.dim)
   f.vendorNote:SetPoint("BOTTOMLEFT", 8, 4)
   f.vendorNote:SetPoint("BOTTOMRIGHT", -8, 4)
   f.vendorNote:SetJustifyH("LEFT")
-  f.vendorNote:SetText("Blizzard nerfed most vendor shuffles, so this tab may often be empty.")
+  f.vendorNote:SetText("Blizzard ослабил большинство цепочек у торговцев, поэтому вкладка часто будет пустой.")
   return f
 end
 
@@ -631,7 +631,7 @@ local function getHeaderCell(i)
       GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
       GameTooltip:AddLine(self.label, 1, 1, 1)
       GameTooltip:AddLine(self.tip, 0.85, 0.85, 0.85, true)
-      GameTooltip:AddLine("Click to sort.", T.accent[1], T.accent[2], T.accent[3])
+      GameTooltip:AddLine("Клик — сортировка.", T.accent[1], T.accent[2], T.accent[3])
       GameTooltip:Show()
     end)
     h:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -679,10 +679,10 @@ local function getRow(i)
     if main.view == "flips" and button == "LeftButton" and not IsShiftKeyDown() and s.buys and s.buys[1] then
       local b = s.buys[1]
       if ns:SearchAuctionHouse(b.id) then
-        ns:Print(("%s: buy up to %s at %s or less each."):format(ns.ItemName(b.id) or "?", b.listed or "?",
+        ns:Print(("%s: купить до %s по %s или дешевле за штуку."):format(ns.ItemName(b.id) or "?", b.listed or "?",
           ns.Money(s.maxBuy or b.price)))
       else
-        ns:Print("Open the auction house, then click a flip to search for it. Right-click a flip for details.")
+        ns:Print("Откройте аукцион и щёлкните флип, чтобы найти его. Правый клик по флипу — подробности.")
       end
       return
     end
@@ -756,7 +756,7 @@ local function fillRow(r, s, lay, index, width)
     profit = "|cff7fd39c" .. ns.Money(s.profit) .. "|r",
     ret = ("%d%%"):format(math.floor(ns:ShuffleReturn(s) * 100 + 0.5)),
     hour = ns.Money(math.floor(s.perHour / 100) * 100),
-    runs = runs and tostring(runs) or dim("no limit"),
+    runs = runs and tostring(runs) or dim("без предела"),
     total = runs and ns.Money(s.profit * runs) or "",
   }
   for key, fs in pairs(r.cells) do fs:SetShown(lay[key] ~= nil) end
@@ -779,9 +779,9 @@ local function getDetail(i)
   d = CreateFrame("Frame", nil, main.table.content)
   T:Fill(d, { 1, 1, 1, 0.035 })
   d.buyTitle = T:Text(d, 11, T.accent)
-  d.buyTitle:SetText("What to buy")
+  d.buyTitle:SetText("Что купить")
   d.stepTitle = T:Text(d, 11, T.accent)
-  d.stepTitle:SetText("Steps")
+  d.stepTitle:SetText("Шаги")
   d.steps = T:Text(d, 11, { 1, 1, 1, 0.85 })
   d.steps:SetJustifyH("LEFT")
   d.steps:SetJustifyV("TOP")
@@ -833,8 +833,8 @@ local function fillDetail(d, s, width, noSteps)
     l.text:ClearAllPoints()
     l.text:SetPoint("LEFT", l.icon, "RIGHT", 6, 0)
     l.text:SetWidth(half - 44)
-    l.text:SetText(("%s%s at %s  %s"):format(b.qty > 1 and (b.qty .. " x ") or "", itemName(b.id),
-      ns.Money(b.price), dim(b.listed and (b.listed .. " listed") or "from a vendor")))
+    l.text:SetText(("%s%s по %s  %s"):format(b.qty > 1 and (b.qty .. " x ") or "", itemName(b.id),
+      ns.Money(b.price), dim(b.listed and (b.listed .. " в продаже") or "у торговца")))
     l.text:Show()
     y = y + 18
   end
@@ -844,7 +844,7 @@ local function fillDetail(d, s, width, noSteps)
     l.icon:Hide()
     l.text:ClearAllPoints()
     l.text:SetPoint("TOPLEFT", 34, -y)
-    l.text:SetText(dim(("and %d more"):format(#buys - MAX_BUY_LINES)))
+    l.text:SetText(dim(("и ещё %d"):format(#buys - MAX_BUY_LINES)))
     l.text:Show()
     y = y + 18
   end
@@ -905,8 +905,8 @@ layoutShuffles = function()
     end
     for i = #keys + 1, #boxes do boxes[i]:Hide() end
     f.charMenu:SetSize(220, 12 + #keys * 22)
-    f.charBtn:SetText(on == #keys and ("All %d characters"):format(#keys)
-      or (on == 0 and "|cffee8597No characters|r" or ("%d of %d characters"):format(on, #keys)))
+    f.charBtn:SetText(on == #keys and ("Все персонажи (%d)"):format(#keys)
+      or (on == 0 and "|cffee8597Нет персонажей|r" or ("%d из %d персонажей"):format(on, #keys)))
     top = top + 32
   end
 
@@ -985,9 +985,9 @@ layoutShuffles = function()
         for _, p in pairs(c.profs or {}) do if next(p.recipes or {}) then recipes = recipes + 1 end end
       end
     end
-    f.empty:SetText((chars > 0 and ticked == 0 and "No characters are ticked: pick some with the characters button above.")
-      or (recipes == 0 and "No recipes saved yet. Open each profession's window once, then click Refresh.")
-      or "None at current prices. Scan the auction house, then click Refresh.")
+    f.empty:SetText((chars > 0 and ticked == 0 and "Не отмечен ни один персонаж: выберите кнопкой персонажей выше.")
+      or (recipes == 0 and "Рецепты ещё не сохранены. Откройте окно каждой профессии один раз и нажмите «Обновить».")
+      or "При текущих ценах ничего нет. Просканируйте аукцион и нажмите «Обновить».")
   end
   content:SetHeight(math.max(y, 30))
   f.sf.UpdateScrollBar()
@@ -1027,27 +1027,27 @@ function ns:RefreshShuffles()
 
   main.shuffles = { vendor = vendor, ah = ah, oneOff = oneOff, flips = flips }
   -- Short, so it fits the smallest window (the tabs' own tips say the rest).
-  main.shuffleInfo:SetText(("%d shuffles, %d vendor flips (%s). %s"):format(
+  main.shuffleInfo:SetText(("Цепочек: %d, флипов у торговца: %d (%s). %s"):format(
     #vendor + #ah + #oneOff, #flips, date("%H:%M"),
-    main.view == "flips" and "Click to search the AH, right-click for details." or "Click a column to sort, a row for details."))
+    main.view == "flips" and "Клик — поиск на аукционе, правый клик — подробности." or "Клик по столбцу — сортировка, по строке — подробности."))
   if main.view == "shuffles" or main.view == "flips" then layoutShuffles() end
 end
 
 ---------------------------------------------------------------------------
 -- Scan buttons and status
 ---------------------------------------------------------------------------
--- "Full scan: Ready", or a countdown until Blizzard allows the next one.
+-- "Полный скан: готов", or a countdown until Blizzard allows the next one.
 function ns:UpdateFullScanButtons()
   if not ns.db then return end
   local wait = ns.Scan:FullWait()
   local open = ns:IsAHOpen()
-  local label, ready = "Full scan", false
+  local label, ready = "Полный скан", false
   if wait == 0 then
     -- "Ready" only where it can be clicked (UI pass, November 9).
-    label, ready = open and "Full scan: Ready" or "Full scan", true
+    label, ready = open and "Полный скан: готов" or "Полный скан", true
   elseif wait < math.huge then
     -- "in": it's a countdown to the next one Blizzard allows, not how long a scan takes.
-    label = ("Full scan in %d:%02d"):format(math.floor(wait / 60), wait % 60)
+    label = ("Полный скан через %d:%02d"):format(math.floor(wait / 60), wait % 60)
   end
   for _, b in ipairs({ main and main.fullBtn or false, ns.ahFullButton or false, ns.panelFullButton or false }) do
     if b then
@@ -1076,7 +1076,7 @@ function ns:SetStatusText(text)
 end
 
 function ns:UpdateScanStatus(done, total)
-  ns:SetStatusText(total and total > 0 and ("Scanning: %d of %d"):format(done, total) or "")
+  ns:SetStatusText(total and total > 0 and ("Сканирование: %d из %d"):format(done, total) or "")
   if done and total and done >= total then
     C_Timer.After(3, function() ns:SetStatusText("") end)
   end
@@ -1092,7 +1092,7 @@ function ns:UpdateAHScanButtons()
   -- The Buy queue button says it closes the panel while it's open, and stays lit.
   local b = ns.ahFinderButton
   if b then
-    b:SetText(docked and "Close buy queue" or "Buy queue")
+    b:SetText(docked and "Закрыть очередь" or "Очередь покупок")
     if docked then b:LockHighlight() else b:UnlockHighlight() end
   end
 end
@@ -1103,14 +1103,14 @@ function ns:OnAHShow()
   if ah and not ns.ahButton then
     -- Just below the window's bottom-right corner, level with Blizzard's Buy/Sell/Auctions
     -- tabs. Inside the window they covered the bid and buyout boxes on item pages.
-    ns.ahButton = blizzButton(ah, "Scan materials", 120, function() ns.Scan:Start("watch") end)
+    ns.ahButton = blizzButton(ah, "Скан материалов", 132, function() ns.Scan:Start("watch") end)
     -- Auctionator adds its own tabs (Shopping, Selling, Cancelling, Auctionator) along the
     -- bottom, reaching the right side: go one row lower so we don't cover them.
     local isLoaded = (C_AddOns and C_AddOns.IsAddOnLoaded) or IsAddOnLoaded
     local auctionator = Auctionator ~= nil or (isLoaded and isLoaded("Auctionator"))
     ns.ahButton:SetPoint("TOPRIGHT", ah, "BOTTOMRIGHT", -4, auctionator and -34 or -2)
     ns.ahButton:SetFrameLevel(ah:GetFrameLevel() + 20)
-    ns.ahFullButton = blizzButton(ah, "Full scan", 130, function() ns.Scan:Start("full") end)
+    ns.ahFullButton = blizzButton(ah, "Полный скан", 130, function() ns.Scan:Start("full") end)
     ns.ahFullButton:SetPoint("RIGHT", ns.ahButton, "LEFT", -4, 0)
     ns.ahFullButton:SetFrameLevel(ah:GetFrameLevel() + 20)
   end
@@ -1152,7 +1152,7 @@ local function ioWindow()
   eb:SetScript("OnEscapePressed", function() io:Hide() end)
   local hint = T:Text(box, 12, T.section)
   hint:SetPoint("TOPLEFT", 10, -9)
-  hint:SetText("Paste here (Ctrl+V)")
+  hint:SetText("Вставьте сюда (Ctrl+V)")
   local function fit()
     content:SetHeight(math.max(eb:GetHeight(), sf:GetHeight()))
     sf.UpdateScrollBar()
@@ -1173,7 +1173,7 @@ local function ioWindow()
   box:SetScript("OnMouseDown", function() eb:SetFocus() end)
   io.eb = eb
 
-  io.action = T:Button(io, "Import", 110, function() end)
+  io.action = T:Button(io, "Импорт", 110, function() end)
   io.action:SetPoint("BOTTOMRIGHT", -14, 12)
   return io
 end
@@ -1245,9 +1245,9 @@ end
 -- Export, Import and Prices as text share one window, with tabs to switch.
 local function dataTabs(current)
   return { current = current,
-    { "Export", function() ns:ShowExport() end },
-    { "Import", function() ns:ShowImport() end },
-    { "Prices as text", function() ns:ShowPricesCSV() end } }
+    { "Экспорт", function() ns:ShowExport() end },
+    { "Импорт", function() ns:ShowImport() end },
+    { "Цены текстом", function() ns:ShowPricesCSV() end } }
 end
 
 -- One title for the one window; the tabs say which part you're on (owner's test,
@@ -1255,8 +1255,8 @@ end
 function ns:ShowExport()
   local f = ioWindow()
   setTabs(f, dataTabs(1))
-  f.title:SetText("Export / import")
-  f.help:SetText("Press Ctrl+A, then Ctrl+C to copy. Paste it into Import on your other account.")
+  f.title:SetText("Экспорт и импорт")
+  f.help:SetText("Нажмите Ctrl+A, затем Ctrl+C, чтобы скопировать. Вставьте в «Импорт» на другом аккаунте.")
   f.eb:SetText(ns:Export())
   f.action:Hide()
   f:Show()
@@ -1268,10 +1268,10 @@ end
 function ns:ShowImport()
   local f = ioWindow()
   setTabs(f, dataTabs(2))
-  f.title:SetText("Export / import")
-  f.help:SetText("Paste an export from your other account with Ctrl+V, then click Import. Newer data replaces older data.")
+  f.title:SetText("Экспорт и импорт")
+  f.help:SetText("Вставьте экспорт с другого аккаунта (Ctrl+V) и нажмите «Импорт». Новые данные заменяют старые.")
   f.eb:SetText("")
-  f.action:SetText("Import")
+  f.action:SetText("Импорт")
   f.action:SetScript("OnClick", function()
     local ok, msg = ns:Import(f.eb:GetText())
     ns:Print(msg)
@@ -1315,8 +1315,8 @@ end
 function ns:ShowPricesCSV()
   local f = ioWindow()
   setTabs(f, dataTabs(3))
-  f.title:SetText("Export / import")
-  f.help:SetText("Press Ctrl+A, then Ctrl+C. Paste this into a spreadsheet to work with today's prices.")
+  f.title:SetText("Экспорт и импорт")
+  f.help:SetText("Нажмите Ctrl+A, затем Ctrl+C. Вставьте в таблицу, чтобы работать с сегодняшними ценами.")
   f.eb:SetText(ns:PricesCSV())
   -- Names the server is still sending: fill them in once, a few seconds later.
   if (ns.csvMissing or 0) > 0 and C_Timer then

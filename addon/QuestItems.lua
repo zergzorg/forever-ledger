@@ -235,10 +235,10 @@ function ns:QuestLines(id, compact)
     if (not compact or q.keep) and (q.mine or not onlyMine) then
       if #lines < 3 then
         lines[#lines + 1] = {
-          text = ("Quest: %s (%s, level %d%s), needs %d%s"):format(q.quest, q.where, q.level,
+          text = ("Задание: %s (%s, уровень %d%s), нужно %d%s"):format(q.quest, q.where, q.level,
             q.class and (", " .. q.class:sub(1, 1) .. q.class:sub(2):lower()) or "", q.count,
-            q.done and " |cff888888(done)|r" or q.grey and " |cff888888(too low)|r"
-              or q.otherClass and " |cff888888(other class)|r" or ""),
+            q.done and " |cff888888(готово)|r" or q.grey and " |cff888888(низкий уровень)|r"
+              or q.otherClass and " |cff888888(другой класс)|r" or ""),
           keep = q.keep,
         }
       else
@@ -246,7 +246,7 @@ function ns:QuestLines(id, compact)
       end
     end
   end
-  if more > 0 then lines[#lines + 1] = { text = ("and %d more %s"):format(more, more == 1 and "quest" or "quests") } end
+  if more > 0 then lines[#lines + 1] = { text = ("и ещё %d %s"):format(more, ns.Plural(more, "задание", "задания", "заданий")) } end
   return #lines > 0 and lines or nil
 end
 

@@ -22,10 +22,10 @@ local function inDungeon()
   return name
 end
 
--- "under a minute" or "12 min".
+-- "меньше минуты" or "12 min".
 local function mins(secs)
-  if secs < 60 then return "under a minute" end
-  return ("%d min"):format(math.floor(secs / 60))
+  if secs < 60 then return "меньше минуты" end
+  return ("%d мин"):format(math.floor(secs / 60))
 end
 
 -- The run is over: add it to its dungeon's totals. A quick walk in and out (under 2
@@ -36,7 +36,7 @@ local function finishRun(run)
   local looted = 0
   for _ in pairs(run.loot or {}) do looted = looted + 1 end
   if secs < 120 and looted == 0 and (run.coin or 0) == 0 then
-    ns:Debug(("Dungeon run not counted: %s, %s and nothing looted."):format(run.name, mins(secs)))
+    ns:Debug(("Заход в подземелье не засчитан: %s, %s и ничего не добыто."):format(run.name, mins(secs)))
     return
   end
   local d = ns.db.dungeons[run.name] or { runs = 0, secs = 0, coin = 0, drops = {} }
@@ -45,7 +45,7 @@ local function finishRun(run)
   d.secs = d.secs + secs
   d.coin = d.coin + (run.coin or 0)
   for id in pairs(run.loot or {}) do d.drops[id] = (d.drops[id] or 0) + 1 end
-  ns:Debug(("Dungeon run counted: %s, %s, %d items looted."):format(run.name, mins(secs), looted))
+  ns:Debug(("Заход в подземелье засчитан: %s, %s, добыто предметов: %d."):format(run.name, mins(secs), looted))
 end
 
 local function check()
@@ -58,7 +58,7 @@ local function check()
     elseif not (run and run.name == name and not run.left) then
       if run then finishRun(run) end
       ns.db.dungeonRun = { name = name, t = time(), coin = 0, loot = {} }
-      ns:Debug("Dungeon run started:", name)
+      ns:Debug("Заход в подземелье начат:", name)
     end
   elseif run then
     if not run.left then run.left = time() end
@@ -126,9 +126,9 @@ function ns:DropLine(id)
   table.sort(parts, function(a, b) return a.n / a.runs > b.n / b.runs end)
   local out = {}
   for i = 1, math.min(2, #parts) do
-    out[i] = ("%s, %d in %d %s"):format(parts[i].name, parts[i].n, parts[i].runs, parts[i].runs == 1 and "run" or "runs")
+    out[i] = ("%s, %d из %d %s"):format(parts[i].name, parts[i].n, parts[i].runs, ns.Plural(parts[i].runs, "забег", "забега", "забегов"))
   end
-  return "Dropped for you: " .. table.concat(out, "; ")
+  return "Выпало вам: " .. table.concat(out, "; ")
 end
 
 function ns:PrintRuns()
@@ -136,13 +136,13 @@ function ns:PrintRuns()
   for name, d in pairs(ns.db.dungeons or {}) do list[#list + 1] = { name = name, d = d } end
   local run = ns.db.dungeonRun
   if #list == 0 and not run then
-    ns:Print("No dungeon runs counted yet. Runs are counted as you go: just run a dungeon.")
+    ns:Print("Заходов пока не засчитано. Они считаются по ходу: просто пройдите подземелье.")
     return
   end
   table.sort(list, function(a, b) return a.d.runs > b.d.runs end)
-  ns:Print("Your dungeon runs (this account):")
+  ns:Print("Ваши заходы в подземелья (этот аккаунт):")
   if run and not run.left then
-    print(("  Now: %s, %s so far."):format(run.name, mins(time() - run.t)))
+    print(("  Сейчас: %s, %s всего."):format(run.name, mins(time() - run.t)))
   end
   for _, e in ipairs(list) do
     local d = e.d
@@ -156,8 +156,8 @@ function ns:PrintRuns()
     for i = 1, math.min(3, #drops) do
       best[i] = ("%s (%d)"):format(ns.ItemName(drops[i].id) or "?", drops[i].n)
     end
-    print(("  %s: %d %s, about %s each, %s coin a run.%s"):format(e.name, d.runs, d.runs == 1 and "run" or "runs",
+    print(("  %s: %d %s, около %s за забег, %s монет за забег.%s"):format(e.name, d.runs, ns.Plural(d.runs, "забег", "забега", "забегов"),
       mins(d.secs / math.max(d.runs, 1)), ns.Money(math.floor(d.coin / math.max(d.runs, 1))),
-      #best > 0 and (" Best drops: " .. table.concat(best, ", ") .. ".") or ""))
+      #best > 0 and (" Лучший дроп: " .. table.concat(best, ", ") .. ".") or ""))
   end
 end

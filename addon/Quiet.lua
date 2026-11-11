@@ -80,8 +80,8 @@ function ns:ToggleQuiet()
   ns.db.quietChars[ns.CharKey()] = on or nil
   offByHand = not on
   ns:UpdateQuiet()
-  ns:Print(ns:IsQuiet() and "Quiet mode on for this character: game sound off, Forever Ledger's chimes at full volume. It stays on after a reload or logout; /fl quiet turns it off."
-    or "Quiet mode off: your sound settings are back.")
+  ns:Print(ns:IsQuiet() and "Тихий режим у этого персонажа: звук игры выкл, звонки Forever Ledger на полной громкости. Остаётся после перезагрузки и выхода; /fl quiet выключает."
+    or "Тихий режим выключен: настройки звука вернулись.")
 end
 
 -- Quiet mode turns the game's effects off, and the game's own sound for winning an
@@ -108,5 +108,5 @@ end)
 ns:OnReady(function()
   ns:UpdateQuiet()
   -- Nothing else shows it's on, and it lasts for days (UI pass, November 9).
-  if onHere() then ns:Print("Quiet mode is on for this character. /fl quiet turns it off.") end
+  if onHere() then ns:Print("Тихий режим включён у этого персонажа. /fl quiet выключает его.") end
 end)

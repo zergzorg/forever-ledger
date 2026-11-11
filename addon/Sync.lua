@@ -106,12 +106,12 @@ end
 
 -- The game's "No player named X is currently playing", right after we whispered X:
 -- stop sending (once is enough), note they're offline, and hide the message.
-local NOT_FOUND = ERR_CHAT_PLAYER_NOT_FOUND_S and ERR_CHAT_PLAYER_NOT_FOUND_S:match("^(.-)%%s") or "No player named "
+local NOT_FOUND = ERR_CHAT_PLAYER_NOT_FOUND_S and ERR_CHAT_PLAYER_NOT_FOUND_S:match("^(.-)%%s") or "Нет игрока с именем "
 local function notFound(msg)
   -- (the chat filter below runs outside ns:On, which keeps hidden text away from handlers)
   if issecretvalue and issecretvalue(msg) then return false end
   if not (lastSentTo and GetTime() - lastSentTo < 5 and type(msg) == "string") then return false end
-  if msg:sub(1, #NOT_FOUND) ~= NOT_FOUND and not msg:find("No player named", 1, true) then return false end
+  if msg:sub(1, #NOT_FOUND) ~= NOT_FOUND and not msg:find("Нет игрока с именем", 1, true) then return false end
   local target = (ping and ping.name) or (test and me()) or partner()
   -- The game names only the first word, so match on that.
   local first = target and target:match("^[^%s%-]+")
@@ -131,12 +131,12 @@ local function failed()
   if ping then
     ping.failed = true
   elseif test then
-    ns:Print(("Sync test stopped: the game says there's no player named %s, so addon whispers to %s don't arrive."):format(
+    ns:Print(("Тест синхронизации остановлен: игра не знает игрока %s, поэтому шёпот аддона к %s не доходит."):format(
       me(), fullName(me())))
     test = nil
   elseif partnerOnline then
     partnerOnline = false
-    ns:Print(("Sync: %s went offline."):format(partner()))
+    ns:Print(("Синхронизация: %s вышел из игры."):format(partner()))
     if ns.RefreshSettings then ns:RefreshSettings() end
   end
 end
@@ -280,7 +280,7 @@ local function catchUpNext(c)
   local job = c.days[c.i]
   if not job then
     catchUp = nil
-    ns:Debug("Sync: price history catch-up sent.")
+    ns:Debug("Синхронизация: догоняющая история цен отправлена.")
     return
   end
   local payload, items = { k = "hd", d = job.day, left = #c.days - c.i, m = {} }, 0
@@ -314,7 +314,7 @@ local function startCatchUp(theirs)
   end
   catchUp = #days > 0 and { days = days, i = 0 } or nil
   if catchUp then
-    ns:Debug(("Sync: %s is missing price history for %d days; sending them in the background."):format(partner(), #days))
+    ns:Debug(("Синхронизация: у %s нет истории цен за %d дн; отправляю в фоне."):format(partner(), #days))
     local c = catchUp
     C_Timer.After(CATCHUP_POLL, function() catchUpNext(c) end)
   end
@@ -335,7 +335,7 @@ local function handle(payload, sender)
     test.chars, test.prices = count(payload.chars), countPrices(payload.prices)
     test.vendor = count(payload.vendorBuy) + count(payload.vendorSell)
     local secs = GetTime() - test.start
-    ns:Print(("Sync test passed: %d characters, %d prices and %d vendor prices came back intact in %d messages, %.0f seconds."):format(
+    ns:Print(("Тест синхронизации пройден: %d персонажей, %d цен и %d цен торговцев вернулись целыми за %d сообщений и %.0f с."):format(
       test.chars, test.prices, test.vendor, test.sent, secs))
     test = nil
     return
@@ -346,7 +346,7 @@ local function handle(payload, sender)
     partnerBooks = payload.books == 2   -- (2: says when they've arrived)
     if not payload.reply then hello(true) end
     if first then
-      ns:Print(("Sync: connected to %s."):format(partner()))
+      ns:Print(("Синхронизация: соединение с %s."):format(partner()))
       if ns.RefreshSettings then ns:RefreshSettings() end
     end
     ns:SyncSend(false)
@@ -364,7 +364,7 @@ local function handle(payload, sender)
     if n > 0 and ns.InvalidateValues then ns:InvalidateValues() end
     if payload.left == 0 then
       if historyGot.days > 0 then
-        ns:Print(("Sync: filled in %d %s of price history from %s."):format(historyGot.days, historyGot.days == 1 and "day" or "days", partner()))
+        ns:Print(("Синхронизация: дополнено %d %s истории цен от %s."):format(historyGot.days, ns.Plural(historyGot.days, "день", "дня", "дней"), partner()))
         ns:RefreshUI()
       end
       historyGot = nil
@@ -406,7 +406,7 @@ ns:On("CHAT_MSG_ADDON", function(prefix, msg, channel, sender)
   if r.got < r.n then return end
   incoming[key] = nil
   local data, err = ns.Deserialize(table.concat(r.parts))
-  if not data then ns:Debug("Sync: couldn't read a message from", name, err); return end
+  if not data then ns:Debug("Синхронизация: не удалось прочитать сообщение от", name, err); return end
   handle(data, name)
 end)
 
@@ -437,14 +437,14 @@ end
 -- Gold and sales go only if you say the other character is yours: they name your buyers.
 StaticPopupDialogs["FOREVER_LEDGER_SHARE_BOOKS"] = {
   text = "Is this your own account?\n\nForever Ledger can share your gold, sales and purchases with it, so both Dashboards and Ledgers show the same. These include your buyers' names, so only say yes if it's yours. You can change this later in Settings, Global settings, Advanced.",
-  button1 = "Yes, share", button2 = "No",
+  button1 = "Да, поделиться", button2 = "No",
   OnAccept = function()
     -- The yes was about one character: a link changed since then doesn't get it.
     local p = partner()
     if not (p and askedFor and p:lower() == askedFor:lower()) then return end
     ns.db.settings.syncMoney = true
     ns:BooksChanged()
-    ns:Print("Your gold and sales will be shared with your sync partner.")
+    ns:Print("Ваше золото и продажи будут доступны партнёру синхронизации.")
     offerQuiet()
   end,
   OnCancel = offerQuiet,
@@ -453,11 +453,11 @@ StaticPopupDialogs["FOREVER_LEDGER_SHARE_BOOKS"] = {
 
 StaticPopupDialogs["FOREVER_LEDGER_BANK_CHAR"] = {
   text = "Is this your auction house character?\n\nForever Ledger can turn the game's sound off while the flip watch runs and play its chimes at full volume, even with the game in the background. You can change this later in Settings, Auction house, Alerts.",
-  button1 = "Yes, turn it on", button2 = "No",
+  button1 = "Да, включить", button2 = "No",
   OnAccept = function()
     ns.db.settings.quietWatch = true
     if ns.UpdateQuiet then ns:UpdateQuiet() end
-    ns:Print("Quiet mode will come on while the flip watch runs.")
+    ns:Print("Тихий режим будет включаться во время слежения за флипами.")
   end,
   timeout = 0, whileDead = true, hideOnEscape = true,
 }
@@ -479,15 +479,15 @@ function ns:SyncCommand(args)
   local cmd, rest = (args or ""):match("^(%S*)%s*(.-)$")
   if cmd == "pair" then
     local name = titleCase(rest)
-    if name == "" then ns:Print("Use /fl pair First Last, on both characters."); return end
+    if name == "" then ns:Print("Используйте /fl pair Имя Фамилия на обоих персонажах."); return end
     -- Whispers need the whole name, and addon whispers to yourself never arrive.
-    if not name:find(" ", 1, true) then ns:Print("Use the character's first and last name."); return end
-    if name:lower() == me():lower() then ns:Print("That's this character: link a character on your other account."); return end
+    if not name:find(" ", 1, true) then ns:Print("Укажите имя персонажа полностью."); return end
+    if name:lower() == me():lower() then ns:Print("Это этот персонаж: укажите персонажа с другого аккаунта."); return end
     local old = partner()
     if not (old and old:lower() == name:lower()) then endLink() end
     ns.db.settings.syncPartner = name
     partnerOnline = false
-    ns:Print(("Paired with %s. Do /fl pair %s on that character too. Syncing starts when both are online."):format(name, me()))
+    ns:Print(("Связка с %s. Выполните /fl pair %s и на том персонаже. Синхронизация начнётся, когда оба будут в сети."):format(name, me()))
     hello(false)
     if not ns.db.settings.syncMoney and StaticPopup_Show then
       askedFor = name
@@ -502,20 +502,20 @@ function ns:SyncCommand(args)
     if p then ns.db.sync[p:lower()] = nil end
     -- What came from them goes (their characters, bags and bank); prices stay.
     local n = p and ns:RemoveSyncedFrom(p) or 0
-    ns:Print(n > 0 and ("Sync turned off. Removed %d %s from %s; the auction prices stay."):format(n, n == 1 and "character" or "characters", p)
-      or "Sync turned off.")
-    if shared then ns:Print("Sharing gold, sales, bags and bank is off too. Your next link starts fresh.") end
+    ns:Print(n > 0 and ("Синхронизация выключена. Удалено %d %s из %s; цены аукциона остались."):format(n, ns.Plural(n, "персонаж", "персонажа", "персонажей"), p)
+      or "Синхронизация выключена.")
+    if shared then ns:Print("Обмен золотом, продажами, сумками и банком тоже выключен. Следующая связка начнётся с чистого листа.") end
   elseif cmd == "test" then
     test = { start = GetTime(), sent = 0, got = 0 }
     local who, data = changes(0)
     data.chars = who.chars
     local n = send(data, me())
-    ns:Print(("Sync test: sending %d characters, %d prices and %d vendor prices to yourself in %d messages. This takes about %d seconds."):format(
+    ns:Print(("Тест синхронизации: отправляю себе %d персонажей, %d цен и %d цен торговцев за %d сообщений. Это займёт около %d с."):format(
       count(data.chars), countPrices(data.prices), count(data.vendorBuy) + count(data.vendorSell), n, math.ceil(n * SEND_GAP)))
   elseif cmd == "ping" then
     -- Try "First Last", then "First Last-Server", and report which the game accepts.
     local name = titleCase(rest)
-    if name == "" then ns:Print("Use /fl sync ping First Last, with someone who's online."); return end
+    if name == "" then ns:Print("Используйте /fl sync ping Имя Фамилия с тем, кто в сети."); return end
     local realm = realmSuffix()
     local tries = { name, realm ~= "" and (name .. "-" .. realm) or nil }
     local results = {}
@@ -525,10 +525,10 @@ function ns:SyncCommand(args)
         local works = {}
         for j, r in ipairs(results) do if r then works[#works + 1] = j end end
         if #works == 0 then
-          ns:Print(("Sync ping: neither form reached %s. Check they're online and the name is spelled exactly."):format(name))
+          ns:Print(("Пинг синхронизации: ни один вариант не дошёл до %s. Проверьте, что игрок в сети и имя написано точно."):format(name))
         else
           ns.db.settings.syncAddRealm = works[1] == 2
-          ns:Print(("Sync ping: whispers to \"%s\" work. Sync will use that form."):format(tries[works[1]]))
+          ns:Print(("Пинг синхронизации: шёпот к «%s» работает. Синхронизация будет использовать этот вид."):format(tries[works[1]]))
         end
         return
       end
@@ -537,32 +537,32 @@ function ns:SyncCommand(args)
       if not sending then pump() end
       C_Timer.After(3, function()
         results[i] = not ping.failed
-        ns:Print(("Sync ping: \"%s\" %s."):format(target, results[i] and "was accepted" or "got \"no player named\""))
+        ns:Print(("Пинг синхронизации: «%s» %s."):format(target, results[i] and "принят" or "ответ «нет игрока с именем»"))
         ping = nil
         try(i + 1)
       end)
     end
-    ns:Print(("Sync ping: sending one hidden message to %s, in two forms, 3 seconds apart."):format(name))
+    ns:Print(("Пинг синхронизации: отправляю одно скрытое сообщение %s в двух видах с интервалом 3 с."):format(name))
     try(1)
   elseif cmd == "whoami" then
     local n1, r1 = UnitName("player")
     local fn, fr = UnitFullName and UnitFullName("player")
     local gn = GetUnitName and GetUnitName("player", true)
-    ns:Print("How the game names this character:")
+    ns:Print("Как игра называет этого персонажа:")
     print(("  UnitName: %s / %s"):format(tostring(n1), tostring(r1)))
     print(("  UnitFullName: %s / %s"):format(tostring(fn), tostring(fr)))
-    print(("  GetUnitName with server: %s"):format(tostring(gn)))
-    print(("  Server for whispers: %s"):format(realmSuffix()))
+    print(("  GetUnitName с сервером: %s"):format(tostring(gn)))
+    print(("  Сервер для шёпота: %s"):format(realmSuffix()))
   elseif cmd == "now" then
-    if not partner() then ns:Print("Pair first with /fl pair Charactername."); return end
+    if not partner() then ns:Print("Сначала свяжитесь через /fl pair Имяперсонажа."); return end
     hello(false)
     C_Timer.After(3, function() ns:SyncSend(true) end)
-    ns:Print("Sending everything to " .. partner() .. " if they're online.")
+    ns:Print("Отправляю всё " .. partner() .. " если он в сети.")
   else
     local p = partner()
-    ns:Print(p and ("Paired with %s, %s. %d messages waiting to send."):format(p, partnerOnline and "online" or "not seen online yet", #queue)
-      or "Not paired. Use /fl pair Charactername on both characters.")
-    print("  /fl pair Name, /fl unpair, /fl sync now (send everything), /fl sync ping Name (check whispers reach someone online)")
+    ns:Print(p and ("Связка с %s, %s. Сообщений в очереди: %d."):format(p, partnerOnline and "в сети" or "ещё не видно в сети", #queue)
+      or "Не связаны. Используйте /fl pair Имяперсонажа на обоих персонажах.")
+    print("  /fl pair Имя, /fl unpair, /fl sync now (отправить всё), /fl sync ping Имя (проверить, доходит ли шёпот)")
   end
 end
 
@@ -571,6 +571,6 @@ function ns:SyncInfo() return partner(), partnerOnline end
 
 function ns:SyncStatus()
   local p = partner()
-  if not p then return "not paired (/fl pair Name)" end
-  return ("%s, %s"):format(p, partnerOnline and "online" or "not seen online yet")
+  if not p then return "не связан (/fl pair Имя)" end
+  return ("%s, %s"):format(p, partnerOnline and "в сети" or "ещё не видно в сети")
 end

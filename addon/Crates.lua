@@ -9,6 +9,7 @@ local T = ns.Theme
 ---------------------------------------------------------------------------
 local FAVOR = 3402
 local PREFIX = "Waylaid Crate"
+local PREFIX_RU = "Забытый ящик"
 -- What a turn-in pays: every filled crate becomes a Sealed Apprentice Crate, which pays
 -- 5s and 10 Merchant's Favor whatever the crate's tier or quality (owner's turn-ins,
 -- beta, October 3). The first turn-in is a one-time quest with more; not counted.
@@ -18,9 +19,9 @@ local TURN_IN_PAY = 500
 local function dim(t) return "|cff888888" .. t .. "|r" end
 local function money(v) return v and ns.Money(math.floor(v + 0.5)) or dim("?") end
 
-local function isCrate(name) return name and name:sub(1, #PREFIX) == PREFIX end
+local function isCrate(name) return name and (name:sub(1, #PREFIX) == PREFIX or name:sub(1, #PREFIX_RU) == PREFIX_RU) end
 -- A filled crate: "Sealed Apprentice Crate".
-local function isSealed(name) return name and name:find("^Sealed") and name:find("Crate", 1, true) and true or false end
+local function isSealed(name) return name and (name:find("^Sealed") or name:find("^Запечатанный")) and name:find("Ящик", 1, true) and true or false end
 
 ---------------------------------------------------------------------------
 -- Reading a crate's bundles from its tooltip
@@ -31,11 +32,11 @@ local function parseBundles(lines)
   local bundles, inList = {}, false
   for _, text in ipairs(lines) do
     for line in (text .. "\n"):gmatch("([^\n]*)\n") do
-      if line:find("any bundle", 1, true) then inList = true end
+      if line:find("любой набор", 1, true) then inList = true end
       local rest = line:match("^%s*%-%s*(.+)$")
       if inList and rest then
         local parts = {}
-        for piece in (rest .. " and "):gmatch("(.-)%s+and%s+") do
+        for piece in (rest .. " и "):gmatch("(.-)%s+and%s+") do
           for sub in (piece .. ","):gmatch("%s*([^,]+),") do
             local qty, name = sub:match("^(%d+)%s*x?%s+(.+)$")
             if qty then parts[#parts + 1] = { qty = tonumber(qty), name = name:gsub("%s+$", "") } end
@@ -125,7 +126,7 @@ end
 function ns:CrateToShoppingList(r, bundle)
   bundle = bundle or (r and (r.cheapest or r.bundles[1]))
   if not bundle then return end
-  local name = "Crate: " .. (r.name or "?"):gsub("^Waylaid Crate: ", "")
+  local name = "Ящик: " .. (r.name or "?"):gsub("^Waylaid Crate: ", ""):gsub("^Забытый ящик: ", "")
   local list
   for _, l in ipairs(ns:ShoppingLists()) do if l.name == name then list = l end end
   if not list then
@@ -172,9 +173,9 @@ function ns:CrateToShoppingList(r, bundle)
     end
   end
   ns:ScaleCrateList(list)
-  ns:Print(("Added %d %s for %s to the shopping list \"%s\". Set the crate's Want there to fill more than one; tick Buy from this list in the Buy queue to buy what you're short (/fl lists). The list goes when you fill the last crate.%s"):format(
-    added, added == 1 and "item" or "items", r.name or "the crate", name,
-    #unknown > 0 and (" Not added (not seen in a scan yet): " .. table.concat(unknown, ", ") .. ".") or ""))
+  ns:Print(("Добавлено %d %s за %s в список покупок «%s». Задайте «Нужно» у ящика там, чтобы заполнить несколько; отметьте «Покупать из этого списка» в очереди, чтобы докупить недостающее (/fl lists). Список исчезнет после последнего ящика.%s"):format(
+    added, ns.Plural(added, "предмет", "предмета", "предметов"), r.name or "ящик", name,
+    #unknown > 0 and (" Не добавлено (ещё не видно в сканах): " .. table.concat(unknown, ", ") .. ".") or ""))
   return list
 end
 
@@ -218,14 +219,14 @@ local function dropCrateLists(crateName)
       if left > 0 then
         crate.qty = left
         ns:ScaleCrateList(l)
-        ns:Print(("Shopping list \"%s\": %d %s left to fill."):format(l.name or "?", left, left == 1 and "crate" or "crates"))
+        ns:Print(("Список покупок «%s»: осталось заполнить %d %s."):format(l.name or "?", left, ns.Plural(left, "ящик", "ящика", "ящиков")))
       else
         ns:DeleteShoppingList(i)
-        ns:Print(("Removed the shopping list \"%s\" (last crate filled)."):format(l.name or "?"))
+        ns:Print(("Список покупок «%s» удалён (последний ящик заполнен)."):format(l.name or "?"))
       end
     elseif l.temp and not crateName and time() - (l.tempT or 0) > TEMP_LIST_SECONDS then
       ns:DeleteShoppingList(i)
-      ns:Print(("Removed the shopping list \"%s\" (a week old)."):format(l.name or "?"))
+      ns:Print(("Список покупок «%s» удалён (ему неделя)."):format(l.name or "?"))
     end
   end
 end
@@ -330,7 +331,7 @@ ns:On("BAG_UPDATE_DELAYED", function()
   if sealed > sealedInBags then
     for name, n in pairs(cratesInBags) do
       if (now[name] or 0) < n then
-        ns:Debug("Crate filled:", name)
+        ns:Debug("Ящик заполнен:", name)
         dropCrateLists(name)
       end
     end
@@ -342,7 +343,7 @@ ns:On("CURRENCY_DISPLAY_UPDATE", function(currencyID)
   if currencyID and currencyID ~= FAVOR then return end
   local q = favorNow()
   if not q then return end
-  if lastFavor and q > lastFavor then ns:Debug("Merchant's Favor:", "+" .. (q - lastFavor)) end
+  if lastFavor and q > lastFavor then ns:Debug("Награда торговца:", "+" .. (q - lastFavor)) end
   lastFavor = q
   if ns.db then ns.db.favor[ns.CharKey()] = q end
 end)
@@ -367,11 +368,11 @@ function ns:CrateTooltipLine(id)
   for _, p in ipairs(r.cheapest.parts) do parts[#parts + 1] = p.qty .. " " .. p.name end
   local per = ""
   if r.net and r.net < 0 then
-    per = (", turn-in pays %s more than that"):format(money(-r.net))
+    per = (", сдача даёт на %s больше"):format(money(-r.net))
   elseif r.perFavor then
-    per = (", about %s per Favor after the turn-in's money"):format(money(r.perFavor))
+    per = (", около %s за награду после денег со сдачи"):format(money(r.perFavor))
   end
-  return ("Cheapest fill: %s, %s%s"):format(table.concat(parts, " + "), money(r.cheapest.cost), per)
+  return ("Дешёвое заполнение: %s, %s%s"):format(table.concat(parts, " + "), money(r.cheapest.cost), per)
 end
 
 ---------------------------------------------------------------------------
@@ -382,13 +383,13 @@ local f
 local rows, details = {}, {}
 local openID
 local COLS = {
-  { key = "name", label = "Crate" },
-  { key = "level", label = "Level", w = 44 },
-  { key = "fill", label = "Cheapest fill", w = 150 },
-  { key = "fillCost", label = "Fill cost", w = 74 },
-  { key = "cratePrice", label = "Price", w = 70 },
- { key = "total", label = "Net cost", w = 80 },
-  { key = "perFavor", label = "Per Favor", w = 80 },
+  { key = "name", label = "Ящик" },
+  { key = "level", label = "Уровень", w = 44 },
+  { key = "fill", label = "Дешёвое заполнение", w = 150 },
+  { key = "fillCost", label = "Стоимость заполнения", w = 74 },
+  { key = "cratePrice", label = "Цена", w = 70 },
+ { key = "total", label = "Чистая стоимость", w = 80 },
+  { key = "perFavor", label = "За награду", w = 80 },
 }
 
 function ns:BuildCrates(parent)
@@ -413,7 +414,7 @@ function ns:BuildCrates(parent)
   f.sf:SetPoint("BOTTOMRIGHT")
   f.empty = T:Text(f.content, 12, T.dim)
   f.empty:SetPoint("TOPLEFT", 8, -8)
-  f.empty:SetText("No Waylaid Crates seen yet. Run a full scan, or put a crate in your bags.")
+  f.empty:SetText("Забытых ящиков пока не видно. Запустите полный скан или положите ящик в сумки.")
   return f
 end
 
@@ -465,7 +466,7 @@ local function getDetail(i)
   T:Fill(d, { 1, 1, 1, 0.035 })
   d.lines = {}
   -- The cheapest fill onto a shopping list, to buy with the Buy queue.
-  d.toList = T:Button(d, "Add cheapest fill to a shopping list", 240, function()
+  d.toList = T:Button(d, "Дешёвое заполнение в список покупок", 240, function()
     if d.report then ns:CrateToShoppingList(d.report) end
   end, 20)
   d.toList:SetPoint("BOTTOMLEFT", 14, 6)
@@ -492,7 +493,7 @@ local function detailLine(d, j)
   hl:SetColorTexture(T.accent[1], T.accent[2], T.accent[3], 0.10)
   b:SetScript("OnClick", function(self)
     if self.itemID and not ns:SearchAuctionHouse(self.itemID) then
-      ns:Print("Open the auction house, then click an item to search for it.")
+      ns:Print("Откройте аукцион и щёлкните предмет, чтобы найти его.")
     end
   end)
   -- Hover: which alts have it.
@@ -501,10 +502,10 @@ local function detailLine(d, j)
     if not p then return end
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
     GameTooltip:AddLine(p.name, 1, 1, 1)
-    GameTooltip:AddDoubleLine("In your bags", tostring(p.bags or 0), 0.85, 0.85, 0.85, 1, 1, 1)
-    GameTooltip:AddDoubleLine("In your bank", tostring(p.bank or 0), 0.85, 0.85, 0.85, 1, 1, 1)
+    GameTooltip:AddDoubleLine("В сумках", tostring(p.bags or 0), 0.85, 0.85, 0.85, 1, 1, 1)
+    GameTooltip:AddDoubleLine("В банке", tostring(p.bank or 0), 0.85, 0.85, 0.85, 1, 1, 1)
     for name, n in pairs(p.byAlt or {}) do GameTooltip:AddDoubleLine(name, tostring(n), 0.85, 0.85, 0.85, 1, 1, 1) end
-    GameTooltip:AddLine("Bank and alts as of their last visit. Click to search the auction house.", T.accent[1], T.accent[2], T.accent[3], true)
+    GameTooltip:AddLine("Банк и альты на момент последнего визита. Клик — поиск на аукционе.", T.accent[1], T.accent[2], T.accent[3], true)
     GameTooltip:Show()
   end)
   b:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -538,8 +539,8 @@ function ns:RefreshCrates()
   end)
 
   local favor = ns.db.favor[ns.CharKey()]
-  f.info:SetText(("Cheapest way to fill each Waylaid Crate at your last scan's prices, best Favor per gold first. After your first turn-in (a one-time quest), every crate pays 5s and 10 Merchant's Favor; Net cost takes the 5s off, and shows green if a crate somehow pays for itself. You have %s Merchant's Favor on this character.%s Click a crate for every bundle."):format(
-    favor and tostring(favor) or "?", unread > 0 and (" %d crates still loading."):format(unread) or ""))
+  f.info:SetText(("Дешёвый способ заполнить каждый Забытый ящик по ценам последнего скана, сначала лучшая награда за золото. После первой сдачи (разовое задание) каждый ящик даёт 5с и 10 наград торговца; чистая стоимость вычитает 5с и зеленеет, если ящик окупается. У вас %s наград торговца.%s Клик по ящику — все наборы."):format(
+    favor and tostring(favor) or "?", unread > 0 and (" %d ящиков ещё загружается."):format(unread) or ""))
 
   f.content:SetWidth(width)
   local y, n, nd = 0, 0, 0
@@ -557,9 +558,9 @@ function ns:RefreshCrates()
     local parts = {}
     for _, p in ipairs(r.cheapest and r.cheapest.parts or {}) do parts[#parts + 1] = p.qty .. " " .. p.name end
     local values = {
-      name = (r.name or "?"):gsub("^Waylaid Crate: ", "") .. (r.owned and dim("  in bags") or ""),
+      name = (r.name or "?"):gsub("^Waylaid Crate: ", ""):gsub("^Забытый ящик: ", "") .. (r.owned and dim("  в сумках") or ""),
       level = r.level and tostring(r.level) or "",
-      fill = #parts > 0 and table.concat(parts, " + ") .. (r.cheapest.have and dim(" (have)") or "") or dim("no prices yet"),
+      fill = #parts > 0 and table.concat(parts, " + ") .. (r.cheapest.have and dim(" (есть)") or "") or dim("цен пока нет"),
       fillCost = r.cheapest and money(r.cheapest.cost) or dim("?"),
       cratePrice = r.owned and dim("owned") or money(r.cratePrice),
      total = r.net and (r.net < 0 and ("|cff7fd39c+" .. money(-r.net) .. "|r") or money(r.net)) or dim("?"),
@@ -592,10 +593,10 @@ function ns:RefreshCrates()
           line:SetWidth(width)
           line.itemID, line.part = p.id, p
           line.icon:SetTexture(p.id and ns:ItemIcon(p.id) or "Interface\\Icons\\INV_Misc_QuestionMark")
-          local mark = (b == r.cheapest and k == 1) and (T:AccentCode() .. "cheapest|r  ") or ""
+          local mark = (b == r.cheapest and k == 1) and (T:AccentCode() .. "минимум|r  ") or ""
           line.text:SetText(("%s%d x %s  %s"):format(mark, p.qty, p.name,
-            dim(("you have %d (bags %d, bank %d, alts %d)%s"):format(p.owned, p.bags or 0, p.bank or 0, p.alts or 0,
-              p.id and "" or ", price unknown"))))
+            dim(("у вас %d (сумки %d, банк %d, альты %d)%s"):format(p.owned, p.bags or 0, p.bank or 0, p.alts or 0,
+              p.id and "" or ", цена неизвестна"))))
           line.right:SetText(k == 1 and (b.cost and money(b.cost) or dim("?")) or "")
           line:Show()
         end

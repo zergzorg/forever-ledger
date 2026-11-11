@@ -4,6 +4,9 @@ local PROFESSIONS = {
   Alchemy = true, Blacksmithing = true, Enchanting = true, Engineering = true, Herbalism = true,
   Leatherworking = true, Mining = true, Skinning = true, Tailoring = true,
   Cooking = true, Fishing = true, ["First Aid"] = true,
+  ["Алхимия"] = true, ["Кузнечное дело"] = true, ["Наложение чар"] = true, ["Инженерное дело"] = true,
+  ["Травничество"] = true, ["Кожевничество"] = true, ["Горное дело"] = true, ["Снятие шкур"] = true,
+  ["Портняжное дело"] = true, ["Кулинария"] = true, ["Рыбная ловля"] = true, ["Первая помощь"] = true,
 }
 
 local function safe(fn, ...)
@@ -52,7 +55,7 @@ function ns:ScanSkillLines()
   end
 
   if not next(found) then
-    ns:Debug("Couldn't read profession list yet.")
+    ns:Debug("Список профессий пока не читается.")
     return
   end
   local changed = false
@@ -121,7 +124,7 @@ function ns:CaptureTradeSkill()
     local _, name, r, m = safe(T.GetTradeSkillLine)
     profName, rank, maxRank = name, r, m
   end
-  if not profName then ns:Debug("Couldn't read which profession is open."); return end
+  if not profName then ns:Debug("Не удалось прочитать, какая профессия открыта."); return end
 
   local ids = safe(T.GetAllRecipeIDs)
   if type(ids) ~= "table" or #ids == 0 then return end
@@ -154,7 +157,7 @@ function ns:CaptureTradeSkill()
   p.recipeCount = count
   if ns.CaptureRecipeBook then ns:CaptureRecipeBook(profName) end
   if count ~= (p.lastAnnounced or -1) then
-    ns:Print(("Saved %d %s recipes for %s."):format(count, profName, c.name or "?"))
+    ns:Print(("Сохранено рецептов: %d %s для %s."):format(count, profName, c.name or "?"))
     p.lastAnnounced = count
   end
   ns:BuildUsageIndex()

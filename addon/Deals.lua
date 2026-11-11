@@ -14,28 +14,28 @@ local MAX_ROWS = 300
 local MAX_AGE = 3600   -- prices from the last hour (alerts use the last 10 minutes)
 
 local COLUMNS = {
-  { key = "item", label = "Item" },
-  { key = "price", label = "Now", width = 80, right = true, tip = "The cheapest one listed right now." },
-  { key = "worth", label = "Usual low", width = 80, right = true, tip = "What it's usually cheapest at, from your scans." },   -- the usual cheapest price
-  { key = "pct", label = "Below", width = 46, right = true, tip = "How far today's price is under the usual low." },
-  { key = "listed", label = "Cheap", width = 44, right = true, tip = "How many are listed at the deal price." },
-  { key = "sold", label = "Sells", width = 60, right = true, tip = "How quickly it sells, from your scans." },   -- the sell speed rating
-  { key = "each", label = "Profit each", width = 80, right = true, tip = "What one brings after the cut and deposit, less what it costs." },
-  { key = "total", label = "Profit all", width = 84, right = true, tip = "The same for every one at the deal price." },
-  { key = "level", label = "Sure", width = 70, tip = "How far to trust it: Good, Fair or Thin. Hover a deal for why." },
+  { key = "item", label = "Предмет" },
+  { key = "price", label = "Сейчас", width = 80, right = true, tip = "Самый дешёвый лот прямо сейчас." },
+  { key = "worth", label = "Обычный мин.", width = 80, right = true, tip = "Обычная минимальная цена по вашим сканам." },   -- the usual cheapest price
+  { key = "pct", label = "Ниже", width = 46, right = true, tip = "Насколько сегодняшняя цена ниже обычного минимума." },
+  { key = "listed", label = "Лотов", width = 44, right = true, tip = "Сколько лотов по цене сделки." },
+  { key = "sold", label = "Сбыт", width = 60, right = true, tip = "Как быстро продаётся, по вашим сканам." },   -- the sell speed rating
+  { key = "each", label = "Прибыль/шт", width = 80, right = true, tip = "Сколько приносит один после комиссии и залога, минус затраты." },
+  { key = "total", label = "Прибыль вся", width = 84, right = true, tip = "То же для всех лотов по цене сделки." },
+  { key = "level", label = "Надёжность", width = 70, tip = "Насколько можно верить: хорошо, средне или мало данных. Наведите на сделку." },
 }
 
 -- The Booty Bay view (owner, October 5): the neutral auction house against yours, each
 -- after its own cut (15% there, yours here). Its prices stay in their own market and
 -- only this view (and an optional tooltip line) reads them (Values.lua NeutralCompare).
 local NEUTRAL_COLUMNS = {
-  { key = "item", label = "Item" },
-  { key = "there", label = "Booty Bay", width = 80, right = true },
-  { key = "here", label = "Here", width = 80, right = true },
-  { key = "better", label = "Better by", width = 80, right = true },
+  { key = "item", label = "Предмет" },
+  { key = "there", label = "Бухта Боти", width = 80, right = true },
+  { key = "here", label = "Здесь", width = 80, right = true },
+  { key = "better", label = "Выгоднее на", width = 80, right = true },
   { key = "npct", label = "%", width = 46, right = true },
-  { key = "lthere", label = "Listed there", width = 80, right = true },
-  { key = "lhere", label = "Listed here", width = 80, right = true },   -- (UI pass, October 6: two "Here" columns)
+  { key = "lthere", label = "Лотов там", width = 80, right = true },
+  { key = "lhere", label = "Лотов здесь", width = 80, right = true },   -- (UI pass, October 6: two "Здесь" columns)
 }
 local NEUTRAL_MIN = 0.10   -- at least 10% better after both cuts
 -- Listings needed on the side you'd sell to, unless "Show thin data too" (owner's
@@ -89,30 +89,30 @@ function ns:BuildDeals(parent)
   f.intro:SetPoint("TOPLEFT", 4, -2)
   f.intro:SetPoint("RIGHT", f, "RIGHT", -220, 0)
   f.intro:SetJustifyH("LEFT")
-  f.intro:SetText("Listings well below the price they're usually cheapest at, to buy and resell. Hover a deal for why it's one; "
-    .. "click it to search the auction house. Items below what a vendor pays are in the Buy queue at the auction house.")
+  f.intro:SetText("Лоты заметно ниже обычной минимальной цены — для покупки и перепродажи. Наведите на сделку, чтобы понять почему; "
+    .. "клик — поиск на аукционе. Предметы дешевле цены торговца — в очереди покупок у аукциона.")
 
   f.thin = T:Check(f, function(self)
     ns.db.settings.dealShowThin = self:GetChecked()
     ns:RefreshDeals()
   end)
   f.thin:SetPoint("TOPRIGHT", -150, -4)
-  f.thin.label:SetText("Show doubtful deals too")
+  f.thin.label:SetText("Показывать сомнительные сделки")
   f.thin:SetHitRectInsets(0, -(f.thin.label:GetStringWidth() + 8), 0, 0)   -- the name ticks it too
   f.thin:HookScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
-    GameTooltip:AddLine("Show doubtful deals too", 1, 1, 1)
-    GameTooltip:AddLine("Also lists deals with few days of prices, or prices that jump around, so the usual price is more of a guess.", nil, nil, nil, true)
+    GameTooltip:AddLine("Показывать сомнительные сделки", 1, 1, 1)
+    GameTooltip:AddLine("Также показывать сделки с малым числом дней цен или с прыгающими ценами, где обычная цена — лишь догадка.", nil, nil, nil, true)
     GameTooltip:Show()
   end)
   f.thin:HookScript("OnLeave", function() GameTooltip:Hide() end)
   -- Booty Bay: which way round.
-  f.dir = T:Choice(f, { { value = "sell", label = "Sells for more there" }, { value = "buy", label = "Cheaper there" } },
+  f.dir = T:Choice(f, { { value = "sell", label = "Там продаётся дороже" }, { value = "buy", label = "Там дешевле" } },
     function(v) ns.db.settings.neutralDir = v; ns:RefreshDeals() end)
   f.dir:SetPoint("TOPRIGHT", -4, -2)
 
   -- Deals, or the Booty Bay comparison.
-  f.mode = T:Choice(f, { { value = "deals", label = "Deals" }, { value = "neutral", label = "Booty Bay" } }, function(v)
+  f.mode = T:Choice(f, { { value = "deals", label = "Сделки" }, { value = "neutral", label = "Бухта Боти" } }, function(v)
     ns.db.settings.dealsMode = v
     f.sf:SetVerticalScroll(0)
     ns:RefreshDeals()
@@ -120,15 +120,15 @@ function ns:BuildDeals(parent)
   f.mode:SetPoint("TOPRIGHT", -4, -42)
   f.mode:HookScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
-    GameTooltip:AddLine("Deals or Booty Bay", 1, 1, 1)
-    GameTooltip:AddLine("Booty Bay compares the neutral auction house (Booty Bay, Gadgetzan, Everlook) with yours, each after its own cut: 15% there. Its prices come from opening it and scanning there, and are kept apart from yours everywhere else.", nil, nil, nil, true)
+    GameTooltip:AddLine("Сделки или Бухта Боти", 1, 1, 1)
+    GameTooltip:AddLine("Бухта Боти сравнивает нейтральный аукцион (Бухта Боти, Прибамбасск, Круговзор) с вашим, каждый после своей комиссии: там 15%. Цены берутся из сканов там и хранятся отдельно от ваших.", nil, nil, nil, true)
     GameTooltip:Show()
   end)
   f.mode:HookScript("OnLeave", function() GameTooltip:Hide() end)
 
   -- Filter: which kind of item, and a name search.
-  f.kind = T:Choice(f, { { value = "all", label = "All" }, { value = "goods", label = "Materials" },
-    { value = "gear", label = "Gear" }, { value = "other", label = "Other" } }, function(value)
+  f.kind = T:Choice(f, { { value = "all", label = "Все" }, { value = "goods", label = "Материалы" },
+    { value = "gear", label = "Снаряжение" }, { value = "other", label = "Прочее" } }, function(value)
     ns.db.settings.dealKind = value
     ns:RefreshDeals()
   end)
@@ -138,7 +138,7 @@ function ns:BuildDeals(parent)
   f.search:SetPoint("LEFT", f.kind, "RIGHT", 12, 0)
   local hint = T:Text(f.search, 11, T.section)
   hint:SetPoint("LEFT", 6, 0)
-  hint:SetText("Search by name")
+  hint:SetText("Поиск по названию")
   -- Redraw once you pause typing, not on every letter (each redraw takes about 0.1 s).
   local pending
   f.search:SetScript("OnTextChanged", function(self)
@@ -186,7 +186,7 @@ local function getHeader(i)
       GameTooltip:SetOwner(self, "ANCHOR_TOP")
       GameTooltip:AddLine(self.label or "", 1, 1, 1)
       if self.tip then GameTooltip:AddLine(self.tip, nil, nil, nil, true) end
-      GameTooltip:AddLine("Click to sort.", 0.7, 0.7, 0.7)
+      GameTooltip:AddLine("Клик — сортировка.", 0.7, 0.7, 0.7)
       GameTooltip:Show()
     end)
     h:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -199,23 +199,23 @@ local function neutralTip(self, d)
   local a = T.accent
   GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
   GameTooltip:AddLine(ns.ItemName(d.id) or "?", 1, 1, 1)
-  GameTooltip:AddLine("Allows for one listing that doesn't sell (its deposit is lost).", 0.7, 0.7, 0.7, true)
+  GameTooltip:AddLine("Учитывает один непроданный лот (залог теряется).", 0.7, 0.7, 0.7, true)
   GameTooltip:AddLine(" ")
-  GameTooltip:AddLine("Booty Bay (15% cut)", a[1], a[2], a[3])
-  GameTooltip:AddDoubleLine("  Cheapest", ns.Money(d.there) .. " |cff999999" .. d.listedThere .. " listed|r", 0.7, 0.7, 0.7, 1, 1, 1)
-  GameTooltip:AddDoubleLine("  Selling there brings", ns.Money(d.netThere), 0.7, 0.7, 0.7, 1, 1, 1)
-  GameTooltip:AddDoubleLine("  Seen", ns.Age(d.t), 0.7, 0.7, 0.7, 1, 1, 1)
-  GameTooltip:AddLine(("Your auction house (%g%% cut)"):format(ns:AHCut(false) * 100), a[1], a[2], a[3])
-  GameTooltip:AddDoubleLine("  Cheapest", ns.Money(d.here) .. " |cff999999" .. d.listedHere .. " listed|r", 0.7, 0.7, 0.7, 1, 1, 1)
-  GameTooltip:AddDoubleLine("  Selling here brings", ns.Money(d.netHere), 0.7, 0.7, 0.7, 1, 1, 1)
+  GameTooltip:AddLine("Бухта Боти (комиссия 15%)", a[1], a[2], a[3])
+  GameTooltip:AddDoubleLine("  Минимум", ns.Money(d.there) .. " |cff999999" .. d.listedThere .. " в продаже|r", 0.7, 0.7, 0.7, 1, 1, 1)
+  GameTooltip:AddDoubleLine("  Продажа там даёт", ns.Money(d.netThere), 0.7, 0.7, 0.7, 1, 1, 1)
+  GameTooltip:AddDoubleLine("  Замечено", ns.Age(d.t), 0.7, 0.7, 0.7, 1, 1, 1)
+  GameTooltip:AddLine(("Ваш аукцион (комиссия %g%%)"):format(ns:AHCut(false) * 100), a[1], a[2], a[3])
+  GameTooltip:AddDoubleLine("  Минимум", ns.Money(d.here) .. " |cff999999" .. d.listedHere .. " в продаже|r", 0.7, 0.7, 0.7, 1, 1, 1)
+  GameTooltip:AddDoubleLine("  Продажа здесь даёт", ns.Money(d.netHere), 0.7, 0.7, 0.7, 1, 1, 1)
   GameTooltip:AddLine(" ")
   if d.dir == "buy" then
-    GameTooltip:AddLine(("Buy at Booty Bay for %s, sell here for %s after the cut: %s more each."):format(
+    GameTooltip:AddLine(("Купить в Бухте Боти за %s, продать здесь за %s после комиссии: на %s больше за штуку."):format(
       ns.Money(d.there), ns.Money(d.netHere), ns.Money(d.buyProfit)), 0.5, 0.83, 0.61, true)
   else
-    GameTooltip:AddLine(("Selling at Booty Bay instead brings %s more each."):format(ns.Money(d.gain)), 0.5, 0.83, 0.61, true)
+    GameTooltip:AddLine(("Продажа в Бухте Боти даёт на %s больше за штуку."):format(ns.Money(d.gain)), 0.5, 0.83, 0.61, true)
   end
-  GameTooltip:AddLine("Prices move: Booty Bay's are only as fresh as your last visit there.", 0.5, 0.5, 0.5, true)
+  GameTooltip:AddLine("Цены меняются: цены Бухты Боти свежи только на момент последнего визита.", 0.5, 0.5, 0.5, true)
   GameTooltip:Show()
 end
 
@@ -225,7 +225,7 @@ local function showTip(self)
   if d.neutral then return neutralTip(self, d) end
   local a = T.accent
   GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-  GameTooltip:AddDoubleLine(ns.ItemName(d.id) or "?", ("%d%% below usual"):format(math.floor(d.pct * 100 + 0.5)),
+  GameTooltip:AddDoubleLine(ns.ItemName(d.id) or "?", ("%d%% ниже обычной"):format(math.floor(d.pct * 100 + 0.5)),
     1, 1, 1, 0.5, 0.83, 0.61)
   for _, e in ipairs(ns:DealExplain(d)) do
     if e.head then
@@ -238,7 +238,7 @@ local function showTip(self)
     end
   end
   GameTooltip:AddLine(" ")
-  GameTooltip:AddLine("Click to search the auction house.", 0.5, 0.5, 0.5)
+  GameTooltip:AddLine("Клик — поиск на аукционе.", 0.5, 0.5, 0.5)
   GameTooltip:Show()
 end
 
@@ -260,12 +260,12 @@ local function getRow(i)
     local d = self.deal
     if not d then return end
     if d.neutral then
-      if not ns:SearchAuctionHouse(d.id) then ns:Print("Open the auction house, then click an item to search for it.") end
+      if not ns:SearchAuctionHouse(d.id) then ns:Print("Откройте аукцион и щёлкните предмет, чтобы найти его.") end
     elseif ns:SearchAuctionHouse(d.id) then
-      ns:Print(("%s: %d at %s or less (usually %s). Hover the deal for the details."):format(
+      ns:Print(("%s: %d по %s или дешевле (обычно %s). Наведите на сделку для подробностей."):format(
         ns.ItemName(d.id) or "?", d.listed, ns.Money(d.limit), ns.Money(d.worth)))
     else
-      ns:Print("Open the auction house, then click a deal to search for it.")
+      ns:Print("Откройте аукцион и щёлкните сделку, чтобы найти её.")
     end
   end)
   rows[i] = r
@@ -282,7 +282,7 @@ local function cell(r, key)
 end
 
 local function show(d, key)
-  if key == "item" then return ns.ItemName(d.id) or ("item " .. d.id) end
+  if key == "item" then return ns.ItemName(d.id) or ("предмет " .. d.id) end
   if key == "there" or key == "here" then return ns.Money(d[key]) end
   if key == "better" then return "|cff7fd39c" .. ns.Money(d.better) .. "|r" end
   -- Ten times or more as "x12" (owner's screenshot: "44637..." was cut off).
@@ -308,7 +308,7 @@ local function show(d, key)
   end
   if key == "level" then
     local days = d.stats and d.stats.points
-    return (ns.DEAL_LEVEL_TEXT[d.level] or d.level) .. (days and dim((" %dd"):format(days)) or dim(" TSM"))
+    return (ns.DEAL_LEVEL_TEXT[d.level] or d.level) .. (days and dim((" %dд"):format(days)) or dim(" TSM"))
   end
   return ""
 end
@@ -365,9 +365,9 @@ function ns:RefreshDeals()
   f.dir:SetValue(set.neutralDir or "sell")
   f.intro:SetPoint("RIGHT", f, "RIGHT", neutral and -(math.max(f.dir:GetWidth(), 250) + 16) or -220, 0)
   f.intro:SetText(neutral
-    and "Booty Bay against your auction house, each after its own cut (15% there): items worth 10% more to sell there, or cheaper to buy there. Hover for the numbers."
-    or ("Listings well below the price they're usually cheapest at, to buy and resell. Hover a deal for why it's one; "
-      .. "click it to search the auction house. Items below what a vendor pays are in the Buy queue at the auction house."))
+    and "Бухта Боти против вашего аукциона, каждый после своей комиссии (там 15%): предметы на 10% выгоднее для продажи там или дешевле для покупки. Наведите для цифр."
+    or ("Лоты заметно ниже обычной минимальной цены — для покупки и перепродажи. Наведите на сделку, чтобы понять почему; "
+      .. "клик — поиск на аукционе. Предметы дешевле цены торговца — в очереди покупок у аукциона."))
 
   -- Filter by kind and by name (owner, October 2: 193 deals is too many to read).
   local kind = set.dealKind or "all"
@@ -455,38 +455,38 @@ function ns:RefreshDeals()
 
   if neutral and #list == 0 and filtered == 0 then
     f.empty:SetText(anyNeutral
-      and ((set.neutralDir == "buy") and "Nothing is at least 10% cheaper at Booty Bay than it sells for here, after the cut."
-        or "Nothing sells for at least 10% more at Booty Bay than here, after both cuts.")
-      or "No Booty Bay prices yet. Open the auction house in Booty Bay, Gadgetzan or Everlook and run a full scan there: its prices are kept apart from yours.")
+      and ((set.neutralDir == "buy") and "В Бухте Боти нет ничего хотя бы на 10% дешевле, чем продаётся здесь после комиссии."
+        or "Ничто не продаётся в Бухте Боти хотя бы на 10% дороже, чем здесь, после обеих комиссий.")
+      or "Цен Бухты Боти пока нет. Откройте аукцион в Бухте Боти, Прибамбасске или Круговзоре и запустите там полный скан: эти цены хранятся отдельно.")
   elseif #list == 0 and filtered > 0 then
-    f.empty:SetText(("Nothing here matches the filter: %d %s hidden by it. Click All, or clear the search box."):format(
-      filtered, filtered == 1 and "deal is" or "deals are"))
+    f.empty:SetText(("Под фильтр ничего не подходит: скрыто %d %s. Нажмите «Все» или очистите поиск."):format(
+      filtered, ns.Plural(filtered, "сделка", "сделки", "сделок")))
   elseif #list == 0 then
-    f.empty:SetText(newest and "No deals that pass the checks right now. Tick \"Show doubtful deals too\" to see them."
-      or "No deals yet. Deals need prices from the last hour (a full scan or the flip watch) and at least 4 days of scans "
-      .. "to know an item's usual price (or TSM installed).")
+    f.empty:SetText(newest and "Сейчас нет сделок, проходящих проверки. Отметьте «Показывать сомнительные сделки», чтобы увидеть их."
+      or "Сделок пока нет. Нужны цены за последний час (полный скан или слежение за флипами) и хотя бы 4 дня сканов, "
+      .. "чтобы знать обычную цену предмета (или установленный TSM).")
   end
   f.empty:SetShown(#list == 0)
   f.content:SetHeight(math.max(n * ROW_HEIGHT, 30))
   f.sf.UpdateScrollBar()
 
   if neutral then
-    local parts = { ("%d %s"):format(#list, #list == 1 and "item" or "items") }
-    if hidden > 0 then parts[#parts + 1] = ("%d hidden (under %d listed)"):format(hidden, NEUTRAL_LISTED) end
-    if filtered > 0 then parts[#parts + 1] = ("%d filtered out"):format(filtered) end
-    if newest then parts[#parts + 1] = "Booty Bay prices from " .. ns.Age(newest) end
-    if #list > MAX_ROWS then parts[#parts + 1] = ("showing the first %d"):format(MAX_ROWS) end
-    f.summary:SetText(table.concat(parts, ", ") .. ". Kept apart from your prices; tooltips can show it (Settings, Tooltips).")
+    local parts = { ("%d %s"):format(#list, ns.Plural(#list, "предмет", "предмета", "предметов")) }
+    if hidden > 0 then parts[#parts + 1] = ("%d скрыто (меньше %d лотов)"):format(hidden, NEUTRAL_LISTED) end
+    if filtered > 0 then parts[#parts + 1] = ("%d отфильтровано"):format(filtered) end
+    if newest then parts[#parts + 1] = "Цены Бухты Боти от " .. ns.Age(newest) end
+    if #list > MAX_ROWS then parts[#parts + 1] = ("показаны первые %d"):format(MAX_ROWS) end
+    f.summary:SetText(table.concat(parts, ", ") .. ". Хранятся отдельно от ваших; подсказки могут их показывать (Настройки, Подсказки).")
     return
   end
-  local parts = { ("%d %s"):format(#list, #list == 1 and "deal" or "deals") }
+  local parts = { ("%d %s"):format(#list, ns.Plural(#list, "сделка", "сделки", "сделок")) }
   if hidden > 0 then
-    parts[#parts + 1] = ("%d hidden (thin data, prices that dropped, or under %s profit)"):format(hidden, ns.Money(set.dealUsualMin or 0))
+    parts[#parts + 1] = ("%d скрыто (мало данных, упавшие цены или прибыль ниже %s)"):format(hidden, ns.Money(set.dealUsualMin or 0))
   end
-  if filtered > 0 then parts[#parts + 1] = ("%d filtered out"):format(filtered) end
-  if newest then parts[#parts + 1] = "prices from " .. date("%H:%M", newest) end
-  if #list > MAX_ROWS then parts[#parts + 1] = ("showing the first %d"):format(MAX_ROWS) end
-  f.summary:SetText(table.concat(parts, ", ") .. ". Rules in Settings, Global settings, Flips and deals.")
+  if filtered > 0 then parts[#parts + 1] = ("%d отфильтровано"):format(filtered) end
+  if newest then parts[#parts + 1] = "цены от " .. date("%H:%M", newest) end
+  if #list > MAX_ROWS then parts[#parts + 1] = ("показаны первые %d"):format(MAX_ROWS) end
+  f.summary:SetText(table.concat(parts, ", ") .. ". Правила: Настройки → Глобальные → Флипы и сделки.")
 end
 
-ns.RefreshDeals = ns.Timed("Deals tab", ns.RefreshDeals)
+ns.RefreshDeals = ns.Timed("Вкладка «Сделки»", ns.RefreshDeals)

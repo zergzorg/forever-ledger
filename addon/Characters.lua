@@ -19,16 +19,16 @@ local navButtons, rows, heads, profCells = {}, {}, {}, {}
 local state = { char = nil, group = nil, where = "both", sort = { key = "total", desc = true } }
 
 local COLS = {
-  { key = "name", label = "Item" },
-  { key = "n", label = "Count", w = 50, right = true },
-  { key = "each", label = "Each", w = 80, right = true,
-    tip = "What one is worth to you: the best of selling it on the auction house (after the cut), to a vendor, disenchanting it or crafting it into something." },
-  { key = "total", label = "Total", w = 90, right = true, tip = "Count times Each." },
-  { key = "how", label = "Best way", w = 170, tip = "How to get the most for it. Hover an item for the whole way." },
+  { key = "name", label = "Предмет" },
+  { key = "n", label = "Кол-во", w = 50, right = true },
+  { key = "each", label = "Цена", w = 80, right = true,
+    tip = "Сколько один предмет стоит для вас: лучшее из продажи на аукционе (после комиссии), торговцу, распыления или крафта во что-то." },
+  { key = "total", label = "Итого", w = 90, right = true, tip = "Количество умножить на цену." },
+  { key = "how", label = "Лучший способ", w = 170, tip = "Как получить больше всего. Наведите на предмет, чтобы увидеть весь путь." },
 }
 
 -- Secondary professions go after the main ones on the professions line.
-local SECONDARY = { ["Cooking"] = true, ["First Aid"] = true, ["Fishing"] = true }
+local SECONDARY = { ["Cooking"] = true, ["Кулинария"] = true, ["Первая помощь"] = true, ["Fishing"] = true, ["Рыбная ловля"] = true }
 
 local function dim(t) return "|cff888888" .. t .. "|r" end
 
@@ -78,9 +78,9 @@ local function inGroup(key, group)
 end
 
 local function groupLabel(group)
-  if group == "*" then return "All realms" end
+  if group == "*" then return "Все миры" end
   local realm, faction = group:match("^(.*)|(.-)$")
-  return shortRealm(realm) .. (faction == "*" and ", both factions" or (" " .. faction))
+  return shortRealm(realm) .. (faction == "*" and ", обе фракции" or (" " .. faction))
 end
 
 -- The dropdown's choices: each realm and faction you have characters on (yours first),
@@ -153,18 +153,18 @@ end
 local function worth(id)
   local vendor = ns:GetSellPrice(id) or 0
   if ns.IsClassicBound and ns:IsClassicBound(id) then
-    if vendor > 0 then return vendor, "Vendor", "Sell to vendor (it binds)", "vendor" end
-    return 0, dim("can't be sold"), "It binds and no vendor buys it", "none"
+    if vendor > 0 then return vendor, "Vendor", "Продать торговцу (привяжется)", "vendor" end
+    return 0, dim("нельзя продать"), "Привязывается, и торговцы её не покупают", "none"
   end
   local best, options = ns:GetValue(id, true)
   local o = options and options[1]
   if best and best > 0 and o then
-    local short = (o.kind == "ah" and "Auction house") or (o.kind == "vendor" and "Vendor")
+    local short = (o.kind == "ah" and "Аукцион") or (o.kind == "vendor" and "Vendor")
       or (o.kind == "disenchant" and "Disenchant") or o.step or o.label
     return best, short, o.label, o.kind
   end
-  if vendor > 0 then return vendor, "Vendor", "Sell to vendor", "vendor" end
-  return 0, dim("no price yet"), "No price yet: scan the auction house", "none"
+  if vendor > 0 then return vendor, "Vendor", "Продажа торговцу", "vendor" end
+  return 0, dim("цены пока нет"), "Цены пока нет: просканируйте аукцион", "none"
 end
 
 -- The items to list: one character, or everyone in the chosen group ("all").
@@ -190,7 +190,7 @@ local function gather(key, where, search)
   local list = {}
   local q = search and search ~= "" and search:lower() or nil
   for id, e in pairs(items) do
-    e.name = ns.ItemName(id) or ("item " .. id)
+    e.name = ns.ItemName(id) or ("предмет " .. id)
     if not q or e.name:lower():find(q, 1, true) then
       e.each, e.how, e.howFull, e.kind = worth(id)
       e.total = e.each * e.n
@@ -256,21 +256,21 @@ local function navButton(i)
   b:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
     if self.key == "all" then
-      GameTooltip:AddLine("All characters: " .. groupLabel(state.group), 1, 1, 1)
+      GameTooltip:AddLine("Все персонажи: " .. groupLabel(state.group), 1, 1, 1)
       for _, k in ipairs(charOrder()) do
         local w = worthOf(k)
-        GameTooltip:AddDoubleLine(whoName(k), (ns.MoneyPlain(goldOf(k) or 0)) .. dim("  items ") .. ns.MoneyPlain(w or 0), 0.8, 0.8, 0.8, 1, 1, 1)
+        GameTooltip:AddDoubleLine(whoName(k), (ns.MoneyPlain(goldOf(k) or 0)) .. dim("  предметов ") .. ns.MoneyPlain(w or 0), 0.8, 0.8, 0.8, 1, 1, 1)
       end
     else
       local c = ns.db.chars[self.key]
       GameTooltip:AddLine(whoName(self.key), 1, 1, 1)
-      GameTooltip:AddDoubleLine("Gold", ns.MoneyPlain(goldOf(self.key) or 0), 0.8, 0.8, 0.8, 1, 1, 1)
+      GameTooltip:AddDoubleLine("Золото", ns.MoneyPlain(goldOf(self.key) or 0), 0.8, 0.8, 0.8, 1, 1, 1)
       local w, bags, bank, inv = worthOf(self.key)
       if w then
-        GameTooltip:AddDoubleLine("Bags worth", ns.MoneyPlain(bags), 0.8, 0.8, 0.8, 1, 1, 1)
-        GameTooltip:AddDoubleLine("Bank worth", inv.bankT and ns.MoneyPlain(bank) or dim("not seen yet"), 0.8, 0.8, 0.8, 1, 1, 1)
+        GameTooltip:AddDoubleLine("Стоимость сумок", ns.MoneyPlain(bags), 0.8, 0.8, 0.8, 1, 1, 1)
+        GameTooltip:AddDoubleLine("Стоимость банка", inv.bankT and ns.MoneyPlain(bank) or dim("ещё не видно"), 0.8, 0.8, 0.8, 1, 1, 1)
       else
-        GameTooltip:AddLine("Bags not saved yet: log in on it once.", 0.6, 0.6, 0.6, true)
+        GameTooltip:AddLine("Сумки не сохранены: войдите этим персонажем один раз.", 0.6, 0.6, 0.6, true)
       end
       if c and c.realm then GameTooltip:AddLine(groupLabel(realmOf(c) .. "|" .. factionOf(c)), 0.6, 0.6, 0.6) end
     end
@@ -303,7 +303,7 @@ local function getRow(i)
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
     GameTooltip:SetItemByID(e.id)
     GameTooltip:AddLine(" ")
-    if e.howFull then GameTooltip:AddLine("Best way: " .. e.howFull, 1, 0.82, 0) end
+    if e.howFull then GameTooltip:AddLine("Лучший способ: " .. e.howFull, 1, 0.82, 0) end
     local names = {}
     for who in pairs(e.who) do names[#names + 1] = who end
     table.sort(names)
@@ -330,7 +330,7 @@ local function getHead(i)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
     GameTooltip:AddLine(self.label, 1, 1, 1)
     GameTooltip:AddLine(self.tip, nil, nil, nil, true)
-    GameTooltip:AddLine("Click to sort.", 0.6, 0.6, 0.6)
+    GameTooltip:AddLine("Клик — сортировка.", 0.6, 0.6, 0.6)
     GameTooltip:Show()
   end)
   h:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -350,8 +350,8 @@ function ns:BuildCharacters(parent)
   f.group:SetPoint("TOPLEFT", 0, 0)
   f.group:HookScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-    GameTooltip:AddLine("Realm and faction", 1, 1, 1)
-    GameTooltip:AddLine("Whose characters to show and add up. Only characters on the same realm and faction share an auction house and can mail each other.", nil, nil, nil, true)
+    GameTooltip:AddLine("Мир и фракция", 1, 1, 1)
+    GameTooltip:AddLine("Чьих персонажей показывать и суммировать. Общий аукцион и пересылка почтой — только у персонажей одного мира и фракции.", nil, nil, nil, true)
     GameTooltip:Show()
   end)
   f.group:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -387,14 +387,14 @@ function ns:BuildCharacters(parent)
   end
 
   -- Bags, bank or both; and a search through them.
-  f.where = T:Choice(f, { { value = "both", label = "Bags and bank" }, { value = "bags", label = "Bags" }, { value = "bank", label = "Bank" } },
+  f.where = T:Choice(f, { { value = "both", label = "Сумки и банк" }, { value = "bags", label = "Сумки" }, { value = "bank", label = "Банк" } },
     function(v) state.where = v; ns:RefreshCharacters() end)
   f.where:SetPoint("TOPLEFT", NAV_W + 10, -66)
   f.search = T:EditBox(f, 160, "LEFT")
   f.search:SetPoint("TOPRIGHT", -6, -66)
   local hint = T:Text(f.search, 11, T.section)
   hint:SetPoint("LEFT", 6, 0)
-  hint:SetText("Search items")
+  hint:SetText("Поиск предметов")
   local typed = 0
   f.search:SetScript("OnTextChanged", function(self)
     hint:SetShown(self:GetText() == "" and not self:HasFocus())
@@ -431,15 +431,15 @@ function ns:BuildCharacters(parent)
   f.sumHit:EnableMouse(true)
   f.sumHit:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
-    GameTooltip:AddLine("What it's worth", 1, 1, 1)
-    GameTooltip:AddLine("Everything in the list above, each at its Each price. Search and the Bags / Bank buttons change it.", nil, nil, nil, true)
+    GameTooltip:AddLine("Сколько стоит", 1, 1, 1)
+    GameTooltip:AddLine("Всё из списка выше, каждый по цене «Цена». Поиск и кнопки «Сумки» / «Банк» меняют его.", nil, nil, nil, true)
     if state.char == "all" then
       GameTooltip:AddLine(" ")
       for _, k in ipairs(charOrder()) do
         local w = worthOf(k)
-        GameTooltip:AddDoubleLine(whoName(k), w and ns.MoneyPlain(w) or dim("not saved yet"), 0.8, 0.8, 0.8, 1, 1, 1)
+        GameTooltip:AddDoubleLine(whoName(k), w and ns.MoneyPlain(w) or dim("не сохранено"), 0.8, 0.8, 0.8, 1, 1, 1)
       end
-      GameTooltip:AddLine("(bags and bank, before any search)", 0.6, 0.6, 0.6)
+      GameTooltip:AddLine("(сумки и банк, до поиска)", 0.6, 0.6, 0.6)
     end
     GameTooltip:Show()
   end)
@@ -486,8 +486,8 @@ function ns:RefreshCharacters()
       for _, k in ipairs(mine) do total = total + (goldOf(k) or 0) end
       b.icon:SetTexture("Interface\\Icons\\INV_Misc_Coin_02")
       b.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-      b.name:SetText(T:AccentCode() .. "All characters|r")
-      b.sub:SetText(("%d %s"):format(#mine, #mine == 1 and "character" or "characters"))
+      b.name:SetText(T:AccentCode() .. "Все персонажи|r")
+      b.sub:SetText(("%d %s"):format(#mine, ns.Plural(#mine, "персонаж", "персонажа", "персонажей")))
       b.gold:SetText(ns.MoneyPlain(total))
     else
       local c = ns.db.chars[e.key]
@@ -499,10 +499,10 @@ function ns:RefreshCharacters()
       else
         b.icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
       end
-      b.name:SetText(className(c) .. (me and dim("  (you)") or ""))
+      b.name:SetText(className(c) .. (me and dim("  (вы)") or ""))
       local g = goldOf(e.key)
       local other = state.group == "*" and realmOf(c) ~= ns.RealmName()
-      b.sub:SetText(("Level %s %s%s"):format(c.level or "?", classWord(c), other and (", " .. shortRealm(realmOf(c))) or ""))
+      b.sub:SetText(("Уровень %s %s%s"):format(c.level or "?", classWord(c), other and (", " .. shortRealm(realmOf(c))) or ""))
       b.gold:SetText(g and ns.MoneyPlain(g) or "")
     end
     b:Show()
@@ -517,13 +517,13 @@ function ns:RefreshCharacters()
   for _, fs in ipairs(profCells) do fs:Hide() end
   f.profCard:Hide()
   if key == "all" then
-    f.title:SetText(T:AccentCode() .. "All characters|r " .. dim(groupLabel(state.group)))
-    f.profs:SetText("What everyone has, added up; hover an item for who has it.")
+    f.title:SetText(T:AccentCode() .. "Все персонажи|r " .. dim(groupLabel(state.group)))
+    f.profs:SetText("Что есть у всех, в сумме; наведите на предмет — у кого он есть.")
     f.profs:Show()
   else
     local c = ns.db.chars[key]
-    f.title:SetText(("%s  %s"):format(className(c), dim(("level %s %s %s%s"):format(c.level or "?", classWord(c), c.faction or "",
-      c.via and (", from your sync partner " .. c.via) or ""))))
+    f.title:SetText(("%s  %s"):format(className(c), dim(("уровень %s %s %s%s"):format(c.level or "?", classWord(c), c.faction or "",
+      c.via and (", от партнёра синхронизации " .. c.via) or ""))))
     local names = {}
     for p in pairs(c.profs or {}) do names[#names + 1] = p end
     table.sort(names, function(a, b)
@@ -535,8 +535,8 @@ function ns:RefreshCharacters()
       local fs = profCells[i]
       if not fs then break end
       local info = c.profs[p]
-      local saved = (info.recipeCount or 0) > 0 and dim(("  %d recipes"):format(info.recipeCount))
-        or "  |cffee8597open to save recipes|r"
+      local saved = (info.recipeCount or 0) > 0 and dim(("  рецептов: %d"):format(info.recipeCount))
+        or "  |cffee8597откройте, чтобы сохранить рецепты|r"
       -- The rank coin, as on the Recipes tabs: gold Artisan, silver Expert, copper Journeyman.
       local max = info.max or 0
       local coin = (max >= 300 and "MoneyFrame\\UI-GoldIcon") or (max >= 225 and "MoneyFrame\\UI-SilverIcon")
@@ -549,7 +549,7 @@ function ns:RefreshCharacters()
       fs:Show()
     end
     f.profCard:SetShown(#names > 0)
-    f.profs:SetText(#names > 0 and "" or "No professions saved yet: open each profession's window once.")
+    f.profs:SetText(#names > 0 and "" or "Профессии не сохранены: откройте окно каждой профессии один раз.")
     f.profs:SetShown(#names == 0)
   end
   f.where:SetValue(state.where)
@@ -626,15 +626,15 @@ function ns:RefreshCharacters()
   local inv = key ~= "all" and ns.db.inventory[key]
   local noData = key ~= "all" and not inv
   f.empty:SetShown(#list == 0)
-  f.empty:SetText((noData and "Nothing saved for this character yet: log in on it once (and open its bank to see that too).")
-    or (f.search:GetText() ~= "" and "Nothing here matches the search.")
-    or (state.where == "bank" and "Nothing saved from the bank yet: open the bank on this character once.")
-    or "Nothing here.")
+  f.empty:SetText((noData and "У этого персонажа ничего не сохранено: войдите им один раз (и откройте банк, чтобы увидеть и его).")
+    or (f.search:GetText() ~= "" and "Поиск ничего не нашёл.")
+    or (state.where == "bank" and "Из банка ничего не сохранено: откройте банк этим персонажем один раз.")
+    or "Здесь пусто.")
   local when = ""
   if inv then
-    when = dim(("   Bags %s%s"):format(key == ns.CharKey() and "now" or (inv.t and ns.Age(inv.t) or "?"),
-      inv.bankT and (", bank " .. ns.Age(inv.bankT)) or ", bank not seen yet"))
+    when = dim(("   Сумки %s%s"):format(key == ns.CharKey() and "now" or (inv.t and ns.Age(inv.t) or "?"),
+      inv.bankT and (", банк " .. ns.Age(inv.bankT)) or ", банк ещё не виден"))
   end
-  f.summary:SetText(("Worth about |cff7fd39c%s|r%s%s"):format(ns.MoneyPlain(math.floor(total)),
-    vendorTrash > 0 and (", of which " .. ns.MoneyPlain(math.floor(vendorTrash)) .. " only to a vendor") or "", when))
+  f.summary:SetText(("Стоит около |cff7fd39c%s|r%s%s"):format(ns.MoneyPlain(math.floor(total)),
+    vendorTrash > 0 and (", из них " .. ns.MoneyPlain(math.floor(vendorTrash)) .. " только торговцу") or "", when))
 end

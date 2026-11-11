@@ -7,17 +7,17 @@ local T = ns.Theme
 -- type: flip or shuffle, crafts that sell, not for sale, not profitable. Right-click a
 -- row to set your own type. A Trainers view lists trainers seen, with map pins.
 ---------------------------------------------------------------------------
-local SECONDARY = { Cooking = true, ["First Aid"] = true, Fishing = true }
+local SECONDARY = { Cooking = true, ["First Aid"] = true, Fishing = true, ["Кулинария"] = true, ["Первая помощь"] = true, ["Рыбная ловля"] = true }
 local ALWAYS_SHUFFLE = { [11287] = true, [11288] = true }   -- Lesser and Greater Magic Wand
 local MIN_LISTED = 5
 local MAX_ROWS = 300
 local ROW = 22
 local TYPES = {
-  shuffle = { label = "Flip or shuffle", short = "Shuffle", color = "7fd39c" },
-  sells = { label = "Crafts that sell", short = "Sells", color = "ffd100" },
-  enchant = { label = "Enchant service", short = "Enchants", color = "66bbff" },   -- no item to sell; sold as a service
-  notsale = { label = "Not for sale", short = "Not for sale", color = "888888" },
-  loss = { label = "Not profitable", short = "Loss", color = "ee8597" },
+  shuffle = { label = "Флип или цепочка", short = "Shuffle", color = "7fd39c" },
+  sells = { label = "Крафт на продажу", short = "Sells", color = "ffd100" },
+  enchant = { label = "Услуги чар", short = "Enchants", color = "66bbff" },   -- no item to sell; sold as a service
+  notsale = { label = "Не на продажу", short = "Не на продажу", color = "888888" },
+  loss = { label = "Невыгодно", short = "Loss", color = "ee8597" },
 }
 local ORDER = { "shuffle", "sells", "enchant", "notsale", "loss" }
 local typeRank = {}
@@ -43,14 +43,14 @@ end
 ---------------------------------------------------------------------------
 function ns:PinOnMap(mapID, x, y, label)
   if not (mapID and x and y and C_Map and C_Map.SetUserWaypoint and UiMapPoint) then
-    ns:Print("No position recorded for that yet.")
+    ns:Print("Позиция пока не записана.")
     return
   end
   local ok = pcall(C_Map.SetUserWaypoint, UiMapPoint.CreateFromCoordinates(mapID, x, y))
   if ok and C_SuperTrack and C_SuperTrack.SetSuperTrackedUserWaypoint then pcall(C_SuperTrack.SetSuperTrackedUserWaypoint, true) end
   local info = C_Map.GetMapInfo and C_Map.GetMapInfo(mapID)
-  ns:Print(ok and ("Map pin set: %s, %s (%.1f, %.1f)."):format(label or "?", info and info.name or "?", x * 100, y * 100)
-    or "The game didn't accept a map pin there.")
+  ns:Print(ok and ("Метка на карте: %s, %s (%.1f, %.1f)."):format(label or "?", info and info.name or "?", x * 100, y * 100)
+    or "Игра не приняла метку на карте.")
 end
 
 ---------------------------------------------------------------------------
@@ -126,7 +126,7 @@ end
 
 -- Only the other faction can get it: for you, the neutral auction house is the way.
 local function otherSideText()
-  return (" |cffee8597%s only: neutral AH|r"):format(ns.OtherFaction())
+  return (" |cffee8597только %s: нейтральный аукцион|r"):format(ns.OtherFaction())
 end
 
 -- An NPC from the Classic data as a source table.
@@ -171,12 +171,12 @@ function ns:AddClassicSourceLines(tt, name)
   local e = name and ns.CLASSIC_RECIPES and ns.CLASSIC_RECIPES[name:lower()]
   if not e then return end
   tt:AddLine(" ")
-  tt:AddLine("In original Classic (unconfirmed in Forever):", 1, 0.82, 0)
+  tt:AddLine("В оригинальном Classic (в Forever не подтверждено):", 1, 0.82, 0)
   for _, id in ipairs(e.vendors or {}) do
     local v = classicNPC(id, "vendor")
     if v then
-      tt:AddDoubleLine("Sold by " .. v.npc, (v.zone or "?") .. (v.x and (" %.0f, %.0f"):format(v.x * 100, v.y * 100) or "")
-        .. (friendly(v) and "" or (" (%s only)"):format(ns.OtherFaction())), 1, 1, 1, 0.8, 0.8, 0.8)
+      tt:AddDoubleLine("Продаёт " .. v.npc, (v.zone or "?") .. (v.x and (" %.0f, %.0f"):format(v.x * 100, v.y * 100) or "")
+        .. (friendly(v) and "" or (" (только %s)"):format(ns.OtherFaction())), 1, 1, 1, 0.8, 0.8, 0.8)
     end
   end
   for _, m in ipairs(e.mobs or {}) do
@@ -187,12 +187,12 @@ function ns:AddClassicSourceLines(tt, name)
     end
   end
   if e.mobCount and e.mobCount > #(e.mobs or {}) then
-    tt:AddLine(("...and %d more kinds of mob."):format(e.mobCount - #(e.mobs or {})), 0.8, 0.8, 0.8)
+    tt:AddLine(("...и ещё %d видов существ."):format(e.mobCount - #(e.mobs or {})), 0.8, 0.8, 0.8)
   end
-  if e.quest then tt:AddLine("Quest: " .. e.quest, 1, 1, 1) end
+  if e.quest then tt:AddLine("Задание: " .. e.quest, 1, 1, 1) end
   local s = ns:ClassicSource(name)
   if s and s.otherSide then
-    tt:AddLine(("Only the %s can get this recipe. For you, the way is the neutral auction house (Booty Bay, Gadgetzan, Everlook)."):format(
+    tt:AddLine(("Этот рецепт доступен только %s. Для вас путь — нейтральный аукцион (Бухта Боти, Прибамбасск, Круговзор)."):format(
       ns.OtherFaction()), 0.93, 0.52, 0.59, true)
   end
 end
@@ -220,7 +220,7 @@ end
 
 -- Recipe items by the recipe they teach ("Recipe: Savory Whimsyfin Delight" -> its item
 -- ID), from every item name the addon has seen. Rebuilt when more names are known.
-local RECIPE_PREFIXES = { "Formula", "Pattern", "Recipe", "Plans", "Schematic", "Manual", "Design", "Technique" }
+local RECIPE_PREFIXES = { "Formula", "Pattern", "Рецепт", "Plans", "Schematic", "Manual", "Design", "Technique" }
 local recipeItems, recipeItemsFrom, recipeItemsChecked = {}, -1, 0
 function ns.RecipeItemFor(name)
   local names = ns.db.itemNames
@@ -260,17 +260,17 @@ end
 
 local function ahText(s)
   local price, rec = recipeAH(s)
-  if price then return "  |cffffd100AH " .. ns.Money(price) .. "|r" end
-  if rec and rec.none then return dim("  none on AH") end
+  if price then return "  |cffffd100аукцион " .. ns.Money(price) .. "|r" end
+  if rec and rec.none then return dim("  на аукционе нет") end
   return ""
 end
 
 local function sourceText(s)
   -- Recipes with no recipe item to find were taught by trainers in Classic.
   -- Forever also adds recipes Classic never had (Favor vendors, camping).
-  if not s then return dim("trainer, or new in Forever") end
+  if not s then return dim("тренер или новое в Forever") end
   if s.kind == "ah" then
-    return ("On the auction house: |cffffd100%s|r %s"):format(ns.Money(s.price), dim(("(%d listed)"):format(s.listed or 0)))
+    return ("На аукционе: |cffffd100%s|r %s"):format(ns.Money(s.price), dim(("(лотов: %d)"):format(s.listed or 0)))
   end
   local classic = s.conf ~= "seen"
   local where = s.zone and (", " .. s.zone) or ""
@@ -285,27 +285,27 @@ local function sourceText(s)
       prof, tier = prof or p2, tier or t2
     end
     if tier and prof then
-      text = ("Any %s+ %s trainer, e.g. %s%s"):format(tier, prof, s.npc or "?", where)
+      text = ("Любой тренер %s+ %s, например %s%s"):format(tier, prof, s.npc or "?", where)
     else
-      text = ("Trainer %s%s"):format(s.npc or "?", where)
+      text = ("Тренер %s%s"):format(s.npc or "?", where)
     end
   elseif s.kind == "vendor" then
     local price = s.currency or (s.cost and ns.Money(s.cost)) or ""
     local side = (classic and s.otherSide) and otherSideText() or ""
-    text = ("Vendor %s%s  %s%s%s"):format(s.npc or "?", where, price, s.limited and dim(" limited") or "", side)
+    text = ("Торговец %s%s  %s%s%s"):format(s.npc or "?", where, price, s.limited and dim(" ограничено") or "", side)
   elseif s.kind == "mob" then
-    text = ("Drops from %s%s"):format(s.npc or "?", where) .. percent(s.chance) .. ahText(s)
+    text = ("Добывается с %s%s"):format(s.npc or "?", where) .. percent(s.chance) .. ahText(s)
   elseif s.kind == "drop" then
     if s.mobCount then
       -- Kept short so the price fits; the mobs are in the hover.
-      text = ("World drop, %d kinds of mob"):format(s.mobCount)
+      text = ("Добыча в мире, %d видов существ"):format(s.mobCount)
     else
-      text = (s.npc and ("Drops from %s%s"):format(s.npc, where) or (s.zone and ("World drop in " .. s.zone) or "World drop, rare"))
+      text = (s.npc and ("Добывается с %s%s"):format(s.npc, where) or (s.zone and ("Добыча в мире: " .. s.zone) or "Добыча в мире, редкое"))
         .. percent(s.chance)
     end
     text = text .. ahText(s)
   elseif s.kind == "quest" then
-    text = ("Quest: %s"):format(s.quest or "?") .. (s.otherSide and otherSideText() or "")
+    text = ("Задание: %s"):format(s.quest or "?") .. (s.otherSide and otherSideText() or "")
   else
     text = s.kind or "?"
   end
@@ -322,19 +322,19 @@ local current     -- profession shown, or "Trainers:<profession>"
 
 -- num: sorts high to low first (text sorts A to Z first; Type in the usual group order).
 local COLS = {
-  { key = "name", label = "Recipe", w = 150, grow = 1 },
-  { key = "skill", label = "Skill", w = 36, num = true },
-  { key = "known", label = "Known by", w = 110 },
-  { key = "source", label = "Where from (hover for all)", w = 250, grow = 1 },
-  { key = "type", label = "Type", w = 104 },
-  { key = "profit", label = "Per craft", w = 80, num = true },
+  { key = "name", label = "Рецепт", w = 150, grow = 1 },
+  { key = "skill", label = "Навык", w = 36, num = true },
+  { key = "known", label = "Известно", w = 110 },
+  { key = "source", label = "Откуда (наведите для всех)", w = 250, grow = 1 },
+  { key = "type", label = "Тип", w = 104 },
+  { key = "profit", label = "На крафт", w = 80, num = true },
   { key = "pin", label = "", w = 36 },
 }
 local NUMERIC = {}   -- [key] = true for numbers, false for text; columns with a label only
 for _, c in ipairs(COLS) do if c.label ~= "" then NUMERIC[c.key] = c.num or false end end
 
 -- The tabs: this character's professions (main ones first, then secondary), then
--- Trainers; every other profession with a recipe book goes in the "Other professions"
+-- Trainers; every other profession with a recipe book goes in the "Другие профессии"
 -- dropdown, starred when another character on this realm and faction has it (owner's
 -- test, October 4: all professions as tabs was too many).
 local function professions()
@@ -376,12 +376,12 @@ end
 local STAR = "|TInterface\\TargetingFrame\\UI-RaidTargetingIcon_1:12:12:0:0|t "
 
 StaticPopupDialogs["FOREVER_LEDGER_CLEAR_TYPES"] = {
-  text = "Clear the types you set on %d recipes? They go back to automatic. This can't be undone.",
+  text = "Сбросить типы, заданные для %d рецептов? Они вернутся к автоматическим. Это необратимо.",
   button1 = YES or "Yes",
   button2 = NO or "No",
   OnAccept = function()
     wipe(ns.db.recipeTypes)
-    ns:Print("Your recipe types are cleared.")
+    ns:Print("Ваши типы рецептов сброшены.")
     ns:RefreshRecipes()
   end,
   timeout = 0,
@@ -400,23 +400,23 @@ function ns:BuildRecipes(parent)
   f.second:SetHeight(24)
 
   local s = settings()
-  f.show = T:Choice(f.second, { { value = "all", label = "All" }, { value = "unknown", label = "Not known" }, { value = "known", label = "Known" } },
+  f.show = T:Choice(f.second, { { value = "all", label = "All" }, { value = "unknown", label = "Не изучено" }, { value = "known", label = "Known" } },
     function(v) s.view = v; ns:RefreshRecipes() end)
   f.show:SetPoint("LEFT", 0, 0)
   f.custom = T:Check(f.second, function(self) s.custom = self:GetChecked(); ns:RefreshRecipes() end)
-  f.custom.label:SetText("Use my types")
+  f.custom.label:SetText("Мои типы")
   f.custom:SetHitRectInsets(0, -(f.custom.label:GetStringWidth() + 8), 0, 0)   -- the name ticks it too
   f.custom:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
-    GameTooltip:AddLine("Use my types", 1, 1, 1)
-    GameTooltip:AddLine("On: recipes you right-clicked keep the type you gave them. Off: every recipe uses the automatic type (your choices are kept for later).", nil, nil, nil, true)
+    GameTooltip:AddLine("Мои типы", 1, 1, 1)
+    GameTooltip:AddLine("Вкл: у рецептов, которым вы задали тип правым кликом, он сохраняется. Выкл: все рецепты используют автоматический тип (ваш выбор сохранится).", nil, nil, nil, true)
     GameTooltip:Show()
   end)
   f.custom:SetScript("OnLeave", function() GameTooltip:Hide() end)
   -- Short labels so the row fits the window.
   -- A dropdown: six buttons pushed Use my types off the window with wider fonts
   -- (owner's test, October 4).
-  local typeOpts = { { value = "all", label = "Any type" } }
+  local typeOpts = { { value = "all", label = "Любой тип" } }
   for _, k in ipairs(ORDER) do typeOpts[#typeOpts + 1] = { value = k, label = TYPES[k].short } end
   f.type = T:Dropdown(f.second, 130, function(v) s.type = v; ns:RefreshRecipes() end)
   f.type:SetOptions(typeOpts)
@@ -424,16 +424,16 @@ function ns:BuildRecipes(parent)
   f.search = T:EditBox(f.second, 140, "LEFT")
   f.search:SetPoint("LEFT", f.type, "RIGHT", 14, 0)
   f.custom:SetPoint("LEFT", f.search, "RIGHT", 14, 0)
-  f.clear = T:Button(f.second, "Clear my types", 110, function()
+  f.clear = T:Button(f.second, "Сбросить мои типы", 110, function()
     local n = 0
     for _ in pairs(ns.db.recipeTypes) do n = n + 1 end
-    if n == 0 then ns:Print("You haven't set any types yet."); return end
+    if n == 0 then ns:Print("Вы ещё не задавали типы."); return end
     StaticPopup_Show("FOREVER_LEDGER_CLEAR_TYPES", n)
   end, 22)
   f.clear:SetPoint("LEFT", f.custom.label, "RIGHT", 14, 0)
   local hint = T:Text(f.search, 11, T.section)
   hint:SetPoint("LEFT", 6, 0)
-  hint:SetText("Search recipes")
+  hint:SetText("Поиск рецептов")
   f.search:SetScript("OnTextChanged", function(self)
     hint:SetShown(self:GetText() == "" and not self:HasFocus())
     ns:RefreshRecipes()
@@ -494,13 +494,13 @@ local function layoutTabs(list, others)
       f.other = T:Dropdown(f, 170, function(v) if v ~= "" then current = v; ns:RefreshRecipes() end end)
       f.other:HookScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
-        GameTooltip:AddLine("Other professions", 1, 1, 1)
-        GameTooltip:AddLine("Professions this character doesn't have. A star: another of your characters on this realm and faction has it.", nil, nil, nil, true)
+        GameTooltip:AddLine("Другие профессии", 1, 1, 1)
+        GameTooltip:AddLine("Профессии, которых нет у этого персонажа. Звёздочка: есть у другого вашего персонажа этого мира и фракции.", nil, nil, nil, true)
         GameTooltip:Show()
       end)
       f.other:HookScript("OnLeave", function() GameTooltip:Hide() end)
     end
-    local opts = { { value = "", label = "Other professions" } }
+    local opts = { { value = "", label = "Другие профессии" } }
     for _, p in ipairs(others) do
       local who = othersWith(p)
       opts[#opts + 1] = { value = p, label = who and (STAR .. p .. "  |cff888888" .. who .. "|r") or p }
@@ -563,7 +563,7 @@ local function getRow(i)
   r:SetScript("OnClick", function(self, button)
     if button ~= "RightButton" or not self.recipeID then return end
     if not settings().custom then
-      ns:Print("Tick \"Use my types\" first to set your own types.")
+      ns:Print("Сначала отметьте «Мои типы», чтобы задавать свои.")
       return
     end
     local overrides = ns.db.recipeTypes
@@ -589,14 +589,14 @@ local function getRow(i)
     local price, rec = recipeAH(self.src)
     if price then
       GameTooltip:AddLine(" ")
-      GameTooltip:AddDoubleLine("Recipe on the auction house", ns.Money(price), 1, 0.82, 0, 1, 1, 1)
-      GameTooltip:AddLine(("%d listed, scanned %s"):format(rec.q or 0, ns.Age(rec.t)), 0.8, 0.8, 0.8)
+      GameTooltip:AddDoubleLine("Рецепт на аукционе", ns.Money(price), 1, 0.82, 0, 1, 1, 1)
+      GameTooltip:AddLine(("лотов: %d, скан %s"):format(rec.q or 0, ns.Age(rec.t)), 0.8, 0.8, 0.8)
     elseif rec and rec.none then
       GameTooltip:AddLine(" ")
-      GameTooltip:AddLine(("Recipe not on the auction house (scanned %s)"):format(ns.Age(rec.t)), 0.8, 0.8, 0.8)
+      GameTooltip:AddLine(("Рецепта нет на аукционе (скан %s)"):format(ns.Age(rec.t)), 0.8, 0.8, 0.8)
     end
     GameTooltip:AddLine(" ")
-    GameTooltip:AddLine("Right-click to set your own type, shift-right-click for automatic.", T.accent[1], T.accent[2], T.accent[3])
+    GameTooltip:AddLine("Правый клик — задать свой тип, Shift+правый клик — автоматический.", T.accent[1], T.accent[2], T.accent[3])
     GameTooltip:Show()
   end)
   r:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -716,9 +716,9 @@ local function recipeRows(prof, width, lay)
     local values = {
       name = e.r.n or "?",
       skill = skillText(skillFor(e.r.n), rank),
-      known = #e.names > 0 and table.concat(e.names, ", ") or (SECONDARY[prof] and "|cff7fd39canyone can learn|r" or dim("nobody yet")),
+      known = #e.names > 0 and table.concat(e.names, ", ") or (SECONDARY[prof] and "|cff7fd39cможет изучить любой|r" or dim("пока никто")),
       source = sourceText(src),
-      type = ("|cff%s%s|r%s"):format(tinfo.color, tinfo.label, e.override and dim(" (yours)") or ""),
+      type = ("|cff%s%s|r%s"):format(tinfo.color, tinfo.label, e.override and dim(" (ваш)") or ""),
       profit = money(e.profit),
     }
     for key, fs in pairs(row.cells) do
@@ -740,8 +740,8 @@ local function recipeRows(prof, width, lay)
     total = total + 1
     if #knownBy(prof, id) > 0 then knownCount = knownCount + 1 end
   end
-  f.summary:SetText(("%s: %d recipes, %d known. Showing %d%s. (Classic) = original Classic data, unconfirmed in Forever until you see it."):format(
-    prof, total, knownCount, n, #list > MAX_ROWS and (" of " .. #list) or ""))
+  f.summary:SetText(("%s: рецептов %d, изучено %d. Показано %d%s. (Classic) — данные оригинального Classic, в Forever не подтверждены, пока вы их не увидите."):format(
+    prof, total, knownCount, n, #list > MAX_ROWS and (" из " .. #list) or ""))
   return n
 end
 
@@ -752,14 +752,14 @@ local TRAINER_COLS = {
   { key = "known", label = "Profession", w = 110 },
   { key = "source", label = "Where", w = 240, grow = 1 },
   { key = "type", label = "Tier", w = 90 },
-  { key = "profit", label = "Title or note", w = 140 },   -- (330 + 230 ran off the window at its smallest: October 4)
+  { key = "profit", label = "Заголовок или заметка", w = 140 },   -- (330 + 230 ran off the window at its smallest: October 4)
   { key = "pin", label = "", w = 36 },
 }
 
 -- Profession and tier from a trainer's title: "Expert Tailor", "Tailoring Trainer".
 local TITLE_PROF = {
   { "Tailor", "Tailoring" }, { "Enchant", "Enchanting" }, { "Cook", "Cooking" }, { "First Aid", "First Aid" },
-  { "Physician", "First Aid" }, { "Fish", "Fishing" }, { "Alchemist", "Alchemy" }, { "Alchemy", "Alchemy" },
+  { "Physician", "First Aid" }, { "Первая помощь", "First Aid" }, { "Fish", "Fishing" }, { "Alchemist", "Alchemy" }, { "Alchemy", "Alchemy" },
   { "Blacksmith", "Blacksmithing" }, { "Leatherwork", "Leatherworking" }, { "Engineer", "Engineering" },
   { "Herbalis", "Herbalism" }, { "Miner", "Mining" }, { "Mining", "Mining" }, { "Skinn", "Skinning" },
 }
@@ -843,7 +843,7 @@ local function trainerRows(width, lay)
     local g = entry.g
     local info = C_Map and C_Map.GetMapInfo and C_Map.GetMapInfo(g.mapID)
     list[#list + 1] = { guard = true, profession = entry.prof,
-      v = { name = g.name or "?", title = "from " .. (g.npc or "a city guard"), zone = info and info.name or "?",
+      v = { name = g.name or "?", title = "от " .. (g.npc or "городской стражник"), zone = info and info.name or "?",
         x = g.x, y = g.y, mapID = g.mapID } }
     guardCount = guardCount + 1
   end
@@ -873,7 +873,7 @@ local function trainerRows(width, lay)
       skill = "",
       known = e.profession or dim("?"),
       source = ("%s%s%s"):format(e.v.zone or "?", e.v.x and ("  (%.1f, %.1f)"):format(e.v.x * 100, e.v.y * 100) or "",
-        e.classic and dim("  (Classic)") or e.guard and "  |cff7fd39c(guard)|r" or ""),
+        e.classic and dim("  (Classic)") or e.guard and "  |cff7fd39c(стражник)|r" or ""),
       type = e.tier or (e.guard and not e.named and dim("shop") or dim("?")),
       profit = e.v.title and dim(e.v.title) or "",
     }
@@ -891,7 +891,7 @@ local function trainerRows(width, lay)
     row.pin:SetShown(e.v.mapID and e.v.x and true or false)
     row:Show()
   end
-  f.summary:SetText(("%d trainers seen, %d from city guards, %d more from Classic (unconfirmed). Ask a guard for a profession trainer to add Forever's real spot."):format(
+  f.summary:SetText(("Тренеров найдено: %d, от городских стражников: %d, ещё из Classic: %d (не подтверждено). Спросите стражника о тренере профессии, чтобы добавить настоящее место в Forever."):format(
     #list - classicCount - guardCount, guardCount, classicCount))
   return #list
 end
@@ -944,10 +944,10 @@ function ns:RefreshRecipes()
   local n = trainers and trainerRows(width, lay) or (current and recipeRows(current, width, lay) or 0)
   for i = n + 1, #rows do rows[i]:Hide() end
   f.empty:SetShown(n == 0)
-  f.empty:SetText(trainers and "No trainers seen yet. Open a profession trainer's window." or
-    "No recipes match. Open this profession's window once to record its recipes.")
+  f.empty:SetText(trainers and "Тренеры ещё не найдены. Откройте окно тренера профессии." or
+    "Рецепты не найдены. Откройте окно этой профессии один раз, чтобы записать рецепты.")
   f.content:SetHeight(math.max(n * ROW, 30))
   f.sf.UpdateScrollBar()
 end
 
-ns.RefreshRecipes = ns.Timed("Recipes tab", ns.RefreshRecipes)
+ns.RefreshRecipes = ns.Timed("Вкладка «Рецепты»", ns.RefreshRecipes)

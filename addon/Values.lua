@@ -91,8 +91,8 @@ local ESSENCES = {
 local CONVERSIONS = {}   -- [itemID] = { { out = itemID, per = outputs per input, label } }
 for _, e in ipairs(ESSENCES) do
   local lesser, greater, kind = e[1], e[2], e[3]
-  CONVERSIONS[lesser] = { { out = greater, per = 1 / 3, label = "Combine into Greater " .. kind .. " Essence" } }
-  CONVERSIONS[greater] = { { out = lesser, per = 3, label = "Split into Lesser " .. kind .. " Essence" } }
+  CONVERSIONS[lesser] = { { out = greater, per = 1 / 3, label = "Соединить в большую эссенцию (" .. kind .. ")" } }
+  CONVERSIONS[greater] = { { out = lesser, per = 3, label = "Разделить на малые эссенции (" .. kind .. ")" } }
 end
 
 ---------------------------------------------------------------------------
@@ -503,10 +503,10 @@ ns.CountSteps = countSteps
 
 -- How a chain carries on after its first step.
 local function rest(o)
-  if o.kind == "ah" then return "sell on the auction house" end
-  if o.kind == "vendor" then return "sell to vendor" end
+  if o.kind == "ah" then return "продать на аукционе" end
+  if o.kind == "vendor" then return "сдать торговцу" end
   local n = countSteps(o)
-  if o.kind == "disenchant" and n == 1 then return "disenchant" end
+  if o.kind == "disenchant" and n == 1 then return "распылить" end
   return n == 1 and "1 more step" or (n .. " more steps")
 end
 
@@ -515,11 +515,11 @@ end
 -- looked like the buying price, next to "Auction, cheapest").
 function ns:OptionLabel(o)
   if o.kind == "ah" then
-    local label = ("Sell on the auction house, after %g%% cut"):format(ns:AHCut() * 100)
-    return (o.deposit or 0) > 0 and (label .. " and one unsold listing") or label
+    local label = ("Продать на аукционе, после комиссии %g%%"):format(ns:AHCut() * 100)
+    return (o.deposit or 0) > 0 and (label .. " и один непроданный лот") or label
   end
-  if o.kind == "vendor" then return o.vendorInstead and "Vendor it instead (deposit risk)" or "Sell to vendor" end
-  if o.kind == "disenchant" then return "Disenchant" end
+  if o.kind == "vendor" then return o.vendorInstead and "Сдать торговцу (риск залога)" or "Сдать торговцу" end
+  if o.kind == "disenchant" then return "Распыление" end
   local label = o.step .. ", " .. rest(o.next)
   if o.who then label = label .. " (" .. o.who .. ")" end
   return label

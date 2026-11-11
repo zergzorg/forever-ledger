@@ -10,9 +10,9 @@ local RANGES = {
   { key = "day", label = "Day", secs = DAY },
   { key = "week", label = "Week", secs = 7 * DAY },
   { key = "month", label = "Month", secs = 30 * DAY },
-  { key = "3months", label = "3 months", secs = 91 * DAY },
+  { key = "3months", label = "3 месяца", secs = 91 * DAY },
   { key = "year", label = "Year", secs = 365 * DAY },
-  { key = "all", label = "All time" },
+  { key = "all", label = "Всё время" },
 }
 local SALES = { ahSale = true, vendorSell = true }
 local EXPENSES = { ahBuy = true, ahFee = true, vendorBuy = true, repair = true }
@@ -26,7 +26,7 @@ local function dim(t) return "|cff888888" .. t .. "|r" end
 local function short(c)
   if c >= 10000 then
     local g, s = math.floor(c / 10000), math.floor(c % 10000 / 100)
-    if g < 100 and s > 0 then return ("%dg %ds"):format(g, s) end
+    if g < 100 and s > 0 then return ("%dз %dс"):format(g, s) end
     return ("%dg"):format(g)
   end
   if c >= 100 then return ("%ds"):format(math.floor(c / 100)) end
@@ -91,7 +91,7 @@ local function goldSeries(keys, from, to)
   return pts
 end
 
-local function itemLabel(id) return id and ns.ItemName(id) or "Unknown item" end
+local function itemLabel(id) return id and ns.ItemName(id) or "Неизвестный предмет" end
 
 -- Sales, expenses, days covered, and the top items for each.
 local function totals(keys, from, to)
@@ -296,7 +296,7 @@ local function drawGraph(g, pts, from, to, rangeKey)
   end
 
   -- Dates along the bottom
-  local fmt = rangeKey == "day" and "%H:%M" or "%b %d"
+  local fmt = rangeKey == "day" and "%H:%M" or "%d.%m"
   for i = 0, 3 do
     local t = from + (to - from) * i / 3
     local label = nextLabel()
@@ -321,8 +321,8 @@ local function hoverGraph(g)
   g.marker:SetHeight(plot.h)
   g.marker:Show()
   GameTooltip:SetOwner(g, "ANCHOR_CURSOR")
-  GameTooltip:AddLine(date("%b %d %H:%M", p.t), 1, 1, 1)
-  GameTooltip:AddLine(p.v and ns.Money(p.v) or "No record yet", 0.85, 0.85, 0.85)
+  GameTooltip:AddLine(date("%d.%m %H:%M", p.t), 1, 1, 1)
+  GameTooltip:AddLine(p.v and ns.Money(p.v) or "Записи пока нет", 0.85, 0.85, 0.85)
   GameTooltip:Show()
 end
 
@@ -340,12 +340,12 @@ local function text(parent, size, color, justify)
 end
 
 -- How the chosen range reads in words.
-local PHRASE = { day = "today", week = "this week", month = "this month", ["3months"] = "in 3 months", year = "this year", all = "all time" }
-local OVER = { day = "the day", week = "the week", month = "the month", ["3months"] = "3 months", year = "the year", all = "all time" }
+local PHRASE = { day = "за сегодня", week = "за неделю", month = "за месяц", ["3months"] = "за 3 месяца", year = "за год", all = "за всё время" }
+local OVER = { day = "день", week = "неделю", month = "месяц", ["3months"] = "3 месяца", year = "год", all = "за всё время" }
 
 local SESSION_COLS = {   -- x (left edge), width, justify
   { "When", 10, 110, "LEFT" }, { "Length", 124, 80, "LEFT" }, { "Gold", 210, 100, "RIGHT" },
-  { "Looted", 320, 100, "RIGHT" }, { "An hour", 430, 100, "RIGHT" },
+  { "Looted", 320, 100, "RIGHT" }, { "В час", 430, 100, "RIGHT" },
 }
 
 function ns:BuildDashboard(parent)
@@ -359,7 +359,7 @@ function ns:BuildDashboard(parent)
   end)(), function(v) settings().range = v; ns:RefreshDashboard(f) end)
   f.rangeChoice:SetPoint("TOPRIGHT", 0, 0)
   -- Start or stop a session (Sessions.lua), beside the character dropdown, as the main action.
-  f.sessionBtn = T:Button(f, "Start a session", 120, function()
+  f.sessionBtn = T:Button(f, "Начать сессию", 120, function()
     if ns:GeneralSessionRunning() then ns:StopGeneralSession() else ns:StartGeneralSession() end
     ns:RefreshDashboard(f)
   end, 22)
@@ -377,17 +377,17 @@ function ns:BuildDashboard(parent)
   f.fundBack:SetColorTexture(1, 1, 1, 0.08)
   f.fundBar = f:CreateTexture(nil, "OVERLAY")
   f.fundBar:SetColorTexture(0.86, 0.69, 0.33, 0.9)
-  f.fundHide = T:Button(f, "Hide here", 76, function()
+  f.fundHide = T:Button(f, "Скрыть", 76, function()
     local c = ns.db.chars[ns.CharKey()]
     if c then c.noRidingFund = true end
-    ns:Print("Riding fund hidden on this character. /fl fund shows it again.")
+    ns:Print("Сбор на транспорт скрыт у этого персонажа. /fl fund вернёт его.")
     ns:RefreshDashboard(f)
   end, 18)
   f.fundHide:GetFontString():SetFont(T.font, 11, "")
   f.fundHide:HookScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
-    GameTooltip:AddLine("Hide the riding fund on this character", 1, 1, 1)
-    GameTooltip:AddLine("Other characters keep it. /fl fund shows it here again; Settings, Global settings, Modules turns it off everywhere.", 0.8, 0.8, 0.8, true)
+    GameTooltip:AddLine("Скрыть сбор на транспорт у этого персонажа", 1, 1, 1)
+    GameTooltip:AddLine("У других персонажей он останется. /fl fund вернёт его здесь; Настройки → Глобальные → Модули отключают его везде.", 0.8, 0.8, 0.8, true)
     GameTooltip:Show()
   end)
   f.fundHide:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -398,15 +398,15 @@ function ns:BuildDashboard(parent)
     if not r then return end
     GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
     GameTooltip:AddLine(r.name, 1, 1, 1)
-    GameTooltip:AddDoubleLine("Training", ns.Money(r.training) .. (r.seen and "" or " |cff999999(not seen at a trainer yet)|r"), 0.7, 0.7, 0.7, 1, 1, 1)
-    GameTooltip:AddDoubleLine("A mount", "about " .. ns.Money(r.mount), 0.7, 0.7, 0.7, 1, 1, 1)
-    GameTooltip:AddDoubleLine("Together", ns.Money(r.cost), 0.7, 0.7, 0.7, 1, 1, 1)
-    GameTooltip:AddDoubleLine("From level", tostring(r.level), 0.7, 0.7, 0.7, 1, 1, 1)
-    GameTooltip:AddDoubleLine("Gold now (the characters above)", ns.Money(r.gold), 0.7, 0.7, 0.7, 1, 1, 1)
+    GameTooltip:AddDoubleLine("Обучение", ns.Money(r.training) .. (r.seen and "" or " |cff999999(у тренера ещё не видно)|r"), 0.7, 0.7, 0.7, 1, 1, 1)
+    GameTooltip:AddDoubleLine("Транспорт", "около " .. ns.Money(r.mount), 0.7, 0.7, 0.7, 1, 1, 1)
+    GameTooltip:AddDoubleLine("Вместе", ns.Money(r.cost), 0.7, 0.7, 0.7, 1, 1, 1)
+    GameTooltip:AddDoubleLine("С уровня", tostring(r.level), 0.7, 0.7, 0.7, 1, 1, 1)
+    GameTooltip:AddDoubleLine("Золото сейчас (персонажи выше)", ns.Money(r.gold), 0.7, 0.7, 0.7, 1, 1, 1)
     if r.perDay and r.perDay > 0 then
-      GameTooltip:AddDoubleLine("Your pace", ns.Money(math.floor(r.perDay)) .. " a day", 0.7, 0.7, 0.7, 1, 1, 1)
+      GameTooltip:AddDoubleLine("Ваш темп", ns.Money(math.floor(r.perDay)) .. " в день", 0.7, 0.7, 0.7, 1, 1, 1)
     end
-    GameTooltip:AddLine("Goes away once this character knows it. Settings, Global settings, Modules turns it off everywhere; Hide here on this character.", 0.6, 0.6, 0.6, true)
+    GameTooltip:AddLine("Исчезнет, когда персонаж её освоит. Настройки → Глобальные → Модули отключают везде; «Скрыть» — у этого персонажа.", 0.6, 0.6, 0.6, true)
     GameTooltip:Show()
   end)
   f.fundHit:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -417,7 +417,7 @@ function ns:BuildDashboard(parent)
   local g = CreateFrame("Frame", nil, f)
   g.empty = T:Text(g, 12, T.dim)
   g.empty:SetPoint("CENTER")
-  g.empty:SetText("No gold recorded in this range yet.")
+  g.empty:SetText("За этот период золото ещё не записано.")
   g.marker = g:CreateTexture(nil, "OVERLAY")
   g.marker:SetColorTexture(1, 1, 1, 0.25)
   g.marker:SetWidth(1)
@@ -444,7 +444,7 @@ function ns:BuildDashboard(parent)
   f.sesHead = text(f, 11)
   f.sesNote = text(f, 11, T.dim, "RIGHT")
   -- Every session, in the Ledger's Sessions sub-tab (owner, October 4).
-  f.sesAll = T:Button(f, "See all sessions", 116, function() ns:OpenLedgerTab("sessions") end, 18)
+  f.sesAll = T:Button(f, "Все сессии", 116, function() ns:OpenLedgerTab("sessions") end, 18)
   f.sesAll:GetFontString():SetFont(T.font, 11, "")
   f.sesCols = {}
   for i, c in ipairs(SESSION_COLS) do
@@ -454,7 +454,7 @@ function ns:BuildDashboard(parent)
   end
   f.sesRows = {}
   f.sesEmpty = text(f, 12, T.dim)
-  f.sesEmpty:SetText("None yet. Start a session to count what your time is worth.")
+  f.sesEmpty:SetText("Пока пусто. Начните сессию, чтобы считать, сколько стоит ваше время.")
   return f
 end
 
@@ -495,16 +495,16 @@ function ns:CharacterOptions()
   local function byName(a, b) return name(a):lower() < name(b):lower() end
   table.sort(own, byName)
   table.sort(other, byName)
-  local opts = { { value = "all", label = ("All %s characters"):format(mine) } }
-  if ns.db.chars[me] then opts[#opts + 1] = { value = me, label = "  " .. name(me) .. " |cff888888(this one)|r" } end
+  local opts = { { value = "all", label = ("Все персонажи: %s"):format(mine) } }
+  if ns.db.chars[me] then opts[#opts + 1] = { value = me, label = "  " .. name(me) .. " |cff888888(этот)|r" } end
   for _, k in ipairs(own) do opts[#opts + 1] = { value = k, label = "  " .. name(k) } end
   if #other > 0 then
     opts[#opts + 1] = { heading = true, label = "" }
-    opts[#opts + 1] = { value = "faction:" .. otherName, label = ("All %s characters"):format(otherName) }
+    opts[#opts + 1] = { value = "faction:" .. otherName, label = ("Все персонажи: %s"):format(otherName) }
     for _, k in ipairs(other) do opts[#opts + 1] = { value = k, label = "  " .. name(k) } end
     local realm = (ns.RealmName() or "this"):gsub("^Classic Beta%s+", "")
     opts[#opts + 1] = { heading = true, label = "" }
-    opts[#opts + 1] = { value = "realm", label = ("Whole %s realm, both factions"):format(realm) }
+    opts[#opts + 1] = { value = "realm", label = ("Весь мир %s, обе фракции"):format(realm) }
   end
   return opts
 end
@@ -538,7 +538,7 @@ function ns:RefreshDashboard(f)
   f.charChoice:SetValue(s.char)
   f.rangeChoice:SetValue(s.range)
   local running = ns.GeneralSessionRunning and ns:GeneralSessionRunning()
-  f.sessionBtn:SetText(running and "Stop the session" or "Start a session")
+  f.sessionBtn:SetText(running and "Остановить сессию" or "Начать сессию")
 
   -- Numbers
   local keys = chosenKeys()
@@ -554,7 +554,7 @@ function ns:RefreshDashboard(f)
       last = p.v
     end
   end
-  local phrase = PHRASE[s.range] or "this week"
+  local phrase = PHRASE[s.range] or "за неделю"
 
   -- Layout, for the fixed window
   local W, H = f:GetWidth(), f:GetHeight()
@@ -568,10 +568,10 @@ function ns:RefreshDashboard(f)
   local tileY, tileH = 32, 64
   local tw = math.floor((W - 3 * gap) / 4)
   local tiles = {
-    { "Gold now", last and ns.Money(last) or dim("no record yet"), first and last and (signed(last - first, true) .. " " .. phrase) or "" },
-    { "Profit " .. phrase, signed(n.profit, true), money(math.floor(n.profit / n.days)) .. " a day" },
-    { "Sales", ns.Money(n.sales), n.topSold and ("top: " .. n.topSold) or "" },
-    { "Expenses", ns.Money(n.expenses), n.topBought and ("top: " .. n.topBought) or "" },
+    { "Золото сейчас", last and ns.Money(last) or dim("записи пока нет"), first and last and (signed(last - first, true) .. " " .. phrase) or "" },
+    { "Прибыль " .. phrase, signed(n.profit, true), money(math.floor(n.profit / n.days)) .. " в день" },
+    { "Продажи", ns.Money(n.sales), n.topSold and ("лучшее: " .. n.topSold) or "" },
+    { "Расходы", ns.Money(n.expenses), n.topBought and ("лучшее: " .. n.topBought) or "" },
   }
   for i, t in ipairs(f.tiles) do
     local x = (i - 1) * (tw + gap)
@@ -591,7 +591,7 @@ function ns:RefreshDashboard(f)
   for _, w in ipairs({ f.fundHead, f.fundText, f.fundBack, f.fundBar, f.fundHide, f.fundHit }) do w:SetShown(fund ~= nil) end
   if fund then
     nextCard(fTop, fTop + fundH, 0, W)
-    T:StyleHeading(f.fundHead, "Riding fund")
+    T:StyleHeading(f.fundHead, "Сбор на транспорт")
     place(f.fundHead, 12, fTop + 9)
     -- A short bar, so the line fits even at "999g 99s 99c of 1000g (99%) about 999 days at
     -- your pace" (owner's screenshot, October 5: the end was cut off).
@@ -606,10 +606,10 @@ function ns:RefreshDashboard(f)
     place(f.fundText, barX + barW + 12, fTop + 9, W - (barX + barW + 12) - 96)
     local eta = ""
     if pct >= 1 then
-      eta = (UnitLevel("player") or 0) >= fund.level and "  |cff7fd39cenough: visit the riding trainer|r"
-        or ("  |cff7fd39cenough, at level %d|r"):format(fund.level)
+      eta = (UnitLevel("player") or 0) >= fund.level and "  |cff7fd39cхватает: посетите тренера езды|r"
+        or ("  |cff7fd39cхватает, с уровня %d|r"):format(fund.level)
     elseif fund.perDay and fund.perDay > 0 then
-      eta = dim(("  about %d days at your pace"):format(math.ceil((fund.cost - fund.gold) / fund.perDay)))
+      eta = dim(("  примерно %d дн при вашем темпе"):format(math.ceil((fund.cost - fund.gold) / fund.perDay)))
     end
     f.fundText:SetText(("%s: %s of %s (%d%%)%s"):format(fund.short, ns.Money(math.max(fund.gold, 0)), ns.Money(fund.cost),
       math.floor(pct * 100), eta))
@@ -625,11 +625,11 @@ function ns:RefreshDashboard(f)
   local gTop = tileY + tileH + gap + (fund and (fundH + gap) or 0)
   local gBottom = gTop + 172 - (fund and (fundH + gap) or 0)
   nextCard(gTop, gBottom, 0, W)
-  T:StyleHeading(f.graphHead, "Gold over " .. (OVER[s.range] or "the week"))
+  T:StyleHeading(f.graphHead, "Золото за " .. (OVER[s.range] or "неделю"))
   place(f.graphHead, 12, gTop + 9)
   f.graphNote:ClearAllPoints()
   f.graphNote:SetPoint("TOPRIGHT", f, "TOPLEFT", W - 12, -(gTop + 9))
-  f.graphNote:SetText(hi and ("high %s,  low %s"):format(ns.Money(hi), ns.Money(lo)) or "")
+  f.graphNote:SetText(hi and ("макс %s,  мин %s"):format(ns.Money(hi), ns.Money(lo)) or "")
   f.graph:ClearAllPoints()
   f.graph:SetPoint("TOPLEFT", 4, -(gTop + 26))
   f.graph:SetSize(W - 8, gBottom - gTop - 30)
@@ -653,15 +653,15 @@ function ns:RefreshDashboard(f)
       r.v:SetText(lines[i][2])
     end
   end
-  detail(f.bestHead, f.best, 0, "Best and biggest", {
-    { "Most profitable", n.topProfit or dim("none yet") },
-    { "Biggest sale", n.bigSale and (ns.Money(n.bigSale.a) .. "  " .. dim(n.bigSale.n)) or dim("none yet") },
-    { "Biggest purchase", n.bigBuy and (ns.Money(n.bigBuy.a) .. "  " .. dim(n.bigBuy.n)) or dim("none yet") },
+  detail(f.bestHead, f.best, 0, "Лучшее и крупнейшее", {
+    { "Самое прибыльное", n.topProfit or dim("пока нет") },
+    { "Крупнейшая продажа", n.bigSale and (ns.Money(n.bigSale.a) .. "  " .. dim(n.bigSale.n)) or dim("пока нет") },
+    { "Крупнейшая покупка", n.bigBuy and (ns.Money(n.bigBuy.a) .. "  " .. dim(n.bigBuy.n)) or dim("пока нет") },
   })
   detail(f.actHead, f.act, hw + gap, "Activity", {
-    { "Auction sales a day", tostring(math.floor(n.nSales / n.days + 0.5)) },
-    { "Auction purchases a day", tostring(math.floor(n.nBuys / n.days + 0.5)) },
-    { "Sales a day", ns.Money(math.floor(n.sales / n.days)) },
+    { "Продаж на аукционе в день", tostring(math.floor(n.nSales / n.days + 0.5)) },
+    { "Покупок на аукционе в день", tostring(math.floor(n.nBuys / n.days + 0.5)) },
+    { "Продаж в день", ns.Money(math.floor(n.sales / n.days)) },
   })
 
   -- Sessions, as a table
@@ -675,7 +675,7 @@ function ns:RefreshDashboard(f)
   f.sesNote:ClearAllPoints()
   f.sesNote:SetPoint("RIGHT", f.sesAll, "LEFT", -10, 0)
   local gs = ns.SessionTotals and ns:SessionTotals()
-  f.sesNote:SetText(gs and ("running: %d min, gold %s"):format(math.floor(gs.secs / 60), signed(gs.gained, true)) or "")
+  f.sesNote:SetText(gs and ("идёт: %d мин, золото %s"):format(math.floor(gs.secs / 60), signed(gs.gained, true)) or "")
   local headY = sTop + 28
   for i, c in ipairs(SESSION_COLS) do place(f.sesCols[i], c[2] + 2, headY, c[3]) end
   local list = ns.db.sessions
@@ -695,8 +695,8 @@ function ns:RefreshDashboard(f)
     local mins = math.floor(secs / 60)
     local gained = (x.earned or 0) - (x.spent or 0)
     local cells = {
-      dim(date("%b %d %H:%M", x.t)),
-      mins < 1 and "under a minute" or (mins .. " min"),
+      dim(date("%d.%m %H:%M", x.t)),
+      mins < 1 and "меньше минуты" or (mins .. " мин"),
       signed(gained, true),
       x.kind == "general" and ns.Money(x.loot or 0) or dim(x.name or "-"),
       secs >= 120 and signed(math.floor(gained / secs * 3600), false) or dim("-"),

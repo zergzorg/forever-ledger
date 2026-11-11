@@ -4,7 +4,7 @@ local T = ns.Theme
 ---------------------------------------------------------------------------
 -- Sell protection (owner's idea, October 3): on the auction house Sell tab, when a
 -- vendor pays more than the listing would bring after the auction house cut, say so
--- above the Post button and grey Post out until "Post anyway" (Settings: sellGuard
+-- above the Post button and grey Post out until "Всё равно выставить" (Settings: sellGuard
 -- off keeps just the warning). It only ever stops a click; it never posts or sells.
 -- Works on Blizzard's sell pages (ItemSellFrame for gear, CommoditiesSellFrame for
 -- stacks). Their pieces are looked up by name and anything missing is skipped, and
@@ -55,8 +55,8 @@ local function evaluate(g)
     return
   end
   -- Two short lines, centred under Post (owner, October 3: "centered and clean").
-  g.text:SetText(("|cffff7070Vendor pays: %s%s|r"):format(ns.Money(vendor), qty > 1 and (" for %d"):format(qty) or ""))
-  g.text2:SetText(("Auction house: %s after the %d%% cut"):format(ns.Money(net), math.floor(ns:AHCut() * 100 + 0.5)))
+  g.text:SetText(("|cffff7070Торговец платит: %s%s|r"):format(ns.Money(vendor), qty > 1 and (" за %d"):format(qty) or ""))
+  g.text2:SetText(("Аукцион: %s после комиссии %d%%"):format(ns.Money(net), math.floor(ns:AHCut() * 100 + 0.5)))
   local lock = ns.db.settings.sellGuard ~= false and not unlocked[g.key]
   g.anyway:SetShown(lock)
   if lock and post and post:IsEnabled() then post:Disable() end
@@ -83,14 +83,14 @@ local function guard(frame, name)
   else
     g.text:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 10, 40)
   end
-  g.anyway = T:Button(frame, "Post anyway", 76, function()
+  g.anyway = T:Button(frame, "Всё равно выставить", 76, function()
     if g.key then unlocked[g.key] = true end
     g.anyway:Hide()
     -- Let the game decide if Post can be used (an item and a price are set), then make
     -- sure our hold is off (October 3: clicking did nothing).
     call(frame, "UpdatePostButtonState")
     if post and not post:IsEnabled() then post:Enable() end
-    ns:Debug("Sell protection: Post anyway for", g.key or "?", "- Post is", post and (post:IsEnabled() and "on" or "still off") or "missing")
+    ns:Debug("Защита продажи: выставить всё равно за", g.key or "?", "- «Выставить»", post and (post:IsEnabled() and "on" or "всё ещё недоступна") or "missing")
   end, 20)
   -- Above everything on the sell page, so nothing invisible covers it.
   g.anyway:SetFrameStrata("DIALOG")
@@ -110,7 +110,7 @@ local function guard(frame, name)
     since = 0
     evaluate(g)
   end)
-  ns:Debug(("Sell protection on %s: PostButton %s, GetItem %s, price from %s, quantity from %s."):format(name, post and "yes" or "no",
+  ns:Debug(("Защита продажи на %s: PostButton %s, GetItem %s, цена из %s, количество из %s."):format(name, post and "yes" or "no",
     frame.GetItem and "yes" or "no", frame.GetUnitPrice and "GetUnitPrice" or (frame.PriceInput and "PriceInput" or "nothing"),
     frame.GetQuantity and "GetQuantity" or (frame.QuantityInput and frame.QuantityInput.GetQuantity and "QuantityInput" or "nothing")))
 end
@@ -129,7 +129,7 @@ local function setPrice(frame, copper)
   local input = frame.PriceInput
   if not (input and copper and copper > 0) then return end
   if call(input, "SetAmount", copper) == nil and not input.SetAmount then
-    ns:Debug("Price helper: no SetAmount on the price box")
+    ns:Debug("Помощь с ценой: у поля цены нет SetAmount")
     return
   end
   -- Let the page work out the total and Post again.
@@ -145,10 +145,10 @@ local function helperUpdate(h)
   -- /fl debug says why it's hidden, or where it is, once each time that changes (owner's
   -- test, October 4: it didn't show on the stacks page).
   local function why(text)
-    if h.why ~= text then h.why = text; ns:Debug("Price helper: " .. text) end
+    if h.why ~= text then h.why = text; ns:Debug("Помощь с ценой: " .. text) end
   end
-  if ns.db.settings.priceHelper == false then h.box:Hide(); why("hidden, switched off in Settings"); return end
-  if type(id) ~= "number" then h.box:Hide(); why("hidden, no item on the page"); return end
+  if ns.db.settings.priceHelper == false then h.box:Hide(); why("скрыто, отключено в настройках"); return end
+  if type(id) ~= "number" then h.box:Hide(); why("скрыто, на странице нет предмета"); return end
   local rec = (ns.db.prices[ns.MarketKey()] or {})[id]
   local cheapest = rec and not rec.none and rec.m
   -- Gear: the cheapest of this version ("of the Monkey"), as Your auctions does; the
@@ -164,7 +164,7 @@ local function helperUpdate(h)
   local usual = stats and stats.points >= 3 and math.floor(stats.usual)
   if not (cheapest or usual) then
     h.box:Hide()
-    why(("hidden, no prices for item %d (cheapest %s, usual from %s days)"):format(id, tostring(rec and rec.m),
+    why(("скрыто, нет цен для предмета %d (минимум %s, обычная за %s дней)"):format(id, tostring(rec and rec.m),
       tostring(stats and stats.points)))
     return
   end
@@ -173,19 +173,19 @@ local function helperUpdate(h)
   h.under = cheapest and math.max(cheapest - 1, 1)
   h.usual = usual
   local parts = {}
-  if usual then parts[#parts + 1] = "Usual " .. ns.Money(usual) end
-  if cheapest then parts[#parts + 1] = "cheapest now " .. ns.Money(cheapest) end
+  if usual then parts[#parts + 1] = "Обычная " .. ns.Money(usual) end
+  if cheapest then parts[#parts + 1] = "минимум сейчас " .. ns.Money(cheapest) end
   local dumped = usual and cheapest and cheapest < usual * DUMP
-  h.text:SetText(table.concat(parts, "   ") .. (dumped and "\n|cffffd100Well below usual: you may do better waiting.|r" or ""))
-  h.under_b:SetText(h.under and ("Undercut " .. ns.MoneyPlain(h.under)) or "Undercut")
+  h.text:SetText(table.concat(parts, "   ") .. (dumped and "\n|cffffd100Заметно ниже обычной: возможно, стоит подождать.|r" or ""))
+  h.under_b:SetText(h.under and ("Перебить " .. ns.MoneyPlain(h.under)) or "Перебить")
   h.under_b:SetEnabled(h.under ~= nil)
   h.under_b:SetWidth(h.under_b:GetFontString():GetStringWidth() + 16)
-  h.usual_b:SetText(usual and ("Usual " .. ns.MoneyPlain(usual)) or "Usual")
+  h.usual_b:SetText(usual and ("Обычная " .. ns.MoneyPlain(usual)) or "Обычная")
   h.usual_b:SetEnabled(usual ~= nil)
   h.usual_b:SetWidth(h.usual_b:GetFontString():GetStringWidth() + 16)
   h.box:Show()
   local l, t = h.box:GetLeft(), h.box:GetTop()
-  why(("shown for item %d at %s,%s (page %s,%s), visible %s, layer %s %d over the page's %d"):format(id,
+  why(("показано для предмета %d в %s,%s (страница %s,%s), видимо %s, слой %s %d над страницей %d"):format(id,
     l and math.floor(l) or "?", t and math.floor(t) or "?",
     frame:GetLeft() and math.floor(frame:GetLeft()) or "?", frame:GetTop() and math.floor(frame:GetTop()) or "?",
     tostring(h.box:IsVisible()), h.box:GetFrameStrata(), h.box:GetFrameLevel(), frame:GetFrameLevel()))
@@ -221,9 +221,9 @@ local function helper(frame, name)
   for _, b in ipairs({ h.under_b, h.usual_b }) do
     b:HookScript("OnEnter", function(self)
       GameTooltip:SetOwner(self, "ANCHOR_TOP")
-      GameTooltip:AddLine(self == h.under_b and "Just under the cheapest" or "Your usual price", 1, 1, 1)
-      GameTooltip:AddLine(self == h.under_b and "Fills the price box with 1 copper under the cheapest listing from your last scan. You still click Post."
-        or "Fills the price box with the usual price from your scans this month. You still click Post.", nil, nil, nil, true)
+      GameTooltip:AddLine(self == h.under_b and "Чуть ниже минимума" or "Ваша обычная цена", 1, 1, 1)
+      GameTooltip:AddLine(self == h.under_b and "Заполняет поле цены на 1 медь ниже самого дешёвого лота из последнего скана. «Выставить» нажимаете вы."
+        or "Заполняет поле цены обычной ценой из сканов этого месяца. «Выставить» нажимаете вы.", nil, nil, nil, true)
       GameTooltip:Show()
     end)
     b:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -232,7 +232,7 @@ local function helper(frame, name)
   h.name = name
   -- Kept up to date by the ticker below while the auction house is open (the page's own
   -- OnUpdate hook never ran in Forever: owner's test, October 4).
-  ns:Debug(("Price helper on %s: PriceInput %s, SetAmount %s."):format(name, input and "yes" or "no",
+  ns:Debug(("Помощь с ценой на %s: PriceInput %s, SetAmount %s."):format(name, input and "yes" or "no",
     input and input.SetAmount and "yes" or "no"))
 end
 
@@ -256,14 +256,14 @@ local function tick()
     if frame:IsVisible() then
       seen[#seen + 1] = h.name
       local ok, err = pcall(helperUpdate, h)
-      if not ok then ns:Debug("Price helper error: " .. tostring(err)) end
+      if not ok then ns:Debug("Ошибка помощи с ценой: " .. tostring(err)) end
     end
   end
   table.sort(seen)
   local now = #seen > 0 and table.concat(seen, ", ") or "none"
   if now ~= lastSeen then
     lastSeen = now
-    ns:Debug("Price helper: sell page showing: " .. now)
+    ns:Debug("Помощь с ценой: страница продажи показывает: " .. now)
   end
 end
 ns:On("AUCTION_HOUSE_SHOW", function()

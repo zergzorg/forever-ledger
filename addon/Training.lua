@@ -16,7 +16,7 @@ local _, ns = ...
 ---------------------------------------------------------------------------
 local lastRead   -- the last trainer read: { name, npc, prof, list }
 
-local function isRiding(name) return name and name:find("Riding", 1, true) ~= nil end
+local function isRiding(name) return name and (name:find("Riding", 1, true) ~= nil or name:find("езда", 1, true) ~= nil) end
 
 function ns:TrainerRead(list, npc, npcID, prof)
   lastRead = { npc = npc, prof = prof, list = list, t = time() }
@@ -238,12 +238,12 @@ end
 -- cost and level, to check against the skip lists and see riding costs.
 function ns:PrintTrainer()
   if not lastRead then
-    ns:Print("Open a trainer first (class or riding); then /fl trainer lists what it teaches.")
+    ns:Print("Сначала откройте тренера (классового или езды); затем /fl trainer покажет, чему он учит.")
     return
   end
   -- One line per spell, its ranks as "level cost" (owner, October 5: one line per rank
   -- was too long for chat), * on ranks you can learn now, + on ones you know.
-  ns:Print(("%s (%s), %d services:"):format(lastRead.npc or "?", lastRead.prof or "class or riding", #lastRead.list))
+  ns:Print(("%s (%s), услуг: %d:"):format(lastRead.npc or "?", lastRead.prof or "класс или езда", #lastRead.list))
   local order, by = {}, {}
   for _, s in ipairs(lastRead.list) do
     if not by[s.name] then by[s.name] = {}; order[#order + 1] = s.name end
@@ -259,16 +259,16 @@ function ns:PrintTrainer()
     end
     print(("  %s: %s"):format(name, table.concat(parts, ", ")))
   end
-  print("  (* you can learn it now, + you know it)")
+  print("  (* можно выучить сейчас, + уже знаете)")
   -- Where Forever keeps the rank (Blizzard's window shows "Rank 4"; the list gives the
   -- state and icon): every value of the first service, and the spellbook's rank text.
   if GetTrainerServiceInfo and GetNumTrainerServices and (GetNumTrainerServices() or 0) > 0 then
     local vals = { pcall(GetTrainerServiceInfo, 1) }
     local parts = {}
     for i = 2, #vals do parts[#parts + 1] = tostring(vals[i]) end
-    print("  First service, every value: " .. table.concat(parts, " | "))
+    print("  Первая услуга, все значения: " .. table.concat(parts, " | "))
     local ok, desc = pcall(function() return GetTrainerServiceDescription and GetTrainerServiceDescription(1) end)
-    if ok and desc then print("  Its description: " .. tostring(desc):sub(1, 120)) end
+    if ok and desc then print("  Её описание: " .. tostring(desc):sub(1, 120)) end
   end
   local book = ns:KnownSpellRanks()
   local n, sample = 0, {}
@@ -276,7 +276,7 @@ function ns:PrintTrainer()
     n = n + 1
     if #sample < 6 then sample[#sample + 1] = name .. " " .. r end
   end
-  print(("  Spellbook: %d spells; ranks read: %s"):format(n, table.concat(sample, ", ")))
+  print(("  Книга заклинаний: %d заклинаний; рангов прочитано: %s"):format(n, table.concat(sample, ", ")))
 end
 
 -- A spell's ranks at the trainer, lowest level first: { { level, cost }, ... }.
@@ -331,11 +331,11 @@ function ns:FundCommand()
   local c = ns.db.chars[ns.CharKey()]
   if c then c.noRidingFund = nil end
   if ns.db.settings.moduleLevelling == false then
-    ns:Print("Leveling help is switched off: Settings, Global settings, Modules.")
+    ns:Print("Помощь в прокачке отключена: Настройки, Глобальные, Модули.")
   elseif ns.db.settings.ridingFund == false then
-    ns:Print("The riding fund is switched off everywhere: Settings, Global settings, Modules.")
+    ns:Print("Сбор на транспорт отключён везде: Настройки, Глобальные, Модули.")
   else
-    ns:Print("Riding fund shown on this character's Dashboard again.")
+    ns:Print("Сбор на транспорт снова показан в Обзоре этого персонажа.")
   end
   ns:RefreshUI()
 end
@@ -348,26 +348,26 @@ end
 ---------------------------------------------------------------------------
 function ns:TalentProbe()
   local function try(fn) local ok, a, b, c = pcall(fn); if ok then return a, b, c end end
-  ns:Print("Talents:")
+  ns:Print("Таланты:")
   local saved = ns:SaveTalentLayout()
-  print("  Layout saved: " .. (saved and "yes" or "no (talents not readable yet)"))
+  print("  Раскладка сохранена: " .. (saved and "да" or "нет (таланты пока не читаются)"))
   local configID = try(function() return C_ClassTalents.GetActiveConfigID() end)
-  print("  Active config: " .. tostring(configID))
+  print("  Активная конфигурация: " .. tostring(configID))
   local spec = try(function() return C_SpecializationInfo.GetSpecialization() end)
-  print("  Specialization: " .. tostring(spec))
+  print("  Специализация: " .. tostring(spec))
   for i = 1, 3 do
     local a, b, c = try(function() return C_SpecializationInfo.GetSpecializationInfo(i) end)
-    if a or b then print(("  Spec %d: %s, %s, %s"):format(i, tostring(a), tostring(b), tostring(c))) end
+    if a or b then print(("  Специализация %d: %s, %s, %s"):format(i, tostring(a), tostring(b), tostring(c))) end
   end
   local thirds = ns.TalentThirds and ns:TalentThirds()
   if thirds then
-    print(("  Points by tree: %s %d, %s %d, %s %d; leveling as: %s"):format(thirds.names[1], thirds.points[1],
+    print(("  Очки по древам: %s %d, %s %d, %s %d; прокачка как: %s"):format(thirds.names[1], thirds.points[1],
       thirds.names[2], thirds.points[2], thirds.names[3], thirds.points[3], tostring(ns:LevellingTree())))
   end
   if not (configID and C_Traits) then return end
   local info = try(function() return C_Traits.GetConfigInfo(configID) end)
   local trees = info and info.treeIDs or {}
-  print(("  Config: type %s, name %s, %d trees"):format(tostring(info and info.type), tostring(info and info.name), #trees))
+  print(("  Конфигурация: тип %s, имя %s, древ %d"):format(tostring(info and info.type), tostring(info and info.name), #trees))
   for _, treeID in ipairs(trees) do
     local nodes = try(function() return C_Traits.GetTreeNodes(treeID) end) or {}
     local picked, xs = {}, {}
@@ -386,7 +386,7 @@ function ns:TalentProbe()
       end
     end
     table.sort(xs)
-    print(("  Tree %s: %d nodes, x from %s to %s; with points: %s"):format(tostring(treeID), #nodes, tostring(xs[1]),
+    print(("  Древо %s: узлов %d, x от %s до %s; с очками: %s"):format(tostring(treeID), #nodes, tostring(xs[1]),
       tostring(xs[#xs]), #picked > 0 and table.concat(picked, "; ") or "none"))
   end
 end

@@ -44,14 +44,14 @@ local PORTALS = {
 }
 local SERVICES = {
   -- setting: the Settings switch (Customers section) that turns the service off.
-  { key = "mage", class = "MAGE", label = "Mage food and water", level = 1, setting = "svcFood",
+  { key = "mage", class = "MAGE", label = "Еда и вода мага", level = 1, setting = "svcFood",
     words = { "water", "food", "mage table", "mage water", "mage food" } },
-  { key = "portal", class = "MAGE", label = "Mage portal", level = 40, setting = "svcPortal", spells = { 10059, 11416, 11419, 11417, 11418, 11420 },
+  { key = "portal", class = "MAGE", label = "Портал мага", level = 40, setting = "svcPortal", spells = { 10059, 11416, 11419, 11417, 11418, 11420 },
     words = { "portal", "portals", "port", "port to", "mage port" } },
-  { key = "summon", class = "WARLOCK", label = "Warlock summon", level = 20, setting = "svcSummon", spells = { 698 },
+  { key = "summon", class = "WARLOCK", label = "Призыв чернокнижника", level = 20, setting = "svcSummon", spells = { 698 },
     -- Not "warlock" on its own: "LF warlock" is usually a group looking for dps.
     words = { "summon", "summons", "summoning", "summ", "sumon", "lock summon", "warlock summon" } },
-  { key = "lockpick", class = "ROGUE", label = "Lockpicking", level = 16, setting = "svcLockpick", spells = { 1804 },
+  { key = "lockpick", class = "ROGUE", label = "Взлом замков", level = 16, setting = "svcLockpick", spells = { 1804 },
     words = { "lockpick", "lockpicker", "lockpicking", "lock pick", "pick lock", "lockbox", "lockboxes", "lock box",
       "open box", "open a box", "open my box", "junkbox" } },
 }
@@ -153,7 +153,7 @@ local function silenced()
   return silencedThisSession or (s and (s.customerSilence == "city" or s.customerSilence == "logout")) or false
 end
 local SILENCE_TEXT = {
-  city = "until you're next in a capital city", reload = "until you reload or log out", logout = "until you log out",
+  city = "до следующего визита в столицу", reload = "до перезагрузки или выхода", logout = "до выхода из игры",
 }
 local function silenceKind()
   if silencedThisSession then return "reload" end
@@ -171,12 +171,12 @@ function ns:SilenceCustomers(kind)
     s.customerSilenceLeft = kind == "city" and not inCity() or nil
   elseif kind == "always" then
     s.customers = false
-    ns:Print("Customer finder off. Turn it back on in Settings, Customers, or with /fl customers on.")
+    ns:Print("Поиск клиентов выключен. Включить: Настройки → Клиенты или /fl customers on.")
   elseif kind == "on" then
     s.customers = true
-    ns:Print("Customer alerts are on.")
+    ns:Print("Оповещения о клиентах включены.")
   end
-  if SILENCE_TEXT[kind] then ns:Print(("Customer alerts are quiet %s. Requests are still listed in the Customers window."):format(SILENCE_TEXT[kind])) end
+  if SILENCE_TEXT[kind] then ns:Print(("Оповещения о клиентах приглушены %s. Заявки всё ещё видны в окне клиентов."):format(SILENCE_TEXT[kind])) end
   if updateSilenceButton then updateSilenceButton() end
   if ns.RefreshUI then ns:RefreshUI() end
 end
@@ -187,13 +187,13 @@ local function checkSilence(isLogin)
   if not s or not s.customerSilence then return end
   if s.customerSilence == "logout" and isLogin then
     s.customerSilence = nil
-    ns:Print("Customer alerts are back on (you logged out since silencing them).")
+    ns:Print("Оповещения о клиентах снова включены (вы выходили из игры после приглушения).")
   elseif s.customerSilence == "city" then
     if not inCity() then
       s.customerSilenceLeft = true
     elseif s.customerSilenceLeft then
       s.customerSilence, s.customerSilenceLeft = nil, nil
-      ns:Print("You're in a city again: customer alerts are back on.")
+      ns:Print("Вы снова в городе: оповещения о клиентах включены.")
     end
   end
   if updateSilenceButton then updateSilenceButton() end
@@ -210,10 +210,10 @@ local function onChat(msg, sender, channel)
   if not what then return end
   if lastAlert[sender] and GetTime() - lastAlert[sender] < THROTTLE then return end
   lastAlert[sender] = GetTime()
-  local where = channel and channel ~= "" and channel:match("^(%S+)") or "chat"
+  local where = channel and channel ~= "" and channel:match("^(%S+)") or "чат"
   local quiet = silenced()   -- (still listed below, just no window, sound or chat)
   if s.customerChat and not quiet then
-    ns:Print(("Customer? |Hplayer:%s|h[%s]|h (%s, %s): %s"):format(sender, sender, where, what, msg))
+    ns:Print(("Клиент? |Hplayer:%s|h[%s]|h (%s, %s): %s"):format(sender, sender, where, what, msg))
   end
   if not quiet and s.customerSound and PlaySound and SOUNDKIT and SOUNDKIT.TELL_MESSAGE then PlaySound(SOUNDKIT.TELL_MESSAGE) end
   local log = ns.db.customers or {}
@@ -332,11 +332,11 @@ end
 
 function ns:PostAd(kind)
   local wait = AD_COOLDOWN - (GetTime() - (lastAd[kind] or 0))
-  if wait > 0 then ns:Print(("Wait %d seconds before posting again."):format(math.ceil(wait))); return end
+  if wait > 0 then ns:Print(("Подождите %d с перед следующим сообщением."):format(math.ceil(wait))); return end
   local number, name = adChannel()
-  if not number then ns:Print("You're not in the Trade or Services channel. Join it in a city first."); return end
+  if not number then ns:Print("Вы не в канале «Торговля» или «Услуги». Сначала вступите в него в городе."); return end
   local text = adText(kind)
-  if #text > 255 then ns:Print("That ad is too long for chat (255 letters). Right-click the button to shorten it."); return end
+  if #text > 255 then ns:Print("Объявление слишком длинное для чата (255 символов). Правый клик по кнопке — сократить."); return end
   SendChatMessage(text, "CHANNEL", nil, number)
   lastAd[kind] = GetTime()
   ns:Debug("Posted to", name, ":", text)
@@ -440,8 +440,8 @@ ns:On("UI_INFO_MESSAGE", function(_, msg)
   log[#log + 1] = entry
   while #log > WORK_LOG do table.remove(log, 1) end
   if request then request.done, request.paid = true, t.got end
-  local what = t.enchant or (#t.give > 0 and t.give[1].name) or entry.what or "trade"
-  ns:Print(("Work log: %s for %s%s."):format(what, t.who or "?", t.got > 0 and (", paid " .. ns.Money(t.got)) or ""))
+  local what = t.enchant or (#t.give > 0 and t.give[1].name) or entry.what or "сделка"
+  ns:Print(("Журнал работ: %s для %s%s."):format(what, t.who or "?", t.got > 0 and (", оплата " .. ns.Money(t.got)) or ""))
   if refresh then refresh() end
 end)
 
@@ -485,11 +485,11 @@ local function refreshWork()
     r:SetWidth(width)
     r.stripe:SetShown(i % 2 == 0)
     local what = e.enchant and ("Enchanted " .. (e.enchantItem or "an item") .. ": " .. e.enchant)
-      or (#(e.give or {}) > 0 and ("Gave " .. e.give[1].qty .. " " .. e.give[1].name .. (#e.give > 1 and (" and " .. (#e.give - 1) .. " more") or "")))
-      or e.what or "Trade"
-    r.head:SetText(("%s  |cff888888%s|r"):format(e.who or "?", date("%b %d %H:%M", e.t)))
+      or (#(e.give or {}) > 0 and ("Отдал " .. e.give[1].qty .. " " .. e.give[1].name .. (#e.give > 1 and (" и ещё " .. (#e.give - 1)) or "")))
+      or e.what or "Сделка"
+    r.head:SetText(("%s  |cff888888%s|r"):format(e.who or "?", date("%d.%m %H:%M", e.t)))
     local net = (e.got or 0) - (e.gave or 0)
-    r.money:SetText(net > 0 and ("|cff7fd39c+" .. ns.Money(net) .. "|r") or net < 0 and ("|cffee8597-" .. ns.Money(-net) .. "|r") or "|cff888888no gold|r")
+    r.money:SetText(net > 0 and ("|cff7fd39c+" .. ns.Money(net) .. "|r") or net < 0 and ("|cffee8597-" .. ns.Money(-net) .. "|r") or "|cff888888без золота|r")
     r.detail:SetWidth(width - 16)
     r.detail:SetText(what)
     r:Show()
@@ -497,12 +497,12 @@ local function refreshWork()
   for i = #list + 1, #workRows do workRows[i]:Hide() end
   for _, r in ipairs(rows) do r:Hide() end
   win.empty:SetShown(#list == 0)
-  win.empty:SetText("No jobs yet. Trades where you enchant something, get paid, or trade with someone from Requests are logged here.")
+  win.empty:SetText("Работ пока нет. Здесь записываются сделки, где вы что-то зачаровали, получили оплату или обменялись с кем-то из заявок.")
   win.content:SetHeight(math.max(#list * ROW, 20))
   local now, d = time(), date("*t")
   local today, tj = workTotals(time({ year = d.year, month = d.month, day = d.day, hour = 0 }))
   local week, wj = workTotals(now - 7 * 86400)
-  win.foot:SetText(("Today: %s from %d jobs.   Last 7 days: %s from %d jobs."):format(ns.Money(today), tj, ns.Money(week), wj))
+  win.foot:SetText(("Сегодня: %s с %d работ.   Последние 7 дней: %s с %d работ."):format(ns.Money(today), tj, ns.Money(week), wj))
   if win.sf.UpdateScrollBar then win.sf.UpdateScrollBar() end
 end
 
@@ -527,15 +527,15 @@ refresh = function()
   if not (win and win:IsShown()) then return end
   if win.mode == "work" then win.clear:Hide(); return refreshWork() end
   for _, r in ipairs(workRows) do r:Hide() end
-  win.empty:SetText("No requests in the last hour. They appear here as soon as someone asks for what you do.")
+  win.empty:SetText("За последний час заявок нет. Они появятся, как только кто-то попросит то, что вы делаете.")
   -- The footer says when alerts are quiet or off, and until when.
   local k = silenceKind()
   if not ns.db.settings.customers then
-    win.foot:SetText("|cffee8597Customer finder off.|r Silence > Turn alerts back on, or /fl customers on.")
+    win.foot:SetText("|cffee8597Поиск клиентов выключен.|r «Приглушение» → включить оповещения или /fl customers on.")
   elseif k then
-    win.foot:SetText(("|cffffd100Quiet %s.|r New requests still show here."):format(SILENCE_TEXT[k] or ""))
+    win.foot:SetText(("|cffffd100Приглушено %s.|r Новые заявки всё равно видны здесь."):format(SILENCE_TEXT[k] or ""))
   else
-    win.foot:SetText("Hover for the full message. x hides a request.")
+    win.foot:SetText("Наведите для полного сообщения. x скрывает заявку.")
   end
   local T = ns.Theme
   local list = ns:OpenCustomerRequests()
@@ -582,7 +582,7 @@ refresh = function()
     r:SetPoint("TOPLEFT", win.content, "TOPLEFT", 0, -(i - 1) * ROW)
     r:SetWidth(width)
     r.stripe:SetShown(i % 2 == 0)
-    r.head:SetText(("%s  %s%s|r  |cff888888%s, %s|r"):format(e.who, T:AccentCode(), e.what, e.where or "chat", ago(e.t)))
+    r.head:SetText(("%s  %s%s|r  |cff888888%s, %s|r"):format(e.who, T:AccentCode(), e.what, e.where or "чат", ago(e.t)))
     -- Stops before the Whisper, Invite and x buttons (code review, October 4).
     r.head:SetWidth(width - 170)
     r.head:SetWordWrap(false)
@@ -615,7 +615,7 @@ function ns:ShowCustomers(quiet)
         GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
         GameTooltip:AddLine(label, 1, 1, 1)
         GameTooltip:AddLine(adText(kind), 0.9, 0.9, 0.9, true)
-        GameTooltip:AddLine("Click to post it in Trade. Right-click to change the text.", T.accent[1], T.accent[2], T.accent[3], true)
+        GameTooltip:AddLine("Клик — отправить в «Торговлю». Правый клик — изменить текст.", T.accent[1], T.accent[2], T.accent[3], true)
         GameTooltip:Show()
       end)
       b:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -638,7 +638,7 @@ function ns:ShowCustomers(quiet)
 
     -- Requests (people asking now) or Work done (the work log).
     win.mode = "requests"
-    win.modeChoice = T:Choice(win, { { value = "requests", label = "Requests" }, { value = "work", label = "Work done" } },
+    win.modeChoice = T:Choice(win, { { value = "requests", label = "Заявки" }, { value = "work", label = "Работы" } },
       function(v) win.mode = v; refresh() end)
     win.modeChoice:SetPoint("TOPRIGHT", -10, -39)
     win.modeChoice:SetValue("requests")
@@ -650,23 +650,23 @@ function ns:ShowCustomers(quiet)
     win.empty:SetPoint("TOPLEFT", 8, -8)
     win.empty:SetPoint("RIGHT", win.content, "RIGHT", -8, 0)   -- wrap instead of running off the edge
     win.empty:SetJustifyH("LEFT")
-    win.empty:SetText("No requests in the last hour. They appear here as soon as someone asks for what you do.")
+    win.empty:SetText("За последний час заявок нет. Они появятся, как только кто-то попросит то, что вы делаете.")
     win.foot = T:Text(win, 11, T.dim)
     win.foot:SetPoint("BOTTOMLEFT", 10, 10)
     win.foot:SetJustifyH("LEFT")
     win.foot:SetWordWrap(false)
-    win.foot:SetText("Hover for the full message. x hides a request.")
+    win.foot:SetText("Наведите для полного сообщения. x скрывает заявку.")
 
     -- Silence: a button with a short menu of how long (owner, October 3).
-    local sil = T:Button(win, "Silence", 84, nil, 22)
+    local sil = T:Button(win, "Приглушить", 84, nil, 22)
     sil:SetPoint("BOTTOMRIGHT", -8, 5)
     -- Clear all: hides every request listed (only on Requests, when there are some).
-    win.clear = T:Button(win, "Clear all", 80, function() ns:ClearCustomerRequests() end, 22)
+    win.clear = T:Button(win, "Скрыть все", 80, function() ns:ClearCustomerRequests() end, 22)
     win.clear:SetPoint("RIGHT", sil, "LEFT", -6, 0)
     win.clear:HookScript("OnEnter", function(self)
       GameTooltip:SetOwner(self, "ANCHOR_TOP")
-      GameTooltip:AddLine("Clear all", 1, 1, 1)
-      GameTooltip:AddLine("Hides every request in the list, like x on each. New ones still show up.", nil, nil, nil, true)
+      GameTooltip:AddLine("Скрыть все", 1, 1, 1)
+      GameTooltip:AddLine("Скрывает все заявки в списке, как x у каждой. Новые появятся.", nil, nil, nil, true)
       GameTooltip:Show()
     end)
     win.clear:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -725,8 +725,8 @@ function ns:ShowCustomers(quiet)
     end)
     sil:HookScript("OnEnter", function(self)
       GameTooltip:SetOwner(self, "ANCHOR_TOP")
-      GameTooltip:AddLine("Silence customer alerts", 1, 1, 1)
-      GameTooltip:AddLine("No window, sound or chat line for new requests, for as long as you pick. They're still listed here.", nil, nil, nil, true)
+      GameTooltip:AddLine("Приглушить оповещения о клиентах", 1, 1, 1)
+      GameTooltip:AddLine("Без окна, звука и строки в чате для новых заявок, на выбранное время. В списке они остаются.", nil, nil, nil, true)
       GameTooltip:Show()
     end)
     sil:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -734,7 +734,7 @@ function ns:ShowCustomers(quiet)
     updateSilenceButton = function()
       local off = not ns.db.settings.customers
       local k = silenceKind()
-      sil:SetText(off and "Off" or (k and "Silenced" or "Silence"))
+      sil:SetText(off and "Выкл" or (k and "Приглушено" or "Приглушить"))
       sil:SetSelected(off or k ~= nil)
       if win:IsShown() then refresh() end
     end
@@ -762,7 +762,7 @@ function ns:ShowWorkLog()
   refresh()
 end
 
--- The 9th value is the channel's plain name ("Trade", "Services").
+-- The 9th value is the channel's plain name ("Сделка", "Services").
 ns:On("CHAT_MSG_CHANNEL", function(msg, sender, _, channelName, _, _, _, _, baseName)
   onChat(msg, sender, baseName or channelName)
 end)
@@ -777,5 +777,5 @@ end
 -- For testing: /fl customer <message> runs a message through the finder.
 function ns:TestCustomer(msg)
   local what = wanted(msg or "")
-  ns:Print(what and ("That would alert: " .. what) or "That wouldn't alert (not a request for something this character does).")
+  ns:Print(what and ("Это вызвало бы оповещение: " .. what) or "Это не вызвало бы оповещения (не заявка на то, что умеет персонаж).")
 end

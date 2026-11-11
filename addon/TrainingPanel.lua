@@ -13,17 +13,17 @@ local WEEK = 7 * 86400
 local panel
 
 local GROUPS = {
-  { key = "train", title = "Must have", color = "7fd39c" },
-  { key = "choice", title = "Nice to have", color = "e8c27a" },
-  { key = "skip", title = "Skip while leveling", color = "ee8597" },
-  { key = "unknown", title = "Not reviewed yet", color = "999999" },
+  { key = "train", title = "Обязательно", color = "7fd39c" },
+  { key = "choice", title = "Полезно", color = "e8c27a" },
+  { key = "skip", title = "Пропустить при прокачке", color = "ee8597" },
+  { key = "unknown", title = "Ещё не разобрано", color = "999999" },
 }
 
 -- One spell's advice: group key, and the reasons to show on hover.
 function ns:SpellAdvice(name, knowsLower)
   local _, class = UnitClass("player")
   local a = ns.TRAINER_ADVICE and ns.TRAINER_ADVICE[class or ""] and ns.TRAINER_ADVICE[class or ""][name]
-  if not a then return "unknown", { reason = "Not in Forever Ledger's list for your class yet.", notes = {} } end
+  if not a then return "unknown", { reason = "Этого пока нет в списке Forever Ledger для вашего класса.", notes = {} } end
   local tree = ns.LevellingTree and ns:LevellingTree()
   -- Hover sections (owner, October 6: readable, not one block): verdict, reason, when to
   -- upgrade, notes.
@@ -45,16 +45,16 @@ function ns:SpellAdvice(name, knowsLower)
     if tier and TIER[tier] then
       group = TIER[tier]
       if tree then
-        why.verdict = ((tier == "must" and "Must have for %s, your tree.") or (tier == "nice" and "Nice to have for %s, your tree.")
-          or "Not needed leveling as %s."):format(tree)
+        why.verdict = ((tier == "must" and "Обязательно для %s, вашего древа.") or (tier == "nice" and "Полезно для %s, вашего древа.")
+          or "Не нужно при прокачке в %s."):format(tree)
       end
     else
       group = "choice"
       local parts = {}
-      for t, v in pairs(a.tr) do parts[#parts + 1] = ("%s: %s"):format(t, (v == "must" and "must have") or (v == "nice" and "nice to have") or "skip") end
+      for t, v in pairs(a.tr) do parts[#parts + 1] = ("%s: %s"):format(t, (v == "must" and "обязательно") or (v == "nice" and "полезно") or "skip") end
       table.sort(parts)
-      why.verdict = "Depends on your tree: " .. table.concat(parts, ", ") .. "."
-      why.notes[#why.notes + 1] = "Spend talent points and this gets clearer."
+      why.verdict = "Зависит от древа: " .. table.concat(parts, ", ") .. "."
+      why.notes[#why.notes + 1] = "Вложите таланты, и это станет яснее."
     end
   elseif a.c == "everyone" then
     group = "train"
@@ -63,13 +63,13 @@ function ns:SpellAdvice(name, knowsLower)
     for _, t in ipairs(a.t or {}) do if t == tree then mine = true end end
     if mine then
       group = "train"
-      why.verdict = ("For %s, your tree."):format(tree)
+      why.verdict = ("Для %s, вашего древа."):format(tree)
     elseif tree then
       group = "skip"
-      why.verdict = ("For %s; you level as %s."):format(table.concat(a.t or {}, " and "), tree)
+      why.verdict = ("Для %s; вы качаетесь как %s."):format(table.concat(a.t or {}, " and "), tree)
     else
       group = "choice"
-      why.verdict = ("For %s. Spend talent points and this gets clearer."):format(table.concat(a.t or {}, " and "))
+      why.verdict = ("Для %s. Вложите таланты, и это станет яснее."):format(table.concat(a.t or {}, " and "))
     end
   elseif a.c == "nice" then
     group = "choice"
@@ -91,38 +91,38 @@ function ns:SpellAdvice(name, knowsLower)
   local castLately = last and time() - last <= WEEK
   local tierGroup = group
   if group == "skip" then
-    why.upgrade = "Not while leveling. Come back to it at 60, or if you start using it."
+    why.upgrade = "Не при прокачке. Вернитесь к нему на 60 или если начнёте использовать."
   elseif a.p == "current" then
-    why.upgrade = knowsLower and "Always: the old rank falls behind as you level."
-      or "Keep every rank as it comes: it's a spell you lean on, and an old rank falls behind."
+    why.upgrade = knowsLower and "Всегда: старый ранг отстаёт по мере роста уровня."
+      or "Берите каждый ранг: это заклинание, на которое вы опираетесь, а старый ранг отстаёт."
   elseif a.p == "learn" then
     if knowsLower then
       if group == "train" then group = "choice" end
-      why.upgrade = "You have it, and the first rank does the job. A higher rank mostly lasts longer or reaches further: buy it with gold to spare."
+      why.upgrade = "Оно у вас есть, и первого ранга хватает. Высший ранг в основном дольше действует или дальше достаёт: берите при лишнем золоте."
     else
-      why.upgrade = "The first rank does the job. Later ranks mostly last longer or reach further: buy them with gold to spare."
+      why.upgrade = "Первого ранга хватает. Поздние ранги в основном дольше действуют или дальше достают: берите при лишнем золоте."
     end
   elseif a.p == "used" then
     if knowsLower and counted and not castLately then
       if group == "train" then group = "choice" end
-      why.upgrade = "Only while you use it, and you haven't cast it in the last week."
+      why.upgrade = "Только если используете, а за последнюю неделю не применяли."
     else
-      why.upgrade = "Upgrade while you cast it often. Skip new ranks once you stop using it."
+      why.upgrade = "Улучшайте, пока часто применяете. Новые ранги пропускайте, когда перестанете."
     end
   elseif a.p == "defer" then
     if knowsLower and counted and not castLately and group == "train" then group = "choice" end
-    why.upgrade = "Can wait: train it when you need it (see why above), not just because it's there."
+    why.upgrade = "Может подождать: учите, когда понадобится (причина выше), а не просто потому, что оно есть."
   end
-  -- Moved down a group by its rank rule: the tree's "Must have" verdict no longer fits
+  -- Moved down a group by its rank rule: the tree's "Обязательно" verdict no longer fits
   -- (Codex review, October 6: the hover said Must have under Nice to have).
   if group ~= tierGroup then
-    why.verdict = ((a.p == "learn") and "Nice to have now: you already have a rank that does the job"
-      or "Nice to have now: you haven't cast it in the last week")
-      .. (tree and (" (a must have for %s)."):format(tree) or ".")
+    why.verdict = ((a.p == "learn") and "Полезно сейчас: у вас уже есть ранг, которого хватает"
+      or "Полезно сейчас: вы не применяли его последнюю неделю")
+      .. (tree and (" (обязательно для %s)."):format(tree) or ".")
   end
   -- A plain verdict when the tree didn't give one, so every hover reads the same way.
-  why.verdict = why.verdict or (group == "train" and "Must have while leveling.")
-    or (group == "choice" and "Nice to have: worth it when gold allows.") or "Skip while leveling."
+  why.verdict = why.verdict or (group == "train" and "Обязательно при прокачке.")
+    or (group == "choice" and "Полезно, если хватает золота.") or "Пропустить при прокачке."
   return group, why
 end
 
@@ -142,7 +142,7 @@ local function build()
   T:DecorateWindow(panel, 24, bar)
   panel.title = T:Text(bar, 13)
   panel.title:SetPoint("LEFT", 10, 0)
-  panel.title:SetText("Training advice")
+  panel.title:SetText("Советы тренера")
   T:StyleTitle(panel.title, 13)
   panel.close = T:Button(bar, "x", 20, function() panel:Hide() end, 18)
   panel.close:SetPoint("RIGHT", -5, 0)
@@ -158,7 +158,7 @@ local function build()
   panel.foot:SetPoint("RIGHT", panel, "RIGHT", -10, 0)
   panel.foot:SetJustifyH("LEFT")
   panel.foot:SetWordWrap(false)
-  panel.foot:SetText("Hover a spell for why. Advice only.")
+  panel.foot:SetText("Наведите на заклинание — почему. Только совет.")
   panel.rows = {}
   panel:Hide()
 end
@@ -202,12 +202,12 @@ local function row(i)
     if w.reason then GameTooltip:AddLine(w.reason, 0.85, 0.85, 0.85, true) end
     if w.upgrade then
       GameTooltip:AddLine(" ")
-      GameTooltip:AddLine("When to upgrade", 1, 0.82, 0)
+      GameTooltip:AddLine("Когда улучшать", 1, 0.82, 0)
       GameTooltip:AddLine(w.upgrade, 0.8, 0.8, 0.8, true)
     end
     if w.notes and #w.notes > 0 then
       GameTooltip:AddLine(" ")
-      GameTooltip:AddLine("Note", 1, 0.82, 0)
+      GameTooltip:AddLine("Примечание", 1, 0.82, 0)
       for _, n in ipairs(w.notes) do GameTooltip:AddLine(n, 0.65, 0.65, 0.65, true) end
     end
     GameTooltip:Show()
@@ -252,8 +252,8 @@ function ns:ShowTrainingAdvice(list)
   end
   local tree = ns.LevellingTree and ns:LevellingTree()
   -- Two short lines (the long one wrapped to three: owner's screenshot, October 6).
-  panel.sub:SetText((total > 0 and ("All of it %s, recommended %s.\n"):format(ns.Money(total), ns.Money(cost.train)) or "Nothing new to learn at this level.\n")
-    .. (tree and ("Leveling as %s (from your talents)."):format(tree) or "No talent points yet: spec spells are your choice."))
+  panel.sub:SetText((total > 0 and ("Всё это %s, рекомендуется %s.\n"):format(ns.Money(total), ns.Money(cost.train)) or "На этом уровне учить нечего.\n")
+    .. (tree and ("Прокачка как %s (по вашим талантам)."):format(tree) or "Очков талантов пока нет: заклинания специализации — на ваш выбор."))
   local y, n = 0, 0
   for _, g in ipairs(GROUPS) do
     if #groups[g.key] > 0 then
@@ -302,7 +302,7 @@ function ns:ShowTrainingAdvice(list)
   local maxH = math.max(260, (trainer and trainer:IsShown() and trainer:GetHeight()) or 440)
   local want = 74 + math.max(y, 20) + 32
   panel:SetHeight(math.min(want, maxH))
-  panel.foot:SetText(want > maxH and "Scroll for more. Hover a spell for why." or "Hover a spell for why. Advice only.")
+  panel.foot:SetText(want > maxH and "Прокрутите для остального. Наведите на заклинание — почему." or "Наведите на заклинание — почему. Только совет.")
   panel.content:SetWidth(300 - 12 - 12)
   panel.content:SetHeight(math.max(y, 20))
   panel.sf:SetVerticalScroll(0)
