@@ -245,6 +245,25 @@ local function throttled()
   return AH.IsThrottledMessageSystemReady and not AH.IsThrottledMessageSystemReady()
 end
 
+-- Paused (the Pause button, Prices.lua ns:ToggleScanPause): the queue looks nothing up by
+-- itself. A click of yours (Buy, Go now, a row, a wheel tick) goes ahead, and so does what
+-- follows from it for a few seconds (the next of a row you're buying), so buying never
+-- takes two clicks.
+local PAUSED = "Paused."
+local AFTER_CLICK = 10
+local function pausedNow()
+  return ns.IsScanPaused ~= nil and ns:IsScanPaused() and not Q.userPicked
+    and GetTime() - (Q.clickAt or -math.huge) > AFTER_CLICK
+end
+Q.pausedNow = pausedNow   -- (for the tests)
+
+-- Looking something up or waiting on a purchase's answer: the flip watch's browse sweep
+-- (Sweep.lua) waits for it before asking for its next group.
+function ns:BuyQueueBusy()
+  local s = Q.state
+  return s == "browse" or s == "search" or s == "price" or s == "buying"
+end
+
 local search, prepare, updateBinding, rebuildNow
 local spendable, sortFlips
 
@@ -266,7 +285,12 @@ local function finishTarget(note, wakeIn, gone)
   local e = Q.cur
   if e then
     done[e.id] = GetTime() - (wakeIn and DONE_FOR - wakeIn or 0)
-    if gone and e.lane == "flips" then checkedFlips[e.id] = time() end
+    if gone and e.lane == "flips" then
+      checkedFlips[e.id] = time()
+      -- The whole-list reading judges it afresh next time, so one listed again at the
+      -- same price brings it back (Sweep.lua).
+      if ns.SweepForget then ns:SweepForget(e.id) end
+    end
     if wakeIn then C_Timer.After(wakeIn, function() Q.built = 0; rebuildNow() end) end
     local list = Q.lanes[e.lane] or {}
     for i, x in ipairs(list) do if x == e then table.remove(list, i); break end end
@@ -421,17 +445,30 @@ local function bought(n, cost, e)
   end
   if e and e.want then e.want = e.want - n end
   if e then Q.note = ("Bought %d %s for %s."):format(n, ns.ItemName(e.id), money(cost)) end
+  -- One listed again at the price just bought at is new to the whole-list reading
+  -- (Sweep.lua; owner, November 10: Birchwood Mauls at 9s only showed after a reload).
+  if e and ns.SweepForget then ns:SweepForget(e.id) end
 end
 
 function search()
   local e = Q.cur
   if not e or not active() then setState("idle"); return end
+  -- Paused (the Pause button, Prices.lua): only what you click is looked up. Checked before
+  -- anything else, so a long pause doesn't hold scans you start yourself (queueBusyUntil).
+  if pausedNow() then
+    Q.waitText, Q.waitHint = PAUSED, "Click Resume below to carry on, or Go now to look this one up."
+    if Q.state ~= "wait" then setState("wait") end
+    timeout(2, search)
+    return
+  end
   -- Only a full scan (a few seconds) is waited for. Other scans pause for a moment after
   -- each lookup and purchase of ours instead (Prices.lua Scan:Next). Asked before waiting:
   -- a scan that carries on keeps the game busy, and flips went while the queue waited
   -- 3 seconds for it (owner's test, November 5: Golem Isospring).
   ns.queueBusyUntil = math.max(ns.queueBusyUntil or 0, GetTime() + 2)
-  if throttled() or (ns.Scan.active and ns.Scan.full) then
+  -- (And a part of the flip watch's auction house list already on its way, a moment at most:
+  -- the sweep waits for the queue before asking for the next one, Sweep.lua.)
+  if throttled() or (ns.Scan.active and ns.Scan.full) or (ns.SweepWaiting and ns:SweepWaiting()) then
     Q.waitFor = ns.Scan.full and "the full scan to finish" or "the auction house"
     setState("wait")
     timeout(1, search)
@@ -442,12 +479,12 @@ function search()
   -- stopped for a few seconds (owner's test, October 2: pages spinning, buys refused).
   -- Clicking Buy or a queue row isn't "searching yourself" (Q.userPicked).
   if not Q.userPicked and ns.lastUserSearch and GetTime() - ns.lastUserSearch < USER_QUIET then
-    Q.waitText = "Paused while you search the auction house yourself."
+    Q.waitText, Q.waitHint = "Paused while you search the auction house yourself.", nil
     setState("wait")
     timeout(1, search)
     return
   end
-  Q.userPicked, Q.waitText = nil, nil
+  Q.userPicked, Q.waitText, Q.waitHint = nil, nil, nil
   leaveStalePage()
   Q.tries = (Q.tries or 0) + 1
   if Q.tries > 3 then finishTarget("no reply from the auction house."); return end
@@ -659,6 +696,7 @@ end
 -- Work on this entry now (clicking a row): its section becomes the armed one.
 local function choose(e)
   noteListUse()
+  Q.clickAt = GetTime()
   arm(e.lane, true)
   dropCurrent()
   Q.cur, Q.tries = e, 0
@@ -889,6 +927,7 @@ local PLAN_SECONDS = 15   -- how long what a lookup found is trusted
 -- starts a scan.
 function ns:BuyQueueAct(clicked)
   noteListUse()
+  Q.clickAt = GetTime()   -- (yours: it goes ahead while paused, pausedNow)
   -- (Before the checks below: a click they hold back must still make room for the next.)
   if Q.state == "ready" or Q.state == "confirm" then holdScans() end
   if clicked and Q.state == "idle" and not Q.cur then
@@ -1394,7 +1433,7 @@ local function statusText()
   local how = S().wheel and "Scroll down over this strip, or click Buy." or "Click Buy (or tick Scroll to buy and scroll here)."
   local GREY = "|cff888888%s|r"
   if st == "wait" then
-    if Q.waitText then return Q.waitText, "Carries on a few seconds after you stop, or click Go now.", "Go now" end
+    if Q.waitText then return Q.waitText, Q.waitHint or "Carries on a few seconds after you stop, or click Go now.", "Go now" end
     if Q.waitFor == "the full scan to finish" then
       return "Waiting for the full scan to finish...", "A few seconds; then it carries on by itself.", GREY:format("Wait")
     end
@@ -1752,7 +1791,7 @@ local function buildQueueView(parent)
       GameTooltip:AddLine("Checks the auction house for everything on your lists ticked \"Buy from this list in the Buy queue\" (and the materials you're short of), one item at a time. What's at or under your price shows up here.", nil, nil, nil, true)
     else
       GameTooltip:AddLine("Watch flips", 1, 1, 1)
-      GameTooltip:AddLine("Keeps looking for flips while the auction house stays open: a full scan whenever the game allows one (about every 15 minutes) and quick checks of likely items in between. New flips chime and join the queue. Click again to stop.", nil, nil, nil, true)
+      GameTooltip:AddLine("Keeps looking for flips while the auction house stays open: a full scan whenever the game allows one (about every 15 minutes), and the whole auction house list read about every half minute in between. New flips chime and join the queue. Click again to stop.", nil, nil, nil, true)
     end
     GameTooltip:Show()
   end)
@@ -1761,11 +1800,11 @@ local function buildQueueView(parent)
   v.fullBtn:SetPoint("LEFT", v.watchBtn, "RIGHT", 6, 0)
   tip(v.fullBtn, "Full scan", "Reads every listing in a few seconds. The game allows one about every 15 minutes; the button counts down to the next.")
   ns.panelFullButton = v.fullBtn
-  v.matsBtn = T:Button(v, "Scan materials", 118, function()
-    if ns.Scan.active and not ns.Scan.full then ns.Scan:Stop("Scan stopped.") else ns.Scan:Start("watch") end
-  end, 22)
-  v.matsBtn:SetPoint("LEFT", v.fullBtn, "RIGHT", 6, 0)
-  tip(v.matsBtn, "Scan materials", "Checks just what your recipes use, one item at a time (a couple of minutes). Click again to stop.")
+  -- Pause / Resume (owner, November 10: in place of Scan materials, which full scans and the
+  -- whole-list reading made redundant; /fl scan materials still does it).
+  v.pauseBtn = T:Button(v, "Pause", 118, function() ns:ToggleScanPause() end, 22)
+  v.pauseBtn:SetPoint("LEFT", v.fullBtn, "RIGHT", 6, 0)
+  tip(v.pauseBtn, "Pause", "Holds the flip watch and the Buy queue's own lookups, so your searches and the page you're on stay as you leave them. Buy, Go now and clicking a row still work. Click Resume to carry on; closing the auction house ends it too.")
   -- Above the buttons: the scan's progress on the left, what you've bought on the right.
   v.totals = T:Text(v, 11, T.dim)
   v.totals:SetPoint("BOTTOMRIGHT", -10, 36)
@@ -2047,8 +2086,9 @@ function ns:UpdatePanelScanButtons()
   v.watchBtn:SetText(lists and "Search my lists" or (ns:IsFlipWatching() and "Stop watching" or "Watch flips"))
   -- (Only works at the auction house; Stop always does. UI pass, November 9.)
   v.watchBtn:SetEnabled((ns:IsAHOpen() or (not lists and ns:IsFlipWatching())) and not (lists and ns.Scan.active))
-  v.matsBtn:SetShown(not lists)
-  v.matsBtn:SetText((ns.Scan.active and not ns.Scan.full) and "Stop scan" or "Scan materials")
+  local paused = ns.IsScanPaused and ns:IsScanPaused()
+  v.pauseBtn:SetText(paused and "Resume" or "Pause")
+  v.pauseBtn:SetEnabled(paused or ns:IsAHOpen())
   if v.viewChoice then v.viewChoice:SetValue(view()) end
   if v.watched then
     v.watched:SetShown(not lists)
@@ -3578,11 +3618,17 @@ function ns:FlipsAnnounced(list)
   -- and could only be found by searching). Not while you're using a list (a lookup or purchase
   -- under way, or a click or tick there in the last 30 seconds): a list never buys a flip
   -- by accident, and the gold count on Vendor flips says they're there.
-  local switched = false
-  if shown() and view() == "lists" and Q.state == "idle" and not Q.cur and not listInUse() then
+  local switched, onView, st, cur = false, view(), Q.state, Q.cur
+  if shown() and onView == "lists" and st == "idle" and not cur and not listInUse() then
     setView("flips")
     switched = true
   end
+  -- (For checking, /fl debug: why a chime did or didn't show Vendor flips. Owner's test,
+  -- November 10: it stayed on Shopping lists, and nothing showed why.)
+  trace(("flip chime, %d new: %s (panel %s, tab %s, view %s, state %s, current %s, list used %s)"):format(#list,
+    switched and "showed Vendor flips" or "view left alone", tostring(side and side:IsShown() or false), tostring(S().tab),
+    onView, st, tostring(cur and cur.id),
+    Q.listTouched and ("%d s ago"):format(math.floor(GetTime() - Q.listTouched)) or "never"))
   if not (shown() and view() == "flips") then Q.unseenFlips = (Q.unseenFlips or 0) + #list end
   Q.built = 0
   if shown() and view() == "flips" and not switched then rebuildNow() end

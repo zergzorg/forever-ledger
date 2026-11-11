@@ -713,6 +713,8 @@ end
 function ns:UpdateWatchButton()
   if ns.UpdatePanelScanButtons then ns:UpdatePanelScanButtons() end
   if ns.RefreshQueueView then ns:RefreshQueueView() end
+  -- Pause / Resume under the auction house window (UI.lua), like the panel's.
+  if ns.ahButton then ns.ahButton:SetText(ns.IsScanPaused and ns:IsScanPaused() and "Resume" or "Pause") end
   local w = ns.ahWatchButton
   if not w then return end
   local on = ns:IsFlipWatching()
@@ -755,7 +757,7 @@ ns:On("AUCTION_HOUSE_SHOW", function()
       w:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
         GameTooltip:AddLine("Flip watch", 1, 1, 1)
-        GameTooltip:AddLine("Keeps looking for items below vendor price while the auction house stays open: a full scan every 15 minutes, quick checks in between. Chimes when it finds one, and new flips join the Buy queue.", nil, nil, nil, true)
+        GameTooltip:AddLine("Keeps looking for items below vendor price while the auction house stays open: a full scan every 15 minutes, and the whole auction house list read about every half minute in between. Chimes when it finds one, and new flips join the Buy queue.", nil, nil, nil, true)
         GameTooltip:Show()
       end)
       w:SetScript("OnLeave", function() GameTooltip:Hide() end)

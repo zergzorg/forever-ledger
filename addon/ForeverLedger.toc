@@ -2,13 +2,14 @@
 ## Title: Forever Ledger
 ## Notes: Tracks your characters' professions, recipes, vendor prices and auction house prices for flips and shuffles.
 ## Author: Forever Ledger
-## Version: 0.20.0
+## Version: 0.21.0
 ## SavedVariables: ForeverLedgerDB
 ## X-Curse-Project-ID: 1720193
 ## X-Wago-ID: qGYBBzNg
 
 Core.lua
 Prices.lua
+Sweep.lua
 Quiet.lua
 History.lua
 Inventory.lua
