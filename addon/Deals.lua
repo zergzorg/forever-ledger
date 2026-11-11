@@ -13,16 +13,18 @@ local ROW_HEIGHT = 20
 local MAX_ROWS = 300
 local MAX_AGE = 3600   -- prices from the last hour (alerts use the last 10 minutes)
 
+local SPEED_SHORT = { fast = "Быстро", steady = "Стабильно", slow = "Медленно", rare = "Редко", none = "Нет" }
+
 local COLUMNS = {
   { key = "item", label = "Предмет" },
   { key = "price", label = "Сейчас", width = 80, right = true, tip = "Самый дешёвый лот прямо сейчас." },
-  { key = "worth", label = "Обычный мин.", width = 80, right = true, tip = "Обычная минимальная цена по вашим сканам." },   -- the usual cheapest price
+  { key = "worth", label = "Обычный мин.", width = 88, right = true, tip = "Обычная минимальная цена по вашим проверкам." },   -- the usual cheapest price
   { key = "pct", label = "Ниже", width = 46, right = true, tip = "Насколько сегодняшняя цена ниже обычного минимума." },
   { key = "listed", label = "Лотов", width = 44, right = true, tip = "Сколько лотов по цене сделки." },
-  { key = "sold", label = "Сбыт", width = 60, right = true, tip = "Как быстро продаётся, по вашим сканам." },   -- the sell speed rating
+  { key = "sold", label = "Сбыт", width = 60, right = true, tip = "Как быстро продаётся, по вашим проверкам." },   -- the sell speed rating
   { key = "each", label = "Прибыль/шт", width = 80, right = true, tip = "Сколько приносит один после комиссии и залога, минус затраты." },
   { key = "total", label = "Прибыль вся", width = 84, right = true, tip = "То же для всех лотов по цене сделки." },
-  { key = "level", label = "Надёжность", width = 70, tip = "Насколько можно верить: хорошо, средне или мало данных. Наведите на сделку." },
+  { key = "level", label = "Надёжность", width = 76, tip = "Насколько можно верить: хорошо, средне или мало данных. Наведите на сделку." },
 }
 
 -- The Booty Bay view (owner, October 5): the neutral auction house against yours, each
@@ -121,7 +123,7 @@ function ns:BuildDeals(parent)
   f.mode:HookScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
     GameTooltip:AddLine("Сделки или Бухта Боти", 1, 1, 1)
-    GameTooltip:AddLine("Бухта Боти сравнивает нейтральный аукцион (Бухта Боти, Прибамбасск, Круговзор) с вашим, каждый после своей комиссии: там 15%. Цены берутся из сканов там и хранятся отдельно от ваших.", nil, nil, nil, true)
+    GameTooltip:AddLine("Бухта Боти сравнивает нейтральный аукцион (Бухта Боти, Прибамбасск, Круговзор) с вашим, каждый после своей комиссии: там 15%. Цены берутся из проверок там и хранятся отдельно от ваших.", nil, nil, nil, true)
     GameTooltip:Show()
   end)
   f.mode:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -299,7 +301,7 @@ local function show(d, key)
     -- The rating's first word (Fast, Steady, Slow, Rare, No); "?" until there are 3
     -- hours of scans to judge by.
     if not d.speed then return dim("?") end
-    local short = d.speed.key == "none" and "None" or d.speed.label:match("^(%a+)")
+    local short = SPEED_SHORT[d.speed.key] or d.speed.label
     return ("|cff%s%s|r"):format(d.speed.color, short)
   end
   if key == "each" or key == "total" then
@@ -457,13 +459,13 @@ function ns:RefreshDeals()
     f.empty:SetText(anyNeutral
       and ((set.neutralDir == "buy") and "В Бухте Боти нет ничего хотя бы на 10% дешевле, чем продаётся здесь после комиссии."
         or "Ничто не продаётся в Бухте Боти хотя бы на 10% дороже, чем здесь, после обеих комиссий.")
-      or "Цен Бухты Боти пока нет. Откройте аукцион в Бухте Боти, Прибамбасске или Круговзоре и запустите там полный скан: эти цены хранятся отдельно.")
+      or "Цен Бухты Боти пока нет. Откройте аукцион в Бухте Боти, Прибамбасске или Круговзоре и запустите там полную проверку: эти цены хранятся отдельно.")
   elseif #list == 0 and filtered > 0 then
     f.empty:SetText(("Под фильтр ничего не подходит: скрыто %d %s. Нажмите «Все» или очистите поиск."):format(
       filtered, ns.Plural(filtered, "сделка", "сделки", "сделок")))
   elseif #list == 0 then
     f.empty:SetText(newest and "Сейчас нет сделок, проходящих проверки. Отметьте «Показывать сомнительные сделки», чтобы увидеть их."
-      or "Сделок пока нет. Нужны цены за последний час (полный скан или слежение за флипами) и хотя бы 4 дня сканов, "
+      or "Сделок пока нет. Нужны цены за последний час (полная проверка или слежение за перепродажами) и хотя бы 4 дня проверок, "
       .. "чтобы знать обычную цену предмета (или установленный TSM).")
   end
   f.empty:SetShown(#list == 0)
@@ -486,7 +488,7 @@ function ns:RefreshDeals()
   if filtered > 0 then parts[#parts + 1] = ("%d отфильтровано"):format(filtered) end
   if newest then parts[#parts + 1] = "цены от " .. date("%H:%M", newest) end
   if #list > MAX_ROWS then parts[#parts + 1] = ("показаны первые %d"):format(MAX_ROWS) end
-  f.summary:SetText(table.concat(parts, ", ") .. ". Правила: Настройки → Глобальные → Флипы и сделки.")
+  f.summary:SetText(table.concat(parts, ", ") .. ". Правила: Настройки → Глобальные → Перепродажи и сделки.")
 end
 
 ns.RefreshDeals = ns.Timed("Вкладка «Сделки»", ns.RefreshDeals)

@@ -158,6 +158,6 @@ function ns:PrintRuns()
     end
     print(("  %s: %d %s, около %s за забег, %s монет за забег.%s"):format(e.name, d.runs, ns.Plural(d.runs, "забег", "забега", "забегов"),
       mins(d.secs / math.max(d.runs, 1)), ns.Money(math.floor(d.coin / math.max(d.runs, 1))),
-      #best > 0 and (" Лучший дроп: " .. table.concat(best, ", ") .. ".") or ""))
+      #best > 0 and (" Лучшая добыча: " .. table.concat(best, ", ") .. ".") or ""))
   end
 end

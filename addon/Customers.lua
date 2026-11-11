@@ -18,16 +18,31 @@ local WORDS = {
   Leatherworking = { "leatherworker", "leatherworkers", "leatherworking", "lw" },
   Engineering = { "engineer", "engineers", "engineering", "engi" },
   Cooking = { "cook", "cooking" },
+  ["Наложение чар"] = { "зачарователь", "зачарователя", "зачарование", "наложение чар", "чарки", "чарку", "зачаруй" },
+  ["Портняжное дело"] = { "портной", "портного", "портниха", "портняжное", "портняжка", "портняжку", "сумки", "сумку" },
+  ["Алхимия"] = { "алхимик", "алхимика", "алхимия", "зелье", "зелья", "зелий" },
+  ["Кузнечное дело"] = { "кузнец", "кузнеца", "кузнечное", "кузнечку", "кузнецкое" },
+  ["Кожевничество"] = { "кожевник", "кожевника", "кожевничество", "кожевенное" },
+  ["Инженерное дело"] = { "инженер", "инженера", "инженерное", "инженерку" },
+  ["Травничество"] = { "травник", "травника", "травничество", "травы", "траву" },
+  ["Горное дело"] = { "горняк", "горняка", "горное дело", "руда", "руду" },
+  ["Снятие шкур"] = { "свежеватель", "свежевание", "снять шкуру", "снятие шкур", "шкуры" },
+  ["Кулинария"] = { "повар", "повара", "кулинар", "кулинария", "еду", "еда" },
+  ["Рыбная ловля"] = { "рыбак", "рыбака", "рыбная ловля", "рыбу", "рыба" },
+  ["Первая помощь"] = { "первая помощь", "бинты", "бинт", "перевязка" },
 }
 -- Someone looking for help, not offering it.
 local ASKING = { "lf", "lfm", "looking for", "need", "needs", "anyone", "any", "wtb", "can someone", "who can",
-  "somebody", "someone" }
+  "somebody", "someone", "нужен", "нужна", "нужно", "нужны", "ищу", "ищем", "кто может", "кто сделает",
+  "кто продаст", "куплю", "купим", "подскажите", "посоветуйте", "у кого" }
 -- Crafters advertising: skip these.
 -- ("anyone need water?" is a Mage selling, not asking: seen in beta trade chat.)
 local OFFERING = { "lfw", "wts", "selling", "can make", "can craft", "offering", "my services", "have all",
   "anyone need", "anybody need", "who needs", "does anyone need", "need any",
   -- Crafters spelling it out ("[Enchanting] LF Work - come buy your BIS weapon enchant").
-  "lf work", "looking for work", "lf job", "lf jobs", "come buy", "for hire", "your mats", "tips appreciated" }
+  "lf work", "looking for work", "lf job", "lf jobs", "come buy", "for hire", "your mats", "tips appreciated",
+  "продаю", "продам", "продаёт", "продает", "предлагаю", "делаю", "сделаю", "могу сделать", "могу изготовить",
+  "ищу работу", "лфв", "втс", "ваши материалы", "ваш материал", "чаевые", "недорого", "дёшево", "дешево" }
 local lastAlert = {}
 
 -- Class services (owner, September 30): Mage food and water, Mage portals, Warlock
@@ -39,21 +54,22 @@ local function knows(spellID)
 end
 -- Portal spells: city names for the ad, per spell.
 local PORTALS = {
-  { 10059, "Stormwind" }, { 11416, "Ironforge" }, { 11419, "Darnassus" },
-  { 11417, "Orgrimmar" }, { 11418, "Undercity" }, { 11420, "Thunder Bluff" },
+  { 10059, "Штормград" }, { 11416, "Стальгорн" }, { 11419, "Дарнас" },
+  { 11417, "Оргриммар" }, { 11418, "Подгород" }, { 11420, "Громовой Утёс" },
 }
 local SERVICES = {
   -- setting: the Settings switch (Customers section) that turns the service off.
   { key = "mage", class = "MAGE", label = "Еда и вода мага", level = 1, setting = "svcFood",
-    words = { "water", "food", "mage table", "mage water", "mage food" } },
+    words = { "water", "food", "mage table", "mage water", "mage food", "вода", "воду", "воды", "еда", "еду", "еды", "стол", "столик" } },
   { key = "portal", class = "MAGE", label = "Портал мага", level = 40, setting = "svcPortal", spells = { 10059, 11416, 11419, 11417, 11418, 11420 },
-    words = { "portal", "portals", "port", "port to", "mage port" } },
+    words = { "portal", "portals", "port", "port to", "mage port", "портал", "порталы", "портала", "портал в" } },
   { key = "summon", class = "WARLOCK", label = "Призыв чернокнижника", level = 20, setting = "svcSummon", spells = { 698 },
     -- Not "warlock" on its own: "LF warlock" is usually a group looking for dps.
-    words = { "summon", "summons", "summoning", "summ", "sumon", "lock summon", "warlock summon" } },
+    words = { "summon", "summons", "summoning", "summ", "sumon", "lock summon", "warlock summon", "призыв", "призови", "призвать", "суммон" } },
   { key = "lockpick", class = "ROGUE", label = "Взлом замков", level = 16, setting = "svcLockpick", spells = { 1804 },
     words = { "lockpick", "lockpicker", "lockpicking", "lock pick", "pick lock", "lockbox", "lockboxes", "lock box",
-      "open box", "open a box", "open my box", "junkbox" } },
+      "open box", "open a box", "open my box", "junkbox", "взлом", "взломать", "вскрыть", "сундук", "сундуки",
+      "замок", "локбокс" } },
 }
 ns.CLASS_SERVICES = SERVICES
 
@@ -78,14 +94,28 @@ local function portalCities()
   local list = {}
   for _, p in ipairs(PORTALS) do if knows(p[1]) then list[#list + 1] = p[2] end end
   if #list == 0 then
-    list = UnitFactionGroup("player") == "Horde" and { "Orgrimmar", "Undercity", "Thunder Bluff" }
-      or { "Stormwind", "Ironforge", "Darnassus" }
+    list = UnitFactionGroup("player") == "Horde" and { "Оргриммар", "Подгород", "Громовой Утёс" }
+      or { "Штормград", "Стальгорн", "Дарнас" }
   end
   return table.concat(list, ", ")
 end
 
--- True if `text` contains `word` as a whole word (or phrase).
+-- True if `text` contains `word` as a whole word (or phrase). Cyrillic is UTF-8:
+-- `%w` sees bytes, so Russian words get a boundary check of their own.
+local function cyrLetter(b)
+  return b and ((b >= 0x80 and b <= 0xBF) or b == 0xD0 or b == 0xD1)
+end
+local function hasCyr(text, word)
+  local from = 1
+  while true do
+    local a, b = text:find(word, from, true)
+    if not a then return false end
+    if not cyrLetter(a > 1 and text:byte(a - 1) or nil) and not cyrLetter(text:byte(b + 1)) then return true end
+    from = a + 1
+  end
+end
 local function has(text, word)
+  if word:find("[^\1-\127]") then return hasCyr(text, word) end
   return (" " .. text .. " "):find("[^%w]" .. word:gsub("(%W)", "%%%1") .. "[^%w]") ~= nil
 end
 local function any(text, list)
@@ -114,7 +144,7 @@ local function wanted(msg)
   if ns.db.settings.svcCrafting ~= false and (has(text, "wtb") or any(text, ASKING)) then
     for id in msg:gmatch("item:(%d+)") do
       local prof = items[tonumber(id)]
-      if prof then return prof .. ": " .. (ns.ItemName(tonumber(id)) or "an item you craft") end
+      if prof then return prof .. ": " .. (ns.ItemName(tonumber(id)) or "предмет вашего изготовления") end
     end
   end
   if not any(text, ASKING) then return end
@@ -139,6 +169,8 @@ local silencedThisSession = false
 local CAPITALS = {
   ["Stormwind City"] = true, ["Ironforge"] = true, ["Darnassus"] = true,
   ["Orgrimmar"] = true, ["Thunder Bluff"] = true, ["Undercity"] = true,
+  ["Штормград"] = true, ["Стальгорн"] = true, ["Дарнас"] = true,
+  ["Оргриммар"] = true, ["Громовой Утёс"] = true, ["Подгород"] = true,
 }
 local CAPITAL_MAPS = { [1453] = true, [1455] = true, [1457] = true, [1454] = true, [1456] = true, [1458] = true,
   [84] = true, [87] = true, [89] = true, [85] = true, [88] = true, [90] = true }
@@ -240,16 +272,16 @@ end
 ---------------------------------------------------------------------------
 local AD_COOLDOWN = 60      -- seconds between posts, so the button can't spam
 local DEFAULT_ADS = {
-  crafting = "{professions} looking for work, your mats or mine. Whisper me!",
-  mage = "WTS Mage water and food {water} {food}. Whisper me!",
-  portal = "WTS portals to {portals}. Whisper me!",
-  summon = "Warlock summons available, whisper me where you are and who's coming!",
-  lockpick = "Rogue lockpicking: bring your lockboxes, tips welcome. Whisper me!",
+  crafting = "{professions}: ищу работу, материалы ваши или мои. Напишите мне!",
+  mage = "Продаю воду и еду мага: {water} {food}. Напишите мне!",
+  portal = "Продаю порталы: {portals}. Напишите мне!",
+  summon = "Призываю чернокнижником: напишите, где вы и кого призывать!",
+  lockpick = "Взлом замков разбойником: приносите сундуки, чаевые приветствуются. Напишите мне!",
 }
 -- The ad button for each service.
 local AD_BUTTONS = {
-  mage = { "Sell food and water", 140 }, portal = { "Sell portals", 100 },
-  summon = { "Offer summons", 120 }, lockpick = { "Offer lockpicking", 140 },
+  mage = { "Продажа еды и воды", 140 }, portal = { "Продажа порталов", 120 },
+  summon = { "Призыв", 120 }, lockpick = { "Взлом замков", 140 },
 }
 -- Conjure Water / Conjure Food ranks (Classic spell IDs) and the item each makes, lowest
 -- first. The ad links the best one this Mage knows.
@@ -323,8 +355,8 @@ local function adChannel()
   for i = 1, (GetNumDisplayChannels and GetNumDisplayChannels() or 0) do
     local name, header, _, number = GetChannelDisplayInfo(i)
     if not header and name and number then
-      if name:find("Services", 1, true) then services = services or { number, name }
-      elseif name:find("^Trade") and not name:find("Local", 1, true) then return number, name end
+      if name:find("Services", 1, true) or name:find("Услуги", 1, true) then services = services or { number, name }
+      elseif (name:find("^Trade") and not name:find("Local", 1, true)) or name:find("^Торговля") then return number, name end
     end
   end
   if services then return services[1], services[2] end
@@ -343,8 +375,8 @@ function ns:PostAd(kind)
 end
 
 StaticPopupDialogs["FOREVER_LEDGER_EDIT_AD"] = {
-  text = "Ad text. {professions} becomes your profession links; {water} and {food} your best conjured water and food; {portals} the cities you can portal to.",
-  button1 = SAVE or "Save", button2 = CANCEL or "Cancel", button3 = "Default",
+  text = "Текст объявления. {professions} заменяется ссылками на ваши профессии; {water} и {food} — на лучшую создаваемую воду и еду; {portals} — на города, куда вы можете открыть портал.",
+  button1 = SAVE or "Сохранить", button2 = CANCEL or "Отмена", button3 = "По умолчанию",
   hasEditBox = true, editBoxWidth = 350, maxLetters = 255,
   OnShow = function(self, kind)
     local box = self.editBox or self.EditBox
@@ -371,9 +403,9 @@ local rows = {}
 
 local function ago(t)
   local d = time() - t
-  if d < 60 then return "now" end
-  if d < 3600 then return math.floor(d / 60) .. "m" end
-  return math.floor(d / 3600) .. "h"
+  if d < 60 then return "сейчас" end
+  if d < 3600 then return math.floor(d / 60) .. " мин" end
+  return math.floor(d / 3600) .. " ч"
 end
 
 ---------------------------------------------------------------------------
@@ -484,7 +516,7 @@ local function refreshWork()
     r:SetPoint("TOPLEFT", win.content, "TOPLEFT", 0, -(i - 1) * ROW)
     r:SetWidth(width)
     r.stripe:SetShown(i % 2 == 0)
-    local what = e.enchant and ("Enchanted " .. (e.enchantItem or "an item") .. ": " .. e.enchant)
+    local what = e.enchant and ("«" .. (e.enchantItem or "предмет") .. "»: " .. e.enchant)
       or (#(e.give or {}) > 0 and ("Отдал " .. e.give[1].qty .. " " .. e.give[1].name .. (#e.give > 1 and (" и ещё " .. (#e.give - 1)) or "")))
       or e.what or "Сделка"
     r.head:SetText(("%s  |cff888888%s|r"):format(e.who or "?", date("%d.%m %H:%M", e.t)))
@@ -623,7 +655,7 @@ function ns:ShowCustomers(quiet)
     end
     -- Ad buttons: crafting, then one per class service this character has and hasn't
     -- turned off in Settings. Laid out again each time the window opens.
-    win.ads = { crafting = adButton("crafting", "Advertise crafting", 140) }
+    win.ads = { crafting = adButton("crafting", "Реклама профессий", 140) }
     for key, b in pairs(AD_BUTTONS) do win.ads[key] = adButton(key, b[1], b[2]) end
     function win:LayoutAds()
       for _, b in pairs(self.ads) do b:Hide(); b:ClearAllPoints() end
@@ -680,8 +712,8 @@ function ns:ShowCustomers(quiet)
     T:Border(menu)
     menu:Hide()
     local ITEMS = {
-      { "city", "Until I'm next in a city" }, { "reload", "Until I reload" }, { "logout", "Until I log out" },
-      { "always", "Always (turns the finder off)" }, { "on", "Turn alerts back on" },
+      { "city", "До следующего визита в город" }, { "reload", "До перезагрузки интерфейса" }, { "logout", "До выхода из игры" },
+      { "always", "Всегда (выключает поиск)" }, { "on", "Снова включить оповещения" },
     }
     menu.buttons = {}
     for i, it in ipairs(ITEMS) do
@@ -766,8 +798,8 @@ end
 ns:On("CHAT_MSG_CHANNEL", function(msg, sender, _, channelName, _, _, _, _, baseName)
   onChat(msg, sender, baseName or channelName)
 end)
-ns:On("CHAT_MSG_SAY", function(msg, sender) onChat(msg, sender, "Say") end)
-ns:On("CHAT_MSG_YELL", function(msg, sender) onChat(msg, sender, "Yell") end)
+ns:On("CHAT_MSG_SAY", function(msg, sender) onChat(msg, sender, "Сказать") end)
+ns:On("CHAT_MSG_YELL", function(msg, sender) onChat(msg, sender, "Крик") end)
 
 -- Settings changed: lay the ad buttons out again if the window is open.
 function ns:UpdateCustomerAds()

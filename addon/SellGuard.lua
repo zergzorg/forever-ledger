@@ -83,7 +83,7 @@ local function guard(frame, name)
   else
     g.text:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 10, 40)
   end
-  g.anyway = T:Button(frame, "Всё равно выставить", 76, function()
+  g.anyway = T:Button(frame, "Всё равно", 76, function()
     if g.key then unlocked[g.key] = true end
     g.anyway:Hide()
     -- Let the game decide if Post can be used (an item and a price are set), then make
@@ -222,8 +222,8 @@ local function helper(frame, name)
     b:HookScript("OnEnter", function(self)
       GameTooltip:SetOwner(self, "ANCHOR_TOP")
       GameTooltip:AddLine(self == h.under_b and "Чуть ниже минимума" or "Ваша обычная цена", 1, 1, 1)
-      GameTooltip:AddLine(self == h.under_b and "Заполняет поле цены на 1 медь ниже самого дешёвого лота из последнего скана. «Выставить» нажимаете вы."
-        or "Заполняет поле цены обычной ценой из сканов этого месяца. «Выставить» нажимаете вы.", nil, nil, nil, true)
+      GameTooltip:AddLine(self == h.under_b and "Заполняет поле цены на 1 медь ниже самого дешёвого лота из последней проверки. «Выставить» нажимаете вы."
+        or "Заполняет поле цены обычной ценой из проверок этого месяца. «Выставить» нажимаете вы.", nil, nil, nil, true)
       GameTooltip:Show()
     end)
     b:HookScript("OnLeave", function() GameTooltip:Hide() end)

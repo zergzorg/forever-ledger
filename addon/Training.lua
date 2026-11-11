@@ -300,8 +300,8 @@ end
 -- training (owner's estimate: 10g and 100g; mounts are per character, so each needs
 -- its own). The fund is the two together: 100g, then 1,000g.
 local RIDING_GUESS = {
-  { name = "Apprentice Riding", short = "Riding at 40", level = 40, training = 900000, mount = 100000, match = "Apprentice" },
-  { name = "Journeyman Riding", short = "Epic riding at 60", level = 60, training = 9000000, mount = 1000000, match = "Journeyman" },
+  { name = "Apprentice Riding", short = "Езда на 40", level = 40, training = 900000, mount = 100000, match = "Apprentice" },
+  { name = "Journeyman Riding", short = "Эпическая езда на 60", level = 60, training = 9000000, mount = 1000000, match = "Journeyman" },
 }
 function ns:RidingFund(goldNow, totals, goldFirst)
   if ns.db.settings.ridingFund == false or ns.db.settings.moduleLevelling == false then return end
@@ -433,6 +433,12 @@ end)
 -- Classic's order per class, confirmed for all nine from their saved layouts (October 6:
 -- Bestial Wrath left, Trueshot Aura middle, Counterattack right, and so on).
 ---------------------------------------------------------------------------
+ns.TREE_NAMES = { Arcane = "Тайная магия", Fire = "Огонь", Frost = "Лёд", Arms = "Оружие", Fury = "Неистовство",
+  Protection = "Защита", Holy = "Свет", Retribution = "Возмездие", Discipline = "Послушание", Shadow = "Тьма",
+  Assassination = "Убийство", Combat = "Бой", Subtlety = "Скрытность", ["Beast Mastery"] = "Повелитель зверей",
+  Marksmanship = "Стрельба", Survival = "Выживание", Affliction = "Колдовство", Demonology = "Демонология",
+  Destruction = "Разрушение", Elemental = "Стихии", Enhancement = "Совершенствование", Restoration = "Исцеление",
+  Balance = "Баланс", ["Feral Combat"] = "Сила зверя" }
 local TREES = {
   MAGE = { "Arcane", "Fire", "Frost" }, WARRIOR = { "Arms", "Fury", "Protection" },
   PALADIN = { "Holy", "Protection", "Retribution" }, PRIEST = { "Discipline", "Holy", "Shadow" },

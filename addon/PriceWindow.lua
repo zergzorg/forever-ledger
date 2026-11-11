@@ -145,7 +145,7 @@ local GRAPH_H = 250
 local PAD_L, PAD_R, PAD_T, PAD_B = 56, 10, 8, 20
 local GOLD, BLUE = { 0.95, 0.78, 0.35 }, { 0.47, 0.58, 0.88 }
 local GREEN, PURPLE, BAR = { 0.5, 0.83, 0.61 }, { 0.80, 0.56, 0.90 }, { 1, 1, 1, 0.07 }
-local RANGES = { { value = 14, label = "2 weeks" }, { value = 90, label = "3 months" }, { value = 365, label = "1 year" } }
+local RANGES = { { value = 14, label = "2 недели" }, { value = 90, label = "3 месяца" }, { value = 365, label = "1 год" } }
 local MAX_MATS = 8
 
 local win
@@ -559,7 +559,7 @@ local function build()
   local g = CreateFrame("Frame", nil, f)
   g.empty = T:Text(g, 12, T.dim)
   g.empty:SetPoint("CENTER")
-  g.empty:SetText("Истории цен пока нет. Каждый скан сохраняет одну точку в день.")
+  g.empty:SetText("Истории цен пока нет. Каждая проверка сохраняет одну точку в день.")
   g.marker = g:CreateTexture(nil, "OVERLAY")
   g.marker:SetColorTexture(1, 1, 1, 0.25)
   g.marker:SetWidth(1)
@@ -598,9 +598,9 @@ local function build()
   local function watchTip(self)
     GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
     GameTooltip:AddLine("Следить за предметом", 1, 1, 1)
-    GameTooltip:AddLine("Слежение проверяет его каждый проход, а очередь покупает первым во «Флипах у торговца» по цене отсюда или дешевле. «торговец»: только когда торговец даёт больше. Все отслеживаемые — кнопка на очереди покупок.", 0.8, 0.8, 0.8, true)
+    GameTooltip:AddLine("Слежение проверяет его каждый проход, а очередь покупает первым в «Перепродажах торговцу» по цене отсюда или дешевле. «торговец»: только когда торговец даёт больше. Все отслеживаемые — кнопка на очереди покупок.", 0.8, 0.8, 0.8, true)
     if f.id and ns:IsGearItem(f.id) then
-      GameTooltip:AddLine("Снаряжение проверяется полным сканом (примерно каждые 15 минут), любая версия.", 0.7, 0.7, 0.7, true)
+      GameTooltip:AddLine("Снаряжение проверяется полной проверкой (примерно каждые 15 минут), любая версия.", 0.7, 0.7, 0.7, true)
     end
     GameTooltip:Show()
   end
@@ -620,7 +620,7 @@ local function build()
   -- Craft card
   f.craftHead, f.craftWho = text(f, 11), text(f, 11, T.dim)
   f.matCols = {}
-  for i, label in ipairs({ "Material", "Need", "Each", "На крафт", "У вас" }) do
+  for i, label in ipairs({ "Материал", "Нужно", "За шт.", "На изготовление", "У вас" }) do
     f.matCols[i] = text(f, 10, T.dim, i == 1 and "LEFT" or "RIGHT")
     f.matCols[i]:SetText(label)
   end
@@ -652,7 +652,7 @@ local function build()
   for i = 1, 5 do f.sum[i] = { l = text(f, 11, T.dim), v = text(f, 12, nil, "RIGHT") } end
   f.crafts = T:Number(f, { min = 1, max = 10000, step = 1 }, function(v) state.crafts = math.floor(v) end)
   f.craftsLabel = text(f, 11, T.dim)
-  f.craftsLabel:SetText("Крафтов")
+  f.craftsLabel:SetText("Изготовления")
   f.listPick = T:Dropdown(f, 190, function(v) state.target = v end)
   f.addMats = T:Button(f, "Материалы в список покупок", 210, function()
     local target = state.target ~= "new" and state.target or nil
@@ -665,7 +665,7 @@ local function build()
   f.addMats:HookScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
     GameTooltip:AddLine("Материалы в список покупок", 1, 1, 1)
-    GameTooltip:AddLine("Всё, что нужно для стольких крафтов, добавляется к тому, что список уже хочет. «До» начинается с обычной цены плюс допуск списка; ваши цены сохраняются. Имеющееся не вычитается: проверьте «Нужно» в списке.", 0.8, 0.8, 0.8, true)
+    GameTooltip:AddLine("Всё, что нужно для стольких изготовлений, добавляется к тому, что список уже хочет. «До» начинается с обычной цены плюс допуск списка; ваши цены сохраняются. Имеющееся не вычитается: проверьте «Нужно» в списке.", 0.8, 0.8, 0.8, true)
     GameTooltip:Show()
   end)
   f.addMats:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -716,15 +716,15 @@ function ns:RefreshPriceWindow()
   local now, nowSub
   if s.cheapest then now = ns.Money(s.cheapest)
   elseif s.listed == 0 then now = dim("лотов нет")
-  else now = dim("не сканировалось") end
+  else now = dim("не проверялось") end
   if s.listed and s.listed > 0 then nowSub = count(s.listed) .. " в продаже" .. (s.scanned and (", " .. ns.Age(s.scanned)) or "")
   else nowSub = s.scanned and ns.Age(s.scanned) or "" end
   local tiles = {
-    { state.suffix and "Обычный минимум" or "Обычная цена", s.usual and ns.Money(s.usual) or dim("слишком новое"), s.usual and "этот месяц" or "нужно 3 дня сканов" },
-    { "Trend", trend or dim("слишком новое"), trend and "7 дней против 14 раньше" or "нужно около 10 дней" },
+    { state.suffix and "Обычный минимум" or "Обычная цена", s.usual and ns.Money(s.usual) or dim("слишком новое"), s.usual and "этот месяц" or "нужно 3 дня проверок" },
+    { "Тенденция", trend or dim("слишком новое"), trend and "7 дней против 14 раньше" or "нужно около 10 дней" },
     { "Минимум сейчас", now, nowSub },
     { "У вас", count(s.have.total), haveSub },
-    { "Posted", count(s.posted), "ваши лоты" },
+    { "Выставлено", count(s.posted), "ваши лоты" },
   }
   for i, t in ipairs(f.tiles) do
     local x = x0 + (i - 1) * (tw + GAP)
@@ -767,7 +767,7 @@ function ns:RefreshPriceWindow()
   local de = ns.DisenchantSaleValue and ns:DisenchantSaleValue(id)
   if de and de > 0 then flats[#flats + 1] = { de, GREEN, "стоимость распыления" }
   elseif vendor and vendor > 0 then flats[#flats + 1] = { vendor, GREEN, "цена торговца" } end
-  if s.craft and s.craft.cost then flats[#flats + 1] = { s.craft.cost, PURPLE, "стоимость крафта" } end
+  if s.craft and s.craft.cost then flats[#flats + 1] = { s.craft.cost, PURPLE, "стоимость изготовления" } end
   local pts = ns:PriceSeries(id, state.suffix, state.range)
   -- Only the flat lines the graph drew go in the legend.
   for _, fl in ipairs(drawGraph(f.graph, pts, flats)) do
@@ -832,7 +832,7 @@ function ns:RefreshPriceWindow()
   if not (options and options[1]) then
     local r = f.worthRows[1]
     r.l:Show(); place(r.l, sx + 12, wTop + 20, SIDE - 24); r.l:SetHeight(28); r.l:SetWordWrap(true)
-    r.l:SetText(dim("Сначала нужна цена: просканируйте аукцион."))
+    r.l:SetText(dim("Сначала нужна цена: проверьте аукцион."))
   end
   f.addItem:ClearAllPoints()
   f.addItem:SetPoint("TOPLEFT", f, "TOPLEFT", sx + 12, -(gTop + GRAPH_H - 32))
@@ -861,7 +861,7 @@ function ns:RefreshPriceWindow()
     -- doesn't sell (as Worth to you counts it), the profit and what that means.
     local dep = c.deposit or 0
     local sums = {
-      { c.oq > 1 and "Стоимость крафта за штуку" or "Стоимость крафта", c.cost and ns.Money(c.cost) or dim("у материала нет цены") },
+      { c.oq > 1 and "Стоимость изготовления за штуку" or "Стоимость изготовления", c.cost and ns.Money(c.cost) or dim("у материала нет цены") },
       { "Продажа после комиссии", c.sells and ns.Money(c.sells + dep) or dim("цены пока нет") },
     }
     if c.sells and dep > 0 then sums[#sums + 1] = { "Один непроданный лот", "|cffee8597-" .. ns.Money(dep) .. "|r" } end
@@ -871,7 +871,7 @@ function ns:RefreshPriceWindow()
     local boxH = 12 + #sums * 20
     local cH = math.max(30 + 14 + rows * 18 + 26 + 40, 28 + boxH + 8 + 40)
     nextCard(cTop, cTop + cH, x0, inner)
-    T:StyleHeading(f.craftHead, "Скрафтить")
+    T:StyleHeading(f.craftHead, "Изготовить")
     place(f.craftHead, x0 + 12, cTop + 10)
     f.craftWho:ClearAllPoints()
     f.craftWho:SetPoint("LEFT", f.craftHead, "RIGHT", 10, 0)
@@ -916,7 +916,7 @@ function ns:RefreshPriceWindow()
     end
     local totalY = headY + 14 + rows * 18 + 6
     place(f.matTotal.l, rowX + 22, totalY, COLS[3][1] - 22)
-    f.matTotal.l:SetText("Один крафт по сегодняшним ценам (торговец, если дешевле)")
+    f.matTotal.l:SetText("Одно изготовление по сегодняшним ценам (торговец, если дешевле)")
     f.matTotal.v:ClearAllPoints()
     f.matTotal.v:SetPoint("TOPRIGHT", f, "TOPLEFT", rowX + COLS[4][1], -totalY)
     f.matTotal.v:SetWidth(COLS[4][2])
@@ -1020,9 +1020,9 @@ end)
 -- or Ctrl or Ctrl+Alt for players whose disenchanting addon uses Alt-click (owner,
 -- November 8). Exactly those keys, so Shift-click (links) is never taken.
 local CLICKS = {
-  alt = { alt = true, ctrl = false, name = "Alt-click" },
-  ctrl = { alt = false, ctrl = true, name = "Ctrl-click" },
-  ctrlalt = { alt = true, ctrl = true, name = "Ctrl+Alt-click" },
+  alt = { alt = true, ctrl = false, name = "Alt+клик" },
+  ctrl = { alt = false, ctrl = true, name = "Ctrl+клик" },
+  ctrlalt = { alt = true, ctrl = true, name = "Ctrl+Alt+клик" },
 }
 function ns:PriceClickName()
   local c = ns.db and CLICKS[ns.db.settings.priceClick]

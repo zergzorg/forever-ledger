@@ -469,7 +469,7 @@ function search()
   -- (And a part of the flip watch's auction house list already on its way, a moment at most:
   -- the sweep waits for the queue before asking for the next one, Sweep.lua.)
   if throttled() or (ns.Scan.active and ns.Scan.full) or (ns.SweepWaiting and ns:SweepWaiting()) then
-    Q.waitFor = ns.Scan.full and "завершения полного скана" or "аукцион"
+    Q.waitFor = ns.Scan.full and "завершения полной проверки" or "аукцион"
     setState("wait")
     timeout(1, search)
     return
@@ -909,7 +909,7 @@ local function limitDropped(e)
     again()
   else
     dropCurrent()   -- (cancels one waiting at Confirm)
-    Q.note = ("Не покупаю %s: он больше не отслеживается и не флип у торговца."):format(ns.ItemName(e.id) or "that")
+    Q.note = ("Не покупаю %s: он больше не отслеживается и не подходит для перепродажи торговцу."):format(ns.ItemName(e.id) or "этот предмет")
     Q.built = 0
     rebuildNow()
   end
@@ -1393,7 +1393,7 @@ local STRIP_BIG = 84    -- a section on its own
 -- the Disenchant finder shows item levels and the Deals tab has the detail, so the queue
 -- is for flips and shopping lists).
 local LANES = {
-  { key = "flips", setting = "flips", title = "Флипы у торговца" },
+  { key = "flips", setting = "flips", title = "Перепродажи торговцу" },
   { key = "lists", setting = "lists", title = "Списки покупок" },
 }
 local LANE_BY_KEY = {}
@@ -1412,7 +1412,7 @@ end
 
 local function reasonLine(e)
   if not e then return "" end
-  if e.reason == "flip" then return ("Флип у торговца: торговец платит %s."):format(money(e.worth)) end
+  if e.reason == "flip" then return ("Перепродажа торговцу: торговец платит %s."):format(money(e.worth)) end
   if e.reason == "watch" then
     return ("Отслеживаемый предмет: до %s, ваша цена%s."):format(money(e.limit),
       (e.worth or 0) > 0 and (" (торговец платит " .. money(e.worth) .. ")") or "")
@@ -1434,8 +1434,8 @@ local function statusText()
   local GREY = "|cff888888%s|r"
   if st == "wait" then
     if Q.waitText then return Q.waitText, Q.waitHint or "Продолжит через несколько секунд после остановки или нажмите «Сейчас».", "Сейчас" end
-    if Q.waitFor == "завершения полного скана" then
-      return "Ждём завершения полного скана...", "Несколько секунд; дальше само продолжится.", GREY:format("Ждите")
+    if Q.waitFor == "завершения полной проверки" then
+      return "Ждём завершения полной проверки...", "Несколько секунд; дальше само продолжится.", GREY:format("Ждите")
     end
     return "Ждём аукцион...", "Он отвечает аддонам примерно раз в секунду; дальше всё само продолжится.", GREY:format("Ждите")
   end
@@ -1466,12 +1466,12 @@ local function statusText()
   if left and left < 1 then
     return "Вы потратили лимит на этот визит.",
       ("Потрачено %s из %s. Увеличьте «Потратить не более» ниже или лимит обновится в следующий визит."):format(money(Q.spent), money(S().limit)),
-      watching and "Stop" or "Следить за флипами"
+      watching and "Остановить" or "Следить"
   end
   local poorText = spendable() < GetMoney() and "%d выше вашего лимита (ниже приглушены)." or "%d пока не по карману (ниже приглушены)."
   local why
   if not ns:IsAHOpen() then
-    why = "Откройте аукцион, чтобы сканировать и покупать."
+    why = "Откройте аукцион, чтобы проверять и покупать."
   elseif view() == "lists" then
     local any = false
     for _, l in ipairs(ns:ShoppingLists()) do if l.on then any = true end end
@@ -1482,10 +1482,10 @@ local function statusText()
   else
     why = (poor > 0 and poorText:format(poor))
       or (waiting > 0 and ("%d ждут цены ниже (ниже приглушены)."):format(waiting))
-      or (watching and "Следим за флипами; новые появятся здесь.")
-      or "Нажмите «Следить за флипами» ниже, чтобы сканировать, пока вы здесь."
+      or (watching and "Следим за перепродажами; новые появятся здесь.")
+      or "Нажмите «Следить» ниже, чтобы проверять, пока вы здесь."
   end
-  return "Покупать пока нечего.", Q.note and (Q.note .. " " .. why) or why, watching and "Stop" or "Следить за флипами"
+  return "Покупать пока нечего.", Q.note and (Q.note .. " " .. why) or why, watching and "Остановить" or "Следить"
 end
 
 -- A section that isn't armed: what it has, and how to start it.
@@ -1675,8 +1675,8 @@ local function buildLane(v, d)
   header:SetPoint("TOPRIGHT", strip, "BOTTOMRIGHT", -4, -2)
   header:SetHeight(14)
   -- "До" and "Cheap" ran together (Magic's screenshot, October 3): more room between.
-  for _, c in ipairs({ { "Item", 4, "LEFT" }, { "До", 294, "RIGHT" }, { "Cheap", 340, "RIGHT" },
-                       { d.key == "lists" and "Now" or "Profit", 428, "RIGHT" } }) do
+  for _, c in ipairs({ { "Предмет", 4, "LEFT" }, { "До", 294, "RIGHT" }, { "Мин.", 340, "RIGHT" },
+                       { d.key == "lists" and "Сейчас" or "Прибыль", 428, "RIGHT" } }) do
     local fs = T:Text(header, 10, T.dim)
     if c[3] == "LEFT" then fs:SetPoint("LEFT", c[2], 0) else fs:SetPoint("RIGHT", header, "LEFT", c[2], 0) end
     fs:SetText(c[1])
@@ -1714,7 +1714,7 @@ local function buildQueueView(parent)
   local bar = toolbar(v, 30)
 
   -- Which view: Vendor flips or Shopping lists, one at a time; and Scroll to buy.
-  v.viewChoice = T:Choice(bar, { { value = "flips", label = "Флипы у торговца" }, { value = "lists", label = "Списки покупок" } },
+  v.viewChoice = T:Choice(bar, { { value = "flips", label = "Перепродажи торговцу" }, { value = "lists", label = "Списки покупок" } },
     function(value)
       setView(value)
       noteListUse()
@@ -1724,8 +1724,8 @@ local function buildQueueView(parent)
     b:HookScript("OnEnter", function(self)
       GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
       if self.value == "flips" then
-        GameTooltip:AddLine("Флипы у торговца", 1, 1, 1)
-        GameTooltip:AddLine("Лоты дешевле цены торговца, найденные сканами. Купите и продайте торговцу.", nil, nil, nil, true)
+        GameTooltip:AddLine("Перепродажи торговцу", 1, 1, 1)
+        GameTooltip:AddLine("Лоты дешевле цены торговца, найденные проверками. Купите и продайте торговцу.", nil, nil, nil, true)
       else
         GameTooltip:AddLine("Списки покупок", 1, 1, 1)
         GameTooltip:AddLine("Предметы из ваших списков с отметкой «Покупать из этого списка в очереди», по вашей цене или дешевле.", nil, nil, nil, true)
@@ -1744,7 +1744,7 @@ local function buildQueueView(parent)
   wheel:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
     GameTooltip:AddLine("Покупка колесом", 1, 1, 1)
-    GameTooltip:AddLine("Когда мышь над верхней полосой (она светится, если есть что купить), каждый щелчок колеса вниз покупает следующий предмет; стопки материалов требуют второго щелчка для подтверждения. Работает и при пустом списке, так что новые флипы можно купить сразу. Выкл: покупает только кнопка «Купить».", nil, nil, nil, true)
+    GameTooltip:AddLine("Когда мышь над верхней полосой (она светится, если есть что купить), каждый щелчок колеса вниз покупает следующий предмет; стопки материалов требуют второго щелчка для подтверждения. Работает и при пустом списке, так что новые перепродажи можно купить сразу. Выкл: покупает только кнопка «Купить».", nil, nil, nil, true)
     GameTooltip:Show()
   end)
   wheel:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -1780,7 +1780,7 @@ local function buildQueueView(parent)
     b:HookScript("OnLeave", function() GameTooltip:Hide() end)
   end
   -- Flips view: Watch flips. Shopping lists view: Search lists (every list bought from).
-  v.watchBtn = T:Button(v, "Следить за флипами", 118, function()
+  v.watchBtn = T:Button(v, "Следить", 118, function()
     if view() == "lists" then ns:SearchQueueLists() else ns:ToggleFlipWatch() end
   end, 22)
   v.watchBtn:SetPoint("BOTTOMLEFT", 10, 8)
@@ -1790,21 +1790,21 @@ local function buildQueueView(parent)
       GameTooltip:AddLine("Искать мои списки", 1, 1, 1)
       GameTooltip:AddLine("Проверяет на аукционе всё из списков с отметкой «Покупать из этого списка в очереди» (и недостающие материалы) по одному. Что по вашей цене или дешевле, появится здесь.", nil, nil, nil, true)
     else
-      GameTooltip:AddLine("Следить за флипами", 1, 1, 1)
-      GameTooltip:AddLine("Ищет флипы, пока аукцион открыт: полный скан, когда игра разрешает (примерно каждые 15 минут), а между ними — чтение всего списка аукциона примерно раз в полминуты. Новые флипы звенят и попадают в очередь. Повторный клик — остановить.", nil, nil, nil, true)
+      GameTooltip:AddLine("Следить за перепродажами", 1, 1, 1)
+      GameTooltip:AddLine("Ищет перепродажи, пока аукцион открыт: полная проверка, когда игра разрешает (примерно каждые 15 минут), а между ними — чтение всего списка аукциона примерно раз в полминуты. Новые перепродажи звенят и попадают в очередь. Повторный клик — остановить.", nil, nil, nil, true)
     end
     GameTooltip:Show()
   end)
   v.watchBtn:HookScript("OnLeave", function() GameTooltip:Hide() end)
-  v.fullBtn = T:Button(v, "Полный скан", 128, function() ns.Scan:Start("full") end, 22)
+  v.fullBtn = T:Button(v, "Полная проверка", 128, function() ns.Scan:Start("full") end, 22)
   v.fullBtn:SetPoint("LEFT", v.watchBtn, "RIGHT", 6, 0)
-  tip(v.fullBtn, "Полный скан", "Читает все лоты за несколько секунд. Игра разрешает один примерно каждые 15 минут; кнопка показывает обратный отсчёт.")
+  tip(v.fullBtn, "Полная проверка", "Читает все лоты за несколько секунд. Игра разрешает одну примерно каждые 15 минут; кнопка показывает обратный отсчёт.")
   ns.panelFullButton = v.fullBtn
   -- Pause / Resume (owner, November 10: in place of Scan materials, which full scans and the
   -- whole-list reading made redundant; /fl scan materials still does it).
   v.pauseBtn = T:Button(v, "Пауза", 118, function() ns:ToggleScanPause() end, 22)
   v.pauseBtn:SetPoint("LEFT", v.fullBtn, "RIGHT", 6, 0)
-  tip(v.pauseBtn, "Пауза", "Останавливает слежение за флипами и собственные запросы очереди покупок, чтобы ваши поиски и открытая страница оставались как есть. «Купить», «Сейчас» и клик по строке работают. Нажмите «Продолжить», чтобы возобновить; закрытие аукциона тоже завершает паузу.")
+  tip(v.pauseBtn, "Пауза", "Останавливает слежение за перепродажами и собственные запросы очереди покупок, чтобы ваши поиски и открытая страница оставались как есть. «Купить», «Сейчас» и клик по строке работают. Нажмите «Продолжить», чтобы возобновить; закрытие аукциона тоже завершает паузу.")
   -- Above the buttons: the scan's progress on the left, what you've bought on the right.
   v.totals = T:Text(v, 11, T.dim)
   v.totals:SetPoint("BOTTOMRIGHT", -10, 36)
@@ -1906,7 +1906,7 @@ local function layoutLanes(v)
     -- the mouse on and scroll while farming (owner, October 2).
     local big = n == 1
     L.strip:SetHeight(big and STRIP_BIG or STRIP_H)
-    L.buy:SetSize(big and 104 or 86, big and 60 or 34)   -- wide enough for "Следить за флипами"
+    L.buy:SetSize(big and 104 or 86, big and 60 or 34)   -- wide enough for the longest action label
     L.buy:GetFontString():SetFont(T.font, big and 16 or 14, "")
     L.icon:SetSize(big and 36 or 24, big and 36 or 24)
     L.line1:SetFont(T.font, big and 13 or 12, "")
@@ -1955,14 +1955,14 @@ local function fillLane(L)
     L:SetScript("OnUpdate", nil)
   end
   L.title:SetText(("%s  |cff888888к покупке: %d|r%s"):format(d.title, ready,
-    wheel and ("   |cff" .. (lit and hex(c) or "888888") .. "прокрутите здесь, чтобы купить|r") or "   |cff888888click Buy, or tick Scroll to buy|r"))
+    wheel and ("   |cff" .. (lit and hex(c) or "888888") .. "прокрутите здесь, чтобы купить|r") or "   |cff888888нажмите «Купить» или отметьте «Покупка колесом»|r"))
   local a, b, label
   if armed then
     a, b, label = statusText()
     L.icon:SetTexture(Q.cur and ns:ItemIcon(Q.cur.id) or "Interface\\Icons\\INV_Misc_Coin_01")
   else
     a, b = idleText(d)
-    label = "Start"
+    label = "Начать"
     L.icon:SetTexture("Interface\\Icons\\INV_Misc_Coin_01")
   end
   L.icon:SetDesaturated(not armed)
@@ -1996,7 +1996,7 @@ local function fillLane(L)
     r.n:SetText(e.waiting and "0" or (e.n and tostring(e.n) or "?"))
     if d.key == "lists" then
       local rec = (ns.db.prices[ns.MarketKey()] or {})[e.id]
-      local now = rec and rec.m and not rec.none and ns.MoneyPlain(rec.m) or "none"
+      local now = rec and rec.m and not rec.none and ns.MoneyPlain(rec.m) or "нет"
       r.profit:SetText(e.waiting and ("|cff888888" .. now .. "|r") or now)
     else
       -- Profit on what you can afford right now, not the whole lot (Magic, October 3:
@@ -2083,7 +2083,7 @@ function ns:UpdatePanelScanButtons()
   local v = queueView
   if not v or not v.watchBtn then return end
   local lists = view() == "lists"
-  v.watchBtn:SetText(lists and "Искать мои списки" or (ns:IsFlipWatching() and "Остановить слежение" or "Следить за флипами"))
+  v.watchBtn:SetText(lists and "Искать списки" or (ns:IsFlipWatching() and "Остановить" or "Следить"))
   -- (Only works at the auction house; Stop always does. UI pass, November 9.)
   v.watchBtn:SetEnabled((ns:IsAHOpen() or (not lists and ns:IsFlipWatching())) and not (lists and ns.Scan.active))
   local paused = ns.IsScanPaused and ns:IsScanPaused()
@@ -2161,7 +2161,7 @@ local function addFromBox(v)
   local id, suffix, known = ns:ResolveItemVersion(text)
   if v.pendingID and not text:find("|H", 1, true) then id, suffix, known = v.pendingID, nil, nil end
   if id and suffix and known == false then
-    ns:Print(("Версия «%s» пока не встречалась в полных сканах: проверьте написание. Всё равно добавлено; «Искать всё» ищет по части названия."):format(suffix))
+    ns:Print(("Версия «%s» пока не встречалась в полных проверках: проверьте написание. Всё равно добавлено; «Искать всё» ищет по части названия."):format(suffix))
   end
   if not id then
     ns:Print("Не удалось найти предмет. Shift+клик по нему в сумках или ссылке в чате, перетащите сюда или введите точное название.")
@@ -2505,7 +2505,7 @@ local function buildListsView(parent)
   T:Fill(header, { 1, 1, 1, 0.05 })
   -- Headings for both layouts; refreshLists places and shows the right ones.
   v.headers = {}
-  local HLABEL = { Item = "Предмет", ["Buy/Craft"] = "Купить/крафт", ["До"] = "До", Want = "Нужно",
+  local HLABEL = { Item = "Предмет", ["Buy/Craft"] = "Купить/изготовить", ["До"] = "До", Want = "Нужно",
     Checked = "Отмечено", Listed = "Лотов", Have = "Есть", Now = "Сейчас" }
   for _, name in ipairs({ "Item", "Buy/Craft", "До", "Want", "Checked", "Listed", "Have", "Now" }) do
     local fs = T:Text(header, 11, T.dim)
@@ -2547,18 +2547,18 @@ local function buildListsView(parent)
     local list = currentList()
     if not list then which = "import" end
     local tabs = { current = which == "import" and 2 or 1,
-      { "Share", function() shareWindow("share") end },
-      { "Import", function() shareWindow("import") end } }
+      { "Поделиться", function() shareWindow("share") end },
+      { "Импорт", function() shareWindow("import") end } }
     if which == "import" then
       ns:ShowTextWindow("Импорт списков покупок",
         "Вставьте общий список (Ctrl+V) и нажмите «Импорт». Подойдёт и простой список названий предметов (или ссылок Wowhead) по одному в строке. Ваши списки не меняются: импорт с тем же именем добавится новым списком.",
-        "", "Import", function(text)
+        "", "Импорт", function(text)
           local ok, msg = ns:ImportShoppingLists(text)
           if ok then Q.built = 0; refreshLists() end
           return ok, msg
         end, tabs)
     else
-      ns:ShowTextWindow("Share \"" .. list.name .. "\"",
+      ns:ShowTextWindow("Поделиться списком «" .. list.name .. "»",
         "Нажмите Ctrl+C, чтобы скопировать, затем вставьте в Discord (между ``` для аккуратности) или отправьте другу. Он вставит это в «Импорт» на вкладке списков покупок.",
         ns:ExportShoppingList(list), nil, nil, tabs)
     end
@@ -2571,9 +2571,9 @@ local function buildListsView(parent)
   -- Buy again: everything on the list counts as not done, so the queue buys it all
   -- again (next raid). Bottom right, on its own.
   local again
-  again = T:Button(v, "Купить снова", 80, function()
+  again = T:Button(v, "Купить снова", 90, function()
     local list = currentList()
-    if not list or not clickTwice(again, list, "Купить снова", "Sure?") then return end
+    if not list or not clickTwice(again, list, "Купить снова", "Точно?") then return end
     ns:BuyListAgain(list)
     local ids = {}
     for _, e in ipairs(list.items) do ids[#ids + 1] = e.id end
@@ -2699,16 +2699,16 @@ local function listRow(i)
     local cob = r.kind == "item" and list and not ns:IsSearchList(list) and ns.CraftOrBuy and ns:CraftOrBuy(list, r.entry)
     if cob then
       GameTooltip:AddLine(" ")
-      GameTooltip:AddLine(("Скрафтить или купить: осталось получить %d:"):format(cob.short), T.accent[1], T.accent[2], T.accent[3])
+      GameTooltip:AddLine(("Изготовить или купить: осталось получить %d:"):format(cob.short), T.accent[1], T.accent[2], T.accent[3])
       GameTooltip:AddDoubleLine("Купить", cob.buy and ("около " .. ns.Money(cob.buy)) or "лотов нет", 0.9, 0.9, 0.9, 1, 1, 1)
-      GameTooltip:AddDoubleLine(("Скрафтить (%d %s)"):format(cob.crafts, "шт."),
-        cob.craft and (cob.craft == 0 and "you have the materials" or ("около " .. ns.Money(cob.craft) .. " in materials"))
-        or "materials not priced", 0.9, 0.9, 0.9, 1, 1, 1)
+      GameTooltip:AddDoubleLine(("Изготовить (%d %s)"):format(cob.crafts, "шт."),
+        cob.craft and (cob.craft == 0 and "все материалы есть" or ("около " .. ns.Money(cob.craft) .. " на материалы"))
+        or "материалы без цены", 0.9, 0.9, 0.9, 1, 1, 1)
       if cob.buy and cob.craft and cob.buy ~= cob.craft then
         local craftWins = cob.craft < cob.buy
-        GameTooltip:AddLine(("%s дешевле на %s.%s"):format(craftWins and "Крафт" or "Покупка",
+        GameTooltip:AddLine(("%s дешевле на %s.%s"):format(craftWins and "Изготовление" or "Покупка",
           ns.Money(math.abs(cob.buy - cob.craft)),
-          (craftWins ~= (r.entry.mode == "craft")) and (" Переключите на «" .. (craftWins and "Крафт" or "Купить") .. "» кнопкой.") or ""),
+          (craftWins ~= (r.entry.mode == "craft")) and (" Переключите на «" .. (craftWins and "Изготовление" or "Купить") .. "» кнопкой.") or ""),
           0.5, 0.83, 0.61, true)
       end
     end
@@ -2716,8 +2716,8 @@ local function listRow(i)
     if r.kind == "item" and r.entry.mode == "craft" then
       local recipe = ns:RecipeFor(id)
       GameTooltip:AddLine(" ")
-      GameTooltip:AddLine(recipe and ("Крафтится из %s%s."):format(recipe.prof or "профессия", recipe.who and (" (" .. recipe.who .. ")") or "")
-        or "No recipe known for it yet.", T.accent[1], T.accent[2], T.accent[3], true)
+      GameTooltip:AddLine(recipe and ("Изготавливается из %s%s."):format(recipe.prof or "профессия", recipe.who and (" (" .. recipe.who .. ")") or "")
+        or "Рецепт пока неизвестен.", T.accent[1], T.accent[2], T.accent[3], true)
       if recipe and recipe.classic then
         GameTooltip:AddLine(("Рецепт оригинального Classic (навык %d, создаёт %g): в Forever может отличаться. Откройте окно профессии у персонажа, который его знает, чтобы использовать этот рецепт."):format(
           recipe.skill or 0, recipe.oq or 1), 0.7, 0.7, 0.7, true)
@@ -2737,7 +2737,7 @@ local function listRow(i)
   r.age = T:Text(r, 11, T.dim)
   r.age:SetPoint("LEFT", C.want, 0)
 
-  r.mode = T:Button(r, "Купить", 50, function()
+  r.mode = T:Button(r, "Купить", 52, function()
     r.entry.mode = r.entry.mode ~= "craft" and "craft" or nil
     Q.built = 0
     refreshLists()
@@ -2745,8 +2745,8 @@ local function listRow(i)
   r.mode:SetPoint("LEFT", C.get, 0)
   r.mode:HookScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
-    GameTooltip:AddLine("Купить или скрафтить", 1, 1, 1)
-    GameTooltip:AddLine("Купить: взять на аукционе по вашей цене. Скрафтить: сделать самому; недостающие материалы перечислены ниже.", nil, nil, nil, true)
+    GameTooltip:AddLine("Купить или изготовить", 1, 1, 1)
+    GameTooltip:AddLine("Купить: взять на аукционе по вашей цене. Изготовить: сделать самому; недостающие материалы перечислены ниже.", nil, nil, nil, true)
     GameTooltip:Show()
   end)
   r.mode:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -2791,8 +2791,8 @@ local function listRow(i)
     local text
     if r.kind == "item" then text = ns:ListPriceSourceText(list, r.entry)
     elseif r.kind == "mat" then
-      text = list.matMax and list.matMax[r.mat.id] and "Set by you. This price is never changed automatically."
-        or ("Usual price + %g%% (this list's allowance). Refreshed when buying is switched on or on Buy again."):format((list.matAllowance or {})[r.mat.id] or ns:ListAllowance(list))
+      text = list.matMax and list.matMax[r.mat.id] and "Задано вами. Эта цена никогда не меняется автоматически."
+        or ("Обычная цена + %g%% (допуск списка). Обновляется при включении покупки или по «Купить снова»."):format((list.matAllowance or {})[r.mat.id] or ns:ListAllowance(list))
     end
     -- Who set it, as its own gold line (owner, October 6: "Задано вами" blended in).
     local mine = (r.kind == "item" and r.entry.src == "you") or (r.kind == "mat" and list.matMax and list.matMax[r.mat.id] ~= nil)
@@ -2830,7 +2830,7 @@ local function listRow(i)
     local changed = r.entry.qty ~= old or r.entry.anyQty ~= oldAny
     if r.entry.anyQty and not oldAny then
       ns:Print(("|cffff4d4d«Любая» для %s: очередь покупает всё по «До» (%s) или дешевле, сколько сможете. Ограничьте «Потратить не более».|r"):format(
-        ns.ItemName(r.entry.id), r.entry.max and r.entry.max > 0 and ns.Money(r.entry.max) or "not set"))
+        ns.ItemName(r.entry.id), r.entry.max and r.entry.max > 0 and ns.Money(r.entry.max) or "не задано"))
     end
     -- Wanting more than has been bought opens a done item again.
     local list = ns:CurrentShoppingList()
@@ -2898,7 +2898,7 @@ local function listRow(i)
       GameTooltip:AddLine("«Нужно» — сколько купить, независимо от имеющегося.", 0.6, 0.6, 0.6, true)
     end
     GameTooltip:AddLine(alts == 0 and "Другие персонажи: на этом правиле и фракции ни у кого нет."
-      or "Other characters: on this ruleset and faction, as of their last login.", 0.6, 0.6, 0.6, true)
+      or "Другие персонажи: на этом правиле и фракции, по последнему входу.", 0.6, 0.6, 0.6, true)
     GameTooltip:Show()
   end)
   r.haveHit:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -2919,7 +2919,7 @@ local function listRow(i)
   r.head:SetPoint("RIGHT", r, "RIGHT", -4, 0)
   r.head:SetJustifyH("LEFT")
   r.headCols = {}
-  for _, c in ipairs({ { "До", C.max }, { "Need", C.want } }) do
+  for _, c in ipairs({ { "До", C.max }, { "Нужно", C.want } }) do
     local fs = T:Text(r, 11, T.dim)
     fs:SetPoint("LEFT", c[2], 0)
     fs:SetText(c[1])
@@ -3086,7 +3086,7 @@ refreshLists = function()
     end
     if not search then mats, missing = ns:ListMaterials(list) end
     if #mats > 0 or #missing > 0 then
-      show[#show + 1] = { kind = "head", text = "Materials to craft them" }
+      show[#show + 1] = { kind = "head", text = "Материалы для изготовления" }
       for _, m in ipairs(mats) do show[#show + 1] = { kind = "mat", m = m } end
       for _, id in ipairs(missing) do
         show[#show + 1] = { kind = "note", text = ("|cffee8597No recipe known for %s:|r open its profession window on the character who makes it."):format(ns.ItemName(id)) }
@@ -3170,7 +3170,7 @@ refreshLists = function()
       -- makes; the rest just say Buy (owner's test, October 3).
       local craftable = ns.RecipeFor and ns:RecipeFor(e.id) ~= nil
       r.mode:SetShown(craftable or craft)
-      r.mode:SetText(craft and "Крафт" or "Купить")
+      r.mode:SetText(craft and "Делать" or "Купить")
       r.mode:SetSelected(craft)
       r.kindText:SetShown(not (craftable or craft))
       r.kindText:SetText("Купить")
@@ -3179,7 +3179,7 @@ refreshLists = function()
       local vendor = not craft and ns:ListVendorPrice(e.id)
       r.max:SetShown(not craft and not vendor and not list.anyPrice)
       r.maxText:SetShown(craft or vendor ~= nil or list.anyPrice)
-      r.maxText:SetText(craft and "крафт" or vendor and (ns.db.settings.vendorItemsAH and shortMoney(limit or 0) or "торговец") or "любая")
+      r.maxText:SetText(craft and "изготовление" or vendor and (ns.db.settings.vendorItemsAH and shortMoney(limit or 0) or "торговец") or "любая")
       if not craft and not r.max:HasFocus() then
         r.max:SetValue(e.max or 0)
         -- Gold when you typed it, white when automatic (owner, October 6).
@@ -3215,7 +3215,7 @@ refreshLists = function()
       r.mat = m
       r.icon:SetTexture(ns:ItemIcon(m.id))
       r.name:SetText(ns.ItemName(m.id))
-      r.kindText:SetText("на крафт")
+      r.kindText:SetText("на изготовление")
       r.max:SetShown(not m.vendor and not list.anyPrice)
       r.maxText:SetShown(m.vendor ~= nil or list.anyPrice)
       r.maxText:SetText(m.vendor and (m.vendorAH and shortMoney(m.limit or 0) or "торговец") or "любая")
@@ -3290,7 +3290,7 @@ refreshLists = function()
     v.info:SetText(buyMode and "|cff7fd39cГотово: всё из списка куплено. «Купить снова» начнёт заново.|r"
       or "|cff7fd39cComplete: you have everything on this list.|r")
   elseif craftsReady > 0 and matsShort == 0 and done + craftsReady == #list.items then
-    v.info:SetText(("|cff7fd39cУ вас есть все материалы:|r скрафтить %d, и готово."):format(craftsReady))
+    v.info:SetText(("|cff7fd39cУ вас есть все материалы:|r изготовить %d, и готово."):format(craftsReady))
   elseif not ns:IsAHOpen() then
     v.info:SetText(estimateText(list) .. ("%d из %d предметов готово%s. Откройте аукцион для поиска и покупки."):format(done, #list.items,
       matsShort > 0 and (", не хватает %d %s"):format(matsShort, ns.Plural(matsShort, "материала", "материалов", "материалов")) or ""))
@@ -3315,7 +3315,7 @@ refreshLists = ns.Timed("Shopping lists view", refreshLists)
 -- The side panel and its tabs. Beside the auction house when it's open; anywhere else
 -- (/fl lists) it's a window of its own you can move, so lists can be made before a raid.
 ---------------------------------------------------------------------------
-local TABS = { { "queue", "Очередь покупок" }, { "lists", "Списки покупок" }, { "finder", "Disenchant finder" }, { "auctions", "Auctions" } }
+local TABS = { { "queue", "Очередь покупок" }, { "lists", "Списки покупок" }, { "finder", "Поиск распыления" }, { "auctions", "Аукционы" } }
 
 local function showTab(tab)
   S().tab = tab

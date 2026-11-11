@@ -22,7 +22,7 @@ local COLS = {
   { key = "name", label = "Предмет" },
   { key = "n", label = "Кол-во", w = 50, right = true },
   { key = "each", label = "Цена", w = 80, right = true,
-    tip = "Сколько один предмет стоит для вас: лучшее из продажи на аукционе (после комиссии), торговцу, распыления или крафта во что-то." },
+    tip = "Сколько один предмет стоит для вас: лучшее из продажи на аукционе (после комиссии), торговцу, распыления или изготовления чего-либо." },
   { key = "total", label = "Итого", w = 90, right = true, tip = "Количество умножить на цену." },
   { key = "how", label = "Лучший способ", w = 170, tip = "Как получить больше всего. Наведите на предмет, чтобы увидеть весь путь." },
 }
@@ -153,18 +153,18 @@ end
 local function worth(id)
   local vendor = ns:GetSellPrice(id) or 0
   if ns.IsClassicBound and ns:IsClassicBound(id) then
-    if vendor > 0 then return vendor, "Vendor", "Продать торговцу (привяжется)", "vendor" end
+    if vendor > 0 then return vendor, "Торговец", "Продать торговцу (привяжется)", "vendor" end
     return 0, dim("нельзя продать"), "Привязывается, и торговцы её не покупают", "none"
   end
   local best, options = ns:GetValue(id, true)
   local o = options and options[1]
   if best and best > 0 and o then
-    local short = (o.kind == "ah" and "Аукцион") or (o.kind == "vendor" and "Vendor")
-      or (o.kind == "disenchant" and "Disenchant") or o.step or o.label
+    local short = (o.kind == "ah" and "Аукцион") or (o.kind == "vendor" and "Торговец")
+      or (o.kind == "disenchant" and "Распыление") or o.step or o.label
     return best, short, o.label, o.kind
   end
-  if vendor > 0 then return vendor, "Vendor", "Продажа торговцу", "vendor" end
-  return 0, dim("цены пока нет"), "Цены пока нет: просканируйте аукцион", "none"
+  if vendor > 0 then return vendor, "Торговец", "Продажа торговцу", "vendor" end
+  return 0, dim("цены пока нет"), "Цены пока нет: проверьте аукцион", "none"
 end
 
 -- The items to list: one character, or everyone in the chosen group ("all").
@@ -632,7 +632,7 @@ function ns:RefreshCharacters()
     or "Здесь пусто.")
   local when = ""
   if inv then
-    when = dim(("   Сумки %s%s"):format(key == ns.CharKey() and "now" or (inv.t and ns.Age(inv.t) or "?"),
+    when = dim(("   Сумки %s%s"):format(key == ns.CharKey() and "сейчас" or (inv.t and ns.Age(inv.t) or "?"),
       inv.bankT and (", банк " .. ns.Age(inv.bankT)) or ", банк ещё не виден"))
   end
   f.summary:SetText(("Стоит около |cff7fd39c%s|r%s%s"):format(ns.MoneyPlain(math.floor(total)),

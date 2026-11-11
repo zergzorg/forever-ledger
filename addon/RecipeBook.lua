@@ -146,6 +146,13 @@ local function captureTrainer()
       local reqName, skill = GetTrainerServiceSkillReq and GetTrainerServiceSkillReq(i)
       if reqName and reqName ~= "" then profCount[reqName] = (profCount[reqName] or 0) + 1 end
       local t = service:match("^(%a+)")
+      if not (t and TIERS[t]) then
+        local low = service:lower()
+        for _, w in ipairs({ { "подмастерье", "Journeyman" }, { "искусник", "Artisan" }, { "ученик", "Apprentice" },
+          { "эксперт", "Expert" }, { "мастер", "Master" } }) do
+          if low:find(w[1], 1, true) then t = w[2]; break end
+        end
+      end
       if TIERS[t] and (not tier or TIERS[t] > TIERS[tier]) then tier = t end
       local cost = GetTrainerServiceCost and GetTrainerServiceCost(i)
       local ok, level = pcall(function() return GetTrainerServiceLevelReq and GetTrainerServiceLevelReq(i) end)
@@ -174,7 +181,7 @@ local function captureTrainer()
     if not v.profession and ns.ProfessionFromTitle then v.profession = ns.ProfessionFromTitle(v.title) end
     -- Forever shows the rank in the window's header, not in the list, so the title
     -- ("Expert Tailor") is the reliable place for the tier.
-    local fromTitle = v.title and v.title:match("^(%a+)")
+    local _, fromTitle = ns.TrainerFromTitle and ns.TrainerFromTitle(v.title) or nil
     if fromTitle and TIERS[fromTitle] then v.tier = fromTitle end
     ns:Debug("Trainer", name or "?", "teaches", prof or "?", "up to", tier or "?", "title", v.title or "?")
   end

@@ -95,8 +95,8 @@ end
 -- and 1 greater splits into 3 lesser.
 ---------------------------------------------------------------------------
 local ESSENCES = {
-  { 10938, 10939, "Magic" }, { 10998, 11082, "Astral" }, { 11134, 11135, "Mystic" },
-  { 11174, 11175, "Nether" }, { 16202, 16203, "Eternal" },
+  { 10938, 10939, "магии" }, { 10998, 11082, "астральная" }, { 11134, 11135, "мистическая" },
+  { 11174, 11175, "Пустоты" }, { 16202, 16203, "вечная" },
 }
 local CONVERSIONS = {}   -- [itemID] = { { out = itemID, per = outputs per input, label } }
 for _, e in ipairs(ESSENCES) do
@@ -111,18 +111,18 @@ end
 ---------------------------------------------------------------------------
 local STRANGE_DUST, LESSER_MAGIC, GREATER_MAGIC, SMALL_GLIMMERING = 10940, 10938, 10939, 10978
 local MAT_NAMES = {
-  [STRANGE_DUST] = "Strange Dust", [LESSER_MAGIC] = "Lesser Magic Essence",
-  [GREATER_MAGIC] = "Greater Magic Essence", [SMALL_GLIMMERING] = "Small Glimmering Shard",
+  [STRANGE_DUST] = "Странная пыль", [LESSER_MAGIC] = "Малая эссенция магии",
+  [GREATER_MAGIC] = "Большая эссенция магии", [SMALL_GLIMMERING] = "Малый мерцающий осколок",
 }
 -- Every material in the table, so names show before the game has loaded the item.
 for id, name in pairs({
-  [10998] = "Lesser Astral Essence", [11082] = "Greater Astral Essence", [11083] = "Soul Dust",
-  [11084] = "Large Glimmering Shard", [11134] = "Lesser Mystic Essence", [11135] = "Greater Mystic Essence",
-  [11137] = "Vision Dust", [11138] = "Small Glowing Shard", [11139] = "Large Glowing Shard",
-  [11174] = "Lesser Nether Essence", [11175] = "Greater Nether Essence", [11176] = "Dream Dust",
-  [11177] = "Small Radiant Shard", [11178] = "Large Radiant Shard", [16202] = "Lesser Eternal Essence",
-  [16203] = "Greater Eternal Essence", [16204] = "Illusion Dust", [14343] = "Small Brilliant Shard",
-  [14344] = "Large Brilliant Shard",
+  [10998] = "Малая астральная эссенция", [11082] = "Большая астральная эссенция", [11083] = "Пыль души",
+  [11084] = "Большой мерцающий осколок", [11134] = "Малая мистическая эссенция", [11135] = "Большая мистическая эссенция",
+  [11137] = "Пыль видений", [11138] = "Малый светящийся осколок", [11139] = "Большой светящийся осколок",
+  [11174] = "Малая эссенция Пустоты", [11175] = "Большая эссенция Пустоты", [11176] = "Пыль грез",
+  [11177] = "Малый сияющий осколок", [11178] = "Большой сияющий осколок", [16202] = "Малая вечная эссенция",
+  [16203] = "Большая вечная эссенция", [16204] = "Пыль иллюзий", [14343] = "Малый сверкающий осколок",
+  [14344] = "Большой сверкающий осколок",
 }) do MAT_NAMES[id] = name end
 
 -- Green items. Up to 20 from the owner's capes test; 21-25 matched the owner's first
@@ -172,7 +172,7 @@ ns.DISENCHANT_BANDS = {}
 do
   local low = 1
   for _, band in ipairs(DISENCHANT) do
-    local levels = low == 1 and ("up to " .. band.maxLevel) or (low .. "-" .. band.maxLevel)
+    local levels = low == 1 and ("до " .. band.maxLevel) or (low .. "-" .. band.maxLevel)
     band.armor.label = "Зелёная броня, уровень предмета " .. levels
     band.weapon.label = "Зелёное оружие, уровень предмета " .. levels
     band.armor.band, band.weapon.band = band.maxLevel, band.maxLevel
@@ -525,7 +525,7 @@ local function rest(o)
   if o.kind == "vendor" then return "сдать торговцу" end
   local n = countSteps(o)
   if o.kind == "disenchant" and n == 1 then return "распылить" end
-  return n == 1 and "1 more step" or (n .. " more steps")
+  return ("ещё %d %s"):format(n, ns.Plural(n, "шаг", "шага", "шагов"))
 end
 
 -- Every way starts with what you'd do ("Sell on the auction house"), so none of them

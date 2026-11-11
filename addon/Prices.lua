@@ -645,7 +645,7 @@ local function record(id, units, src)
   -- flip (full scans check everything at once when they finish).
   if src ~= "full" and ns.CheckFlip then
     local ok, err = pcall(ns.CheckFlip, ns, id)
-    if not ok then ns:Debug("Проверка флипа не удалась для", id, err) end
+    if not ok then ns:Debug("Проверка перепродажи не удалась для", id, err) end
   end
   -- History is a bonus: a problem there must never stop a scan from saving prices.
   if ns.RecordPriceHistory then
@@ -781,8 +781,8 @@ local function soldTracker()
   function t.finish()
     -- Why there was nothing to compare with, for checking (/fl debug).
     if not compare then
-      local why = ("Скорость продажи: пока не с чем сравнивать (%s). Этот скан сохранён для следующего раза."):format(
-        not prev and "прошлый полный скан не сохранён"
+      local why = ("Скорость продажи: пока не с чем сравнивать (%s). Эта проверка сохранена для следующего раза."):format(
+        not prev and "прошлая полная проверка не сохранена"
         or prev.market ~= market and ("последний был " .. tostring(prev.market))
         or gap < 60 and "последний был меньше минуты назад"
         or ("последний был %d ч назад"):format(math.floor(gap / 3600)))
@@ -806,7 +806,7 @@ local function soldTracker()
         log[#log + 1] = date("%d.%m %H:%M ") .. text
         while #log > 30 do table.remove(log, 1) end
       end
-      line(("Скорость продажи: сравнение с полным сканом %d мин назад. Точно куплено (или снято): %d шт.; переставлено дешевле: %d; могло истечь, не считается: %d."):format(
+      line(("Скорость продажи: сравнение с полной проверкой %d мин назад. Точно куплено (или снято): %d шт.; переставлено дешевле: %d; могло истечь, не считается: %d."):format(
         math.floor(gap / 60), totGone, totReposted, totMaybe))
       table.sort(top, function(a, b) return a[2] > b[2] end)
       for i = 1, math.min(5, #top) do
@@ -847,16 +847,16 @@ end
 
 -- mode: "auto" (full scan if allowed, otherwise materials), "full" or "watch" (materials only).
 function Scan:Start(mode)
-  if not C_AuctionHouse then ns:Print("В этом клиенте нет сканирования аукциона."); return end
+  if not C_AuctionHouse then ns:Print("В этом клиенте нет проверки аукциона."); return end
   if not ahOpen then ns:Print("Сначала откройте аукцион."); return end
-  if self.active then ns:Print("Скан уже идёт. Введите /fl stop, чтобы отменить."); return end
+  if self.active then ns:Print("Проверка уже идёт. Введите /fl stop, чтобы отменить."); return end
   self.started = GetTime()
   if mode == "full" then return self:StartFull(false) end
   if mode == "auto" then
     local wait = self:FullWait()
     if wait == 0 then return self:StartFull(true) end
     if wait < math.huge then
-      ns:Print(("Полный скан снова возможен через %d мин. Пока сканирую ваши материалы."):format(math.ceil(wait / 60)))
+      ns:Print(("Полная проверка снова возможна через %d мин. Пока проверяю ваши материалы."):format(math.ceil(wait / 60)))
     end
   end
   self:StartWatch()
@@ -866,7 +866,7 @@ function Scan:StartWatch()
   self.queue = ns:WatchList()
   self.items, self.retry, self.retrying = #self.queue, {}, false
   self.total, self.done, self.active, self.pending = #self.queue, 0, true, nil
-  ns:Print(("Сканирую предметы: %d. Держите аукцион открытым."):format(self.total))
+  ns:Print(("Проверяю предметы: %d. Держите аукцион открытым."):format(self.total))
   self:Next()
 end
 
@@ -875,7 +875,7 @@ end
 function Scan:StartList(ids, label)
   if not C_AuctionHouse then return end
   if not ahOpen then ns:Print("Сначала откройте аукцион."); return end
-  if self.active then ns:Print("Скан уже идёт. Введите /fl stop, чтобы отменить."); return end
+  if self.active then ns:Print("Проверка уже идёт. Введите /fl stop, чтобы отменить."); return end
   if #ids == 0 then ns:Print("В том списке пока нет предметов."); return end
   self.started = GetTime()
   self.queue = {}
@@ -981,7 +981,7 @@ function Scan:Stop(reason)
   self.queue = {}
   -- The flip watch's quiet checks don't announce each pass.
   if was and not (self.quiet and not reason) then
-    ns:Print(reason or ("Скан завершён: проверено предметов %d за %s."):format(self.items or self.done or 0, took()))
+    ns:Print(reason or ("Проверка завершена: проверено предметов %d за %s."):format(self.items or self.done or 0, took()))
   end
   self.quiet = nil
   if was and not reason and ns.FlipWatchNext then ns.FlipWatchNext() end
@@ -1118,13 +1118,13 @@ local function fullNote(what)
 end
 function Scan:StartFull(fallback)
   if not C_AuctionHouse.ReplicateItems then
-    ns:Print("В этом клиенте полные сканы недоступны. Используйте /fl scan materials.")
+    ns:Print("В этом клиенте полные проверки недоступны. Используйте /fl scan materials.")
     return
   end
   self.active, self.full, self.done, self.total = true, true, 0, 0
   self.fullToken = (self.fullToken or 0) + 1
   local tok = self.fullToken
-  ns:Print("Запрашиваю полный скан аукциона. Обычно это несколько секунд.")
+  ns:Print("Запрашиваю полную проверку аукциона. Обычно это несколько секунд.")
   fullNote("asked")
   self.askedAt = GetTime()
   C_AuctionHouse.ReplicateItems()
@@ -1139,12 +1139,12 @@ function Scan:StartFull(fallback)
     if fallback and ns.IsScanPaused and ns:IsScanPaused() then
       -- Paused while it waited: nothing starts in its place, though the full scan asked for
       -- is still read if it comes (Codex review, November 10: the materials scan started).
-      ns:Print("Аукцион ещё не прислал полный скан; держите его открытым — скан будет прочитан, если придёт. Пауза, поэтому пока ничего не сканируется.")
+      ns:Print("Аукцион ещё не прислал полную проверку; держите его открытым — проверка будет прочитана, если придёт. Пауза, поэтому пока ничего не проверяется.")
     elseif fallback then
-      ns:Print("Аукцион ещё не прислал полный скан. Пока сканирую материалы; держите аукцион открытым — скан будет прочитан, если придёт.")
+      ns:Print("Аукцион ещё не прислал полную проверку. Пока проверяю материалы; держите аукцион открытым — проверка будет прочитана, если придёт.")
       self:StartWatch()
     else
-      ns:Print("Аукцион ещё не прислал полный скан. При нагрузке это может занять минуты: держите его открытым, и скан прочитается, когда придёт. Разрешается один примерно каждые 15 минут.")
+      ns:Print("Аукцион ещё не прислал полную проверку. При нагрузке это может занять минуты: держите его открытым, и проверка прочитается, когда придёт. Разрешается один примерно каждые 15 минут.")
     end
   end)
 end
@@ -1322,13 +1322,13 @@ ns:On("REPLICATE_ITEM_LIST_UPDATE", function()
       ns:UpdateScanStatus(n, n)
       local secs = math.floor(GetTime() - started + 0.5)
       if mine then
-        ns:Print(("Полный скан готов: %d лотов по %d предметам за %s."):format(n, items, took()))
+        ns:Print(("Полная проверка готова: %d лотов по %d предметам за %s."):format(n, items, took()))
       elseif waited then
         -- Says when, not whose: another addon may have asked meanwhile, and the results
         -- don't say who asked (Codex review, November 7).
-        ns:Print(("Полный скан готов: %d лотов по %d предметам, примерно через %d мин после запроса Forever Ledger."):format(n, items, math.max(1, math.floor(waited / 60 + 0.5))))
+        ns:Print(("Полная проверка готова: %d лотов по %d предметам, примерно через %d мин после запроса Forever Ledger."):format(n, items, math.max(1, math.floor(waited / 60 + 0.5))))
       else
-        ns:Print(("Другой аддон запустил полный скан; Forever Ledger тоже его прочитал: %d лотов по %d предметам за %d с."):format(n, items, secs))
+        ns:Print(("Другой аддон запустил полную проверку; Forever Ledger тоже её прочитал: %d лотов по %d предметам за %d с."):format(n, items, secs))
       end
       -- ns.fullScanDone: alerts from this check may open the Buy queue (Shuffles.lua).
       if ns.CheckDeals then
@@ -1368,7 +1368,7 @@ ns:On("AUCTION_HOUSE_CLOSED", function()
     ns.neutralAH = nil
     if ns.InvalidateValues then ns:InvalidateValues(true) end
   end
-  if Scan.active then Scan:Stop("Аукцион закрыт, скан остановлен.") end
+  if Scan.active then Scan:Stop("Аукцион закрыт, проверка остановлена.") end
   ns:RefreshUI()   -- grey out the scan buttons
 end)
 
@@ -1531,7 +1531,7 @@ local function watchPass()
   nextPause = WATCH_PAUSE
   local ids = flipCandidates()
   if #ids == 0 then
-    ns:Debug("Слежение: рядом с ценой торговца или в отслеживаемых ничего нет; ждём следующий полный скан.")
+    ns:Debug("Слежение: рядом с ценой торговца или в отслеживаемых ничего нет; ждём следующую полную проверку.")
     watchTimer = C_Timer.NewTimer(WATCH_PAUSE, watchPass)
     return
   end
@@ -1551,8 +1551,8 @@ local function showCountdown(untilTime)
       return
     end
     local full = Scan:FullWait()
-    ns:SetStatusText(("Слежение за флипами: следующая проверка через %d с%s"):format(left,
-      full > 0 and full < math.huge and (", полный скан через %d мин"):format(math.ceil(full / 60)) or ""))
+    ns:SetStatusText(("Слежение за перепродажами: следующая проверка через %d с%s"):format(left,
+      full > 0 and full < math.huge and (", полная проверка через %d мин"):format(math.ceil(full / 60)) or ""))
   end)
 end
 
@@ -1577,7 +1577,7 @@ function ns:StopFlipWatch(silent)
   -- Also end the watch's own re-check pass (it kept going and looked like the watch
   -- hadn't stopped). A full scan in progress is left to finish, as it's nearly instant.
   if Scan.active and Scan.quiet and not Scan.full then
-    Scan:Stop(silent and "Скан остановлен." or "Слежение остановлено.")
+    Scan:Stop(silent and "Проверка остановлена." or "Слежение остановлено.")
   elseif not silent then
     ns:Print("Слежение остановлено.")
   end
@@ -1592,10 +1592,10 @@ function ns:ToggleFlipWatch(quiet)
   -- (Starting it means carry on: a pause ends too.)
   watching, paused = true, false
   if not quiet then
-    ns:Print("Слежение включено: полный скан каждые 15 минут, а между ними — " ..
+    ns:Print("Слежение включено: полная проверка каждые 15 минут, а между ними — " ..
       (ns.SweepOn and ns:SweepOn() and "чтение всего списка аукциона примерно раз в полминуты. "
         or "перепроверка предметов у цены торговца. ") ..
-      "Звонок означает новый флип. Слежение встаёт на паузу при закрытии аукциона и продолжается при возвращении.")
+      "Звонок означает новую перепродажу. Слежение встаёт на паузу при закрытии аукциона и продолжается при возвращении.")
   end
   if ns.UpdateWatchButton then ns:UpdateWatchButton() end
   if ns.UpdateQuiet then ns:UpdateQuiet() end
@@ -1618,7 +1618,7 @@ function ns:ToggleScanPause()
     paused, sweepAfter = true, nil
     if watchTimer then watchTimer:Cancel(); watchTimer = nil end
     if countdown then countdown:Cancel(); countdown = nil end
-    if Scan.active and not Scan.full then Scan:Stop("Скан приостановлен.") end
+    if Scan.active and not Scan.full then Scan:Stop("Проверка приостановлена.") end
     if ns.SetStatusText then ns:SetStatusText("Пауза: нажмите «Продолжить», чтобы возобновить.") end
   end
   if ns.UpdateWatchButton then ns:UpdateWatchButton() end
@@ -1693,7 +1693,7 @@ function ns:GetPrice(id)
   local maxAge = (ns.db.settings.maxAgeHours or 12) * 3600
   local fresh = rec and rec.m and (time() - (rec.t or 0)) <= maxAge
   if rec and rec.m and (src == "own" or (src == "auto" and fresh)) then
-    local label = rec.src == "full" and "полный скан" or rec.src or "scan"
+    local label = rec.src == "full" and "полная проверка" or rec.src or "scan"
     -- (An average under the cheapest is left over from older listings: use the cheapest.)
     return math.max(rec.a or rec.m, rec.m), label, rec.t, rec
   end

@@ -244,7 +244,7 @@ function ns:ShowTrainingAdvice(list)
     if s.state == "available" then
       local knownRank = book[s.name]
       local group, why = ns:SpellAdvice(s.name, knownRank ~= nil)
-      local tag = (knownRank == nil and "new") or (knownRank > 0 and ("rank " .. (knownRank + 1))) or "upgrade"
+      local tag = (knownRank == nil and "новое") or (knownRank > 0 and ("ранг " .. (knownRank + 1))) or "улучшение"
       table.insert(groups[group], { s = s, why = why, tag = tag })
       cost[group] = cost[group] + (s.cost or 0)
       total = total + (s.cost or 0)
@@ -253,7 +253,7 @@ function ns:ShowTrainingAdvice(list)
   local tree = ns.LevellingTree and ns:LevellingTree()
   -- Two short lines (the long one wrapped to three: owner's screenshot, October 6).
   panel.sub:SetText((total > 0 and ("Всё это %s, рекомендуется %s.\n"):format(ns.Money(total), ns.Money(cost.train)) or "На этом уровне учить нечего.\n")
-    .. (tree and ("Прокачка как %s (по вашим талантам)."):format(tree) or "Очков талантов пока нет: заклинания специализации — на ваш выбор."))
+    .. (tree and ("Прокачка как %s (по вашим талантам)."):format(ns.TREE_NAMES and ns.TREE_NAMES[tree] or tree) or "Очков талантов пока нет: заклинания специализации — на ваш выбор."))
   local y, n = 0, 0
   for _, g in ipairs(GROUPS) do
     if #groups[g.key] > 0 then

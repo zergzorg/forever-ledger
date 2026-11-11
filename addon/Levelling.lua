@@ -34,7 +34,7 @@ local LIST = {
     ids = { 2589, 2996 },
     zone = { "Кобольды и гноллы Элвинна, затем Дефиас в Западном крае", "Лагеря иглогривов в Дуротаре, затем пираты южнее Крутого Холма" },
     how = "Убивайте гуманоидов по заданиям: лён оставляйте, серые предметы продавайте, зелёные проверяйте. Уходите, когда в лагере людно.",
-    why = "Ткань, монеты и лут торговцу с тех же убийств." },
+    why = "Ткань, монеты и добыча торговцу с тех же убийств." },
   { title = "Делайте льняные сумки", prof = "Tailoring", lvl = { 1, 20 }, forever = true,
     ids = { 4238, 2589, 2996, 2320, 4496 },
     zone = { "Любой город с покупателями", "Любой город с покупателями" },
@@ -44,11 +44,11 @@ local LIST = {
     ids = { 11287, 11288, 10938, 4470 },
     zone = { "Города с новыми кастерами", "Города с новыми кастерами" },
     how = "Сделайте малый волшебный жезл (позже большой) для кастера, которому он нужен. Торговцы дают за них мало (малый 1с 10м, большой 2с после патча 8 октября), поэтому продавайте игрокам; цена торговца — лишь нижняя граница.",
-    why = "Полезное раннее оружие может стоить дороже затрат на крафт." },
+    why = "Полезное раннее оружие может стоить дороже затрат на изготовление." },
   { title = "Шерсть из следующих лагерей", lvl = { 18, 26 },
     ids = { 2592, 2997 },
     zone = { "Орки Чёрной горы в Красногорье, затем Хилсбрад", "Лагеря и фермы Синдиката в Хилсбраде" },
-    how = "Когда хватает сил на лагерь, фармите шерстяную ткань; продавайте её отдельно от льна.",
+    how = "Когда хватает сил на лагерь, добывайте шерстяную ткань; продавайте её отдельно от льна.",
     why = "Следующая ткань попадает к покупателям раньше, чем туда дойдут остальные." },
   { title = "Олово, грубый камень и бронза", prof = "Mining", lvl = { 12, 25 },
     ids = { 2771, 3576, 2841, 2836 },
@@ -86,6 +86,13 @@ ns.LEVELLING_START = LIST
 
 local view
 
+local PROF_RU = {
+  Enchanting = "Наложение чар", ["First Aid"] = "Первая помощь", Fishing = "Рыбная ловля",
+  Herbalism = "Травничество", Mining = "Горное дело", Skinning = "Снятие шкур",
+  Tailoring = "Портняжное дело", Alchemy = "Алхимия", Blacksmithing = "Кузнечное дело",
+  Engineering = "Инженерное дело", Leatherworking = "Кожевничество", Cooking = "Кулинария",
+}
+
 local function myProfs()
   local c = ns.db.chars[ns.CharKey()]
   local have = {}
@@ -97,17 +104,17 @@ end
 local function fits(e, profs, class, faction)
   if e.class and e.class ~= class then return false, "нужен " .. e.class:sub(1, 1) .. e.class:sub(2):lower() end
   if e.faction and e.faction ~= faction then return false, e.faction .. " только" end
-  if e.prof and not profs[e.prof] then return false, "с " .. e.prof end
+  if e.prof and not (profs[e.prof] or profs[PROF_RU[e.prof] or e.prof]) then return false, "нужно " .. (PROF_RU[e.prof] or e.prof) end
   return true
 end
 
 -- What the row shows on the right: the first item's price.
 local function priceText(e)
-  if e.service then return "|cff999999service|r" end
+  if e.service then return "|cff999999услуга|r" end
   local id = e.ids and e.ids[1]
   if not id then return "" end
   local p = e.vendor and ns:GetSellPrice(id) or (ns:GetPrice(id))
-  if not p then return "|cff999999скан, чтобы увидеть|r" end
+  if not p then return "|cff999999нужна проверка|r" end
   return ns.Money(p) .. (e.vendor and " |cff999999торговец|r" or "")
 end
 
@@ -158,10 +165,10 @@ local function row(i)
     GameTooltip:AddLine(e.why, 0.85, 0.85, 0.85, true)
     if e.ids then
       GameTooltip:AddLine(" ")
-      GameTooltip:AddLine(e.vendor and "Торговец платит" or "Цены из ваших сканов", 1, 0.82, 0)
+      GameTooltip:AddLine(e.vendor and "Торговец платит" or "Цены из ваших проверок", 1, 0.82, 0)
       for _, id in ipairs(e.ids) do
         local p = e.vendor and ns:GetSellPrice(id) or (ns:GetPrice(id))
-        GameTooltip:AddDoubleLine("  " .. ns.ItemName(id), p and ns.Money(p) or "ещё не сканировалось", 0.8, 0.8, 0.8, 1, 1, 1)
+        GameTooltip:AddDoubleLine("  " .. ns.ItemName(id), p and ns.Money(p) or "ещё не проверялось", 0.8, 0.8, 0.8, 1, 1, 1)
       end
     end
     if e.service then GameTooltip:AddLine("Клик: окно клиентов.", T.accent[1], T.accent[2], T.accent[3])
@@ -183,7 +190,7 @@ function ns:BuildLevelling(parent)
   view.intro:SetPoint("TOPLEFT", 4, -24)
   view.intro:SetPoint("RIGHT", view, "RIGHT", -4, 0)
   view.intro:SetJustifyH("LEFT")
-  view.intro:SetText("Способы заработать во время прокачки, лучшее сначала, по ценам ваших сканов. Приглушённые строки требуют профессии, которой у персонажа нет. Наведите на строку, чтобы узнать, что делать.")
+  view.intro:SetText("Способы заработать во время прокачки, лучшее сначала, по ценам ваших проверок. Приглушённые строки требуют профессии, которой у персонажа нет. Наведите на строку, чтобы узнать, что делать.")
   -- Only what this character can do: hides lines needing a profession it hasn't got
   -- (owner, October 7). Class-only lines never show for other classes.
   view.mine = T:Check(view, function(self)

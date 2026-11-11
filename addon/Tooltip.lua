@@ -16,7 +16,7 @@ local debugLinks = {}   -- tooltip links already shown in debug
 local function historyLines(tt, id)
   local days = ns.PriceHistory and ns:PriceHistory(id) or {}
   if #days == 0 then
-    tt:AddLine("Истории цен пока нет: она копится со сканами", 0.5, 0.5, 0.5, true)
+    tt:AddLine("Истории цен пока нет: она копится с проверками", 0.5, 0.5, 0.5, true)
     return
   end
   -- The range of each day's typical price (the average of the cheapest 20): the very
@@ -289,7 +289,7 @@ local function addLines(tt, id, forceFull, copyPrice)
     if link and rec and rec.sx and ns.db.settings.debug and not debugLinks[link] then
       debugLinks[link] = true
       ns:Debug("Версия подсказки:", link:match("%[(.-)%]") or "?", "=", link:match("item:[%-%d:]*") or "?",
-        "version:", suffix or "нет (группа)", "по скану:", rec.sx:sub(1, 80))
+        "version:", suffix or "нет (группа)", "по проверке:", rec.sx:sub(1, 80))
     end
   end
 

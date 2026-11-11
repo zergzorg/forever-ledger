@@ -99,7 +99,7 @@ ns:OnReady(function()
     C_Timer.After(10, function()
       ns:Print("Списки покупок теперь одного вида: отметьте «Покупать из этого списка» в очереди покупок, чтобы покупать из него. «Нужно» — сколько купить; «Есть» показывает, что у вас есть. Уже имеющееся считается купленным, поэтому лишнее не покупается.")
       if #paused > 0 then
-        ns:Print(("Покупка приостановлена для %s (он крафтит): проверьте «Нужно» и снова отметьте «Покупать из этого списка»."):format(table.concat(paused, ", ")))
+        ns:Print(("Покупка приостановлена для %s (он изготавливает): проверьте «Нужно» и снова отметьте «Покупать из этого списка»."):format(table.concat(paused, ", ")))
       end
     end)
   end
@@ -169,7 +169,7 @@ function ns:ShuffleToShoppingList(s, list, runs)
     if not b.max or b.max < 1 then return nil, "Не хватает лимита покупки для " .. (ns.ItemName(b.id) or ("item " .. b.id)) .. ". Обновите цепочки и попробуйте снова." end
     for _, e in ipairs(list and list.items or {}) do
       if e.id == b.id and not e.suffix and e.mode == "craft" then
-        return nil, "В этом списке крафтится один из этих материалов. Выберите другой список или создайте новый."
+        return nil, "В этом списке изготавливается один из этих материалов. Выберите другой список или создайте новый."
       end
     end
   end
@@ -200,7 +200,7 @@ end
 -- One purchase of each finder row. Validate everything before changing the list;
 -- filters choose the items, not a rule that silently adds future scan results.
 function ns:DisenchantToShoppingList(rows, list, name)
-  if not rows or #rows == 0 then return nil, "Предметы не показаны: выберите фильтры и сначала просканируйте." end
+  if not rows or #rows == 0 then return nil, "Предметы не показаны: выберите фильтры и сначала проверьте." end
   if list then
     local exists = false
     for _, l in ipairs(ns:ShoppingLists()) do if l == list then exists = true end end
@@ -218,7 +218,7 @@ function ns:DisenchantToShoppingList(rows, list, name)
     if not cap then return nil, "Не хватает лимита покупки для распыления: " .. (id and ns.ItemName(id) or "этот предмет") .. ". Проверьте наложение чар и цены материалов, затем обновите поиск." end
     for _, e in ipairs(list and list.items or {}) do
       if e.id == id and not e.suffix and e.mode == "craft" then
-        return nil, "В этом списке крафтится один из этих предметов. Выберите другой список или создайте новый."
+        return nil, "В этом списке изготавливается один из этих предметов. Выберите другой список или создайте новый."
       end
     end
     if not seen[id] then
@@ -254,7 +254,7 @@ end
 function ns:CraftToShoppingList(id, crafts, list)
   crafts = tonumber(crafts) or 1
   if crafts ~= crafts or crafts < 1 or crafts > 10000 or crafts ~= math.floor(crafts) then
-    return nil, "Выберите целое число крафтов от 1 до 10000."
+    return nil, "Выберите целое число изготовлений от 1 до 10000."
   end
   local recipe = id and ns:RecipeFor(id)
   if not (recipe and recipe.r and #recipe.r > 0) then return nil, "Для этого предмета нет известного рецепта." end
@@ -266,7 +266,7 @@ function ns:CraftToShoppingList(id, crafts, list)
     for _, e in ipairs(list.items) do
       for _, r in ipairs(recipe.r) do
         if e.id == r[1] and not e.suffix and e.mode == "craft" then
-          return nil, "В этом списке крафтится один из этих материалов. Выберите другой список или создайте новый."
+          return nil, "В этом списке изготавливается один из этих материалов. Выберите другой список или создайте новый."
         end
       end
     end
@@ -286,7 +286,7 @@ function ns:CraftToShoppingList(id, crafts, list)
   end
   for i, l in ipairs(ns:ShoppingLists()) do if l == list then ns:SelectShoppingList(i); break end end
   ns:Print(("Материалы на %d %s из %s добавлены в список покупок «%s». Проверьте «Нужно» и «До» (/fl lists)."):format(
-    crafts, ns.Plural(crafts, "крафт", "крафта", "крафтов"), ns.ItemName(id) or "?", list.name))
+    crafts, ns.Plural(crafts, "изготовление", "изготовления", "изготовлений"), ns.ItemName(id) or "?", list.name))
   if ns.RefreshListsView then ns:RefreshListsView() end
   return list
 end
@@ -575,7 +575,7 @@ function ns:ImportShoppingLists(text)
     end
   end
   if #made == 0 then
-    return false, "Nothing to import: paste a shared list (it starts with \"" .. HEADER .. "\"), or item names, one per line."
+    return false, "Нечего импортировать: вставьте общий список (он начинается с \"" .. HEADER .. "\") или названия предметов по одному в строке."
   end
   local names = {}
   for _, l in ipairs(made) do names[#names + 1] = l.name end
@@ -939,7 +939,7 @@ function ns:ListPriceSourceText(list, e)
         s.id == e.id and "потолок маршрута" or "доп. стоимость материалов", ns.ItemName(s.id))
     end
     table.sort(details)
-    return table.concat(details, "; ") .. ". От цепочки: " .. (e.shuffleName or "unknown") .. ". Использует потолок покупки маршрута; при двух цепочках — меньший. Обновляется при повторном добавлении или по «Купить снова»."
+    return table.concat(details, "; ") .. ". От цепочки: " .. (e.shuffleName or "неизвестно") .. ". Использует потолок покупки маршрута; при двух цепочках — меньший. Обновляется при повторном добавлении или по «Купить снова»."
   end
   return ("Обычная цена + %g%% (допуск этого списка). Обновляется при включении покупки или по «Купить снова»."):format(e.usualAllowance or ns:ListAllowance(list))
 end
@@ -1242,9 +1242,9 @@ function ns:SearchAllList(list)
   if scan.active then
     if scan.quiet then
       -- The flip watch's quick checks give way, and carry on afterwards.
-      scan:Stop("Проверки слежения за флипами приостановлены на время поиска всех.")
+      scan:Stop("Проверки слежения за перепродажами приостановлены на время поиска всех.")
     else
-      ns:Print("Идёт скан: поиск всех можно запустить после него.")
+      ns:Print("Идёт проверка: поиск всех можно запустить после него.")
       return
     end
   end

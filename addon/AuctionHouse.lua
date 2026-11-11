@@ -18,10 +18,10 @@ end
 -- Why a listing is worth buying, as the badge says it (owner: "BUY" didn't say whether
 -- it was a vendor flip or a disenchant, September 30).
 local REASONS = {
-  vendor = { badge = "FLIP", word = "Флип у торговца" },
-  disenchant = { badge = "DE", word = "Распыление" },
-  craft = { badge = "CRAFT", word = "Крафт" },
-  convert = { badge = "USE", word = "Переделка" },
+  vendor = { badge = "ТОРГ", word = "Перепродажа торговцу" },
+  disenchant = { badge = "РАСП", word = "Распыление" },
+  craft = { badge = "ИЗГ", word = "Изготовление" },
+  convert = { badge = "ПЕРЕД", word = "Переделка" },
 }
 
 -- The most worth paying for one of an item and why (REASONS entry), or nil if nothing
@@ -35,7 +35,7 @@ function ns:BuyLimit(id)
   local sell = ns:GetSellPrice(id)
   local vendorLimit = sell and sell > 0 and ns:VendorFlipLimit(sell)
   if vendorLimit and vendorLimit > 0 and (not limit or vendorLimit > limit) then limit, reason = vendorLimit, REASONS.vendor end
-  if limit then return limit, reason or { badge = "BUY", word = "Стоит купить" } end
+  if limit then return limit, reason or { badge = "КУП", word = "Стоит купить" } end
 end
 
 -- Call fn(row) for each row frame the list shows.
@@ -315,9 +315,11 @@ end
 function ns:DisenchantFinderListName()
   local s, bands = finderSettings(), {}
   for _, b in ipairs(ns.DISENCHANT_BANDS) do if s.bands[b.key] then bands[#bands + 1] = b.label end end
-  local kind = s.armor and s.weapon and "броня и оружие" or s.armor and "armor" or s.weapon and "weapons" or "нет типов"
-  return "Распыление: уровень предмета " .. (#bands > 0 and table.concat(bands, ", ") or "none") .. " " .. kind
-    .. (s.profitable and " (стоит распыления)" or "")
+  local kind = s.armor and s.weapon and "броня и оружие" or s.armor and "броня" or s.weapon and "оружие" or "нет типов"
+  local levels = #bands > 0 and table.concat(bands, ", ") or nil
+  local name = kind == "нет типов" and "Распыление: нет типов"
+    or ("Распыление: " .. kind .. (levels and (", уровень предмета " .. levels) or ""))
+  return name .. (s.profitable and " (стоит распыления)" or "")
 end
 
 local function finderListOptions()
@@ -569,7 +571,7 @@ local function buildFinder(side)
   header:SetPoint("TOPRIGHT", -6, -y)
   header:SetHeight(20)
   T:Fill(header, { 1, 1, 1, 0.05 })
-  local cols = { { "Item", 8, "LEFT" }, { "Price", 250, "RIGHT" }, { "Worth", 320, "RIGHT" }, { "Profit", 396, "RIGHT" } }
+  local cols = { { "Предмет", 8, "LEFT" }, { "Цена", 250, "RIGHT" }, { "Стоимость", 320, "RIGHT" }, { "Прибыль", 396, "RIGHT" } }
   for _, c in ipairs(cols) do
     local fs = T:Text(header, 11, T.dim)
     if c[3] == "LEFT" then fs:SetPoint("LEFT", c[2], 0) else fs:SetPoint("RIGHT", header, "LEFT", c[2], 0) end
@@ -675,11 +677,11 @@ function ns:RefreshDisenchantFinder()
   -- Say why it's blank, and what to do (UI pass, November 9).
   finder.empty:SetShown(n == 0 and next(finderSettings().bands) ~= nil)
   finder.empty:SetText(finderSettings().profitable
-    and "При этих уровнях сейчас нечего выгодно распылять. Снимите «Только выгодные для распыления» или запустите полный скан."
-    or "На этих уровнях ничего не выставлено. Запустите полный скан или выберите другие уровни.")
+    and "При этих уровнях сейчас нечего выгодно распылять. Снимите «Только выгодные для распыления» или запустите полную проверку."
+    or "На этих уровнях ничего не выставлено. Запустите полную проверку или выберите другие уровни.")
   local newest = 0
   for _, rec in pairs(ns.db.prices[ns.MarketKey()] or {}) do newest = math.max(newest, rec.t or 0) end
-  finder.info:SetText(("Из последнего скана (%s). Клик по предмету — найти его."):format(newest > 0 and ns.Age(newest) or "пока нет"))
+  finder.info:SetText(("Из последней проверки (%s). Клик по предмету — найти его."):format(newest > 0 and ns.Age(newest) or "пока нет"))
   if next(finderSettings().bands) == nil then
     finder.count:SetText("Уровни не выбраны: выберите их ниже.")
   else
@@ -731,7 +733,7 @@ function ns:UpdateWatchButton()
   local w = ns.ahWatchButton
   if not w then return end
   local on = ns:IsFlipWatching()
-  w:SetText(on and "     Остановить слежение" or "Следить за флипами")
+  w:SetText(on and "  Остановить" or "Следить")
   if not w.eye then w.eye = watchEye(w) end
   w.eye:SetShown(on)
   w.eye:SetScript("OnUpdate", on and eyeUpdate or nil)
@@ -769,8 +771,8 @@ ns:On("AUCTION_HOUSE_SHOW", function()
       w:SetScript("OnClick", function() ns:ToggleFlipWatch() end)
       w:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
-        GameTooltip:AddLine("Слежение за флипами", 1, 1, 1)
-        GameTooltip:AddLine("Ищет предметы дешевле цены торговца, пока аукцион открыт: полный скан каждые 15 минут, а между ними — чтение всего списка аукциона примерно раз в полминуты. Звенит при находке, новые флипы попадают в очередь покупок.", nil, nil, nil, true)
+        GameTooltip:AddLine("Слежение за перепродажами", 1, 1, 1)
+        GameTooltip:AddLine("Ищет предметы дешевле цены торговца, пока аукцион открыт: полная проверка каждые 15 минут, а между ними — чтение всего списка аукциона примерно раз в полминуты. Звенит при находке, новые перепродажи попадают в очередь покупок.", nil, nil, nil, true)
         GameTooltip:Show()
       end)
       w:SetScript("OnLeave", function() GameTooltip:Hide() end)

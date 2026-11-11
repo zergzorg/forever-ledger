@@ -190,7 +190,7 @@ local function addFromBox(v)
     return
   end
   ns:WatchItem(id, max)
-  ns:Print(("Следим за %s, %s. Слежение за флипами проверяет его каждый проход."):format(ns.ItemName(id) or "предмет",
+  ns:Print(("Следим за %s, %s. Слежение за перепродажами проверяет его каждый проход."):format(ns.ItemName(id) or "предмет",
     max > 0 and ("до " .. ns.Money(max)) or "по цене торговца"))
   v.add:SetText(""); v.max:SetText("")
   v.pendingID = nil
@@ -223,13 +223,13 @@ local function row(v, i)
     if how == "you" then
       GameTooltip:AddLine(("Покупать по %s или дешевле, ваша цена."):format(ns.Money(limit)), T.accent[1], T.accent[2], T.accent[3], true)
     elseif how == "vendor" then
-      GameTooltip:AddLine(("Покупать по %s или дешевле: торговец платит %s минус ваш запас флипа."):format(ns.Money(limit), ns.Money(sell)),
+      GameTooltip:AddLine(("Покупать по %s или дешевле: торговец платит %s минус ваш запас на перепродажу."):format(ns.Money(limit), ns.Money(sell)),
         T.accent[1], T.accent[2], T.accent[3], true)
     else
       GameTooltip:AddLine("Пока не покупается: торговцы его не покупают. Введите максимум в «До».", 1, 0.82, 0, true)
     end
     if ns.IsGearItem and ns:IsGearItem(r.id) then
-      GameTooltip:AddLine("Снаряжение проверяется полным сканом (примерно каждые 15 минут), а не между ними.", 0.7, 0.7, 0.7, true)
+      GameTooltip:AddLine("Снаряжение проверяется полной проверкой (примерно каждые 15 минут), а не между ними.", 0.7, 0.7, 0.7, true)
     end
     GameTooltip:AddLine("Клик — найти на аукционе.", 0.6, 0.6, 0.6)
     GameTooltip:Show()
@@ -245,7 +245,7 @@ local function row(v, i)
   r.max:HookScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
     GameTooltip:AddLine("До", 1, 1, 1)
-    GameTooltip:AddLine("Максимум, который платит очередь. «торговец»: только когда торговец даёт больше (флип у торговца). Ваша цена ниже всё равно покупает флипы.", nil, nil, nil, true)
+    GameTooltip:AddLine("Максимум, который платит очередь. «торговец»: только когда торговец даёт больше (перепродажа торговцу). Ваша цена ниже всё равно покупает такие предметы.", nil, nil, nil, true)
     GameTooltip:Show()
   end)
   r.max:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -326,7 +326,7 @@ local function build(parent)
   info:SetPoint("RIGHT", v, "RIGHT", -12, 0)
   info:SetJustifyH("LEFT")
   info:SetWordWrap(true)
-  info:SetText("Слежение проверяет их каждый проход сверх обычных. Всё по «До» или дешевле попадает во «Флипы у торговца» первыми и звенит. «До» = «торговец»: только когда торговец даёт больше.")
+  info:SetText("Слежение проверяет их каждый проход сверх обычных. Всё по «До» или дешевле попадает во «Перепродажи торговцу» первыми и звенит. «До» = «торговец»: только когда торговец даёт больше.")
 
   -- Add: shift-click, drag or type an item; the most you'd pay (empty: vendor price).
   v.add = hinted(v, 214, "Shift+клик, перетащите или введите предмет", "LEFT")
@@ -352,7 +352,7 @@ local function build(parent)
   v.max:SetScript("OnEnterPressed", function() addFromBox(v) end)
   local addB = T:Button(v, "Следить", 70, function() addFromBox(v) end, 22)
   addB:SetPoint("LEFT", v.max, "RIGHT", 4, 0)
-  tip(addB, "Следить", "Добавляет предмет. Пустая цена — покупать только как флип у торговца; или введите максимум: 2s, 1g 50s или число для золота.")
+  tip(addB, "Следить", "Добавляет предмет. Пустая цена — покупать только как перепродажу торговцу; или введите максимум: 2s, 1g 50s или число для золота.")
 
   local header = CreateFrame("Frame", nil, v)
   header:SetPoint("TOPLEFT", 6, -114)
@@ -365,10 +365,10 @@ local function build(parent)
     fs:SetPoint(point, header, "LEFT", x, 0)
     return fs
   end
-  head("Item", "LEFT", 8)
+  head("Предмет", "LEFT", 8)
   head("До", "LEFT", C.max + 2)
-  head("Now", "RIGHT", C.now)
-  head("Vendor", "RIGHT", C.vendor)   -- (what a vendor pays; "Vendor pays" ran into Now)
+  head("Сейчас", "RIGHT", C.now)
+  head("Торговец", "RIGHT", C.vendor)   -- (what a vendor pays; "Vendor pays" ran into Now)
 
   v.sf, v.content = T:Scroll(v)
   v.sf:SetPoint("TOPLEFT", 6, -136)

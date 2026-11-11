@@ -254,7 +254,7 @@ function ns:FindVendorFlips()
   end)
   return flips
 end
-ns.FindVendorFlips = ns.Timed("Ищу флипы у торговца", ns.FindVendorFlips)
+ns.FindVendorFlips = ns.Timed("Ищу перепродажи торговцу", ns.FindVendorFlips)
 
 local function where(b)
   return b.listed and (b.listed .. " в продаже") or "vendor"
@@ -298,15 +298,15 @@ function ns:ShuffleDetails(s)
     lines[#lines + 1] = ("Купить %s до %s (сейчас %s, %s)."):format(
       itemName(s.id), ns.Money(s.maxBuy), ns.Money(b.price), where(b))
   else
-    lines[#lines + 1] = "Купить на каждый крафт:"
+    lines[#lines + 1] = "Купить на каждое изготовление:"
     for _, b in ipairs(s.buys) do
       lines[#lines + 1] = ("      %s %s по %s (%s)"):format(b.qty, itemName(b.id), ns.Money(b.price), where(b))
     end
   end
-  lines[#lines + 1] = "Then:"
+  lines[#lines + 1] = "Затем:"
   stepLines(s.opt, lines, { n = 0 }, true)
   lines[#lines + 1] = ("Прибыль %s %s (%d%%), около %s в час."):format(
-    ns.Money(s.profit), s.single and "each" or "за крафт", returnPct(s), ns.Money(s.perHour))
+    ns.Money(s.profit), s.single and "за штуку" or "за изготовление", returnPct(s), ns.Money(s.perHour))
   if (s.deposit or 0) > 0 then lines[#lines + 1] = ("Учитывает один непроданный 8-часовой лот (залог теряется): %s."):format(ns.Money(s.deposit)) end
   return table.concat(lines, "\n")
 end
@@ -340,7 +340,7 @@ function ns:StepIcons(o)
     if o.kind == "ah" then out[#out + 1] = { AH_ICON, "Продать на аукционе" }; return end
     if o.kind == "vendor" then out[#out + 1] = { VENDOR_ICON, "Продать торговцу" }; return end
     if o.kind == "disenchant" then
-      out[#out + 1] = { DISENCHANT_ICON, "Disenchant" }
+      out[#out + 1] = { DISENCHANT_ICON, "Распыление" }
       local top
       for _, m in ipairs(o.mats) do
         if not top or m.opt.value * m.count > top.opt.value * top.count then top = m end
@@ -508,7 +508,7 @@ function ns:ShuffleShoppingControls(d, s, width, top)
   c.pick:SetValue(c.target)
   c.pick:SetWidth(math.max(190, width - 250))
   c.amount:SetValue(c.runs)
-  c.label:SetText(s.single and "Предметы" or "Крафты")
+  c.label:SetText(s.single and "Предметы" or "Изготовления")
   c.top = top
   c:ClearAllPoints()
   c:SetPoint("TOPLEFT", 14, -top)
@@ -532,7 +532,7 @@ function ns:ShuffleProfitLine(s)
   local limit = (s.single or s.group) and ("Купить до %s. "):format(ns.Money(s.maxBuy)) or ""
   local hour = s.opt.kind == "vendor" and "" or (", около %s в час"):format(ns.Money(s.perHour))
   return ("%sПрибыль %s %s (%d%%)%s."):format(
-    limit, ns.Money(s.profit), s.single and "each" or "за крафт", returnPct(s), hour)
+    limit, ns.Money(s.profit), s.single and "за штуку" or "за изготовление", returnPct(s), hour)
 end
 
 -- How many times the shuffle could be done profitably with what's listed now, limited
@@ -592,7 +592,7 @@ local function printShuffle(i, s)
       parts[#parts + 1] = ("%s %s по %s (%s)"):format(b.qty, itemName(b.id), ns.Money(b.price), where(b))
     end
     print("    Купить: " .. table.concat(parts, ", "))
-    print(("    Прибыль %s за крафт (%d%%), около %s в час."):format(
+    print(("    Прибыль %s за изготовление (%d%%), около %s в час."):format(
       ns.Money(s.profit), math.floor(s.profit / s.cost * 100 + 0.5), ns.Money(s.perHour)))
   end
 end
@@ -606,14 +606,14 @@ end
 function ns:PrintShuffles(showAll)
   local vendor, ah, oneOff, flips = ns:FindShuffles()
   if #vendor + #ah + #oneOff + #flips == 0 then
-    ns:Print("Цепочек при текущих ценах нет. Просканируйте аукцион и откройте окна профессий.")
+    ns:Print("Цепочек при текущих ценах нет. Проверьте аукцион и откройте окна профессий.")
     return
   end
   local n = showAll and math.huge or SHOWN
   ns:Print(("Цепочки при текущих ценах, сначала лучшая прибыль в час (запас %g%%)."):format(ns.db.settings.margin or 10))
   printSection("Продажа торговцу (надёжно):", vendor, n)
   printSection("Продажа на аукционе (зависит от покупателей):", ah, n)
-  printSection("Флипы у торговца (купить на аукционе, продать торговцу):", flips, n)
+  printSection("Перепродажи торговцу (купить на аукционе, продать торговцу):", flips, n)
   if showAll then
     printSection(("Разовые сделки (в продаже меньше %d):"):format(MIN_LISTED), oneOff, n)
   else
@@ -693,13 +693,13 @@ function ns:DealRules()
   local src = s.dealHistory or "auto"
   local from
   if not TSM_API then
-    from = src == "local" and "сканы этого аддона" or "сканы этого аддона, TSM не установлен"
+    from = src == "local" and "проверки этого аддона" or "проверки этого аддона, TSM не установлен"
   elseif src == "tsm" then
     from = "цены TSM"
   elseif src == "local" then
-    from = "сканы этого аддона"
+    from = "проверки этого аддона"
   else
-    from = "цены TSM или сканы аддона там, где у TSM их нет"
+    from = "цены TSM или проверки аддона там, где у TSM их нет"
   end
   local usualMin = (s.dealUsualMin or 0) > 0 and (" и минимум " .. ns.Money(s.dealUsualMin) .. " прибыли за штуку при перепродаже") or ""
   return ("на %g%% или больше ниже обычной минимальной цены за %s (из %s)%s, или %s"):format(
@@ -785,7 +785,7 @@ local function judgeUsual(id, rec)
     end
     if basis == "TSM" and level == "thin" then level = "fair" end
     if points < DEAL_MIN_DAYS then
-      d.warnings[#d.warnings + 1] = ("Всего %d %s ваших сканов."):format(points, ns.Plural(points, "день", "дня", "дней"))
+      d.warnings[#d.warnings + 1] = ("Всего %d %s ваших проверок."):format(points, ns.Plural(points, "день", "дня", "дней"))
     elseif spread and spread > JUMPY then
       d.warnings[#d.warnings + 1] = "Цены сильно прыгают от дня ко дню."
     end
@@ -812,7 +812,7 @@ local function judgeUsual(id, rec)
     if sp.key == "none" or sp.key == "slow" then
       level = lower(level)
       d.warnings[#d.warnings + 1] = sp.key == "none"
-        and ("За %d ч сканов ничего не куплено: может не продаваться."):format(math.floor(sp.hours))
+        and ("За %d ч проверок ничего не куплено: может не продаваться."):format(math.floor(sp.hours))
         or "Продаётся медленно для такого числа лотов."
     end
   end
@@ -899,9 +899,9 @@ function ns:DealExplain(d)
   local function green(v) return (v > 0 and "|cff7fd39c" or "|cffee8597") .. ns.Money(math.max(0, v)) .. "|r" end
 
   L[#L + 1] = { head = "Сейчас" }
-  pair("Cheapest", ns.Money(d.price))
+  pair("Минимум", ns.Money(d.price))
   pair(("Стоит купить, до %s"):format(ns.Money(d.limit)), d.listed > 1 and ("%d, в среднем %s"):format(d.listed, ns.Money(d.cost)) or "1")
-  pair("Следующий лот", d.nextUp and ns.Money(d.nextUp) or "none")
+  pair("Следующий лот", d.nextUp and ns.Money(d.nextUp) or "нет")
 
   L[#L + 1] = { head = "Обычно (" .. (ns.WINDOW_NAMES[s.dealWindow or "all"] or "всё время") .. ")" }
   -- The deal is measured against the usual cheapest price (see judgeUsual).
@@ -911,13 +911,13 @@ function ns:DealExplain(d)
   end
   if st then
     pair("Типичная цена", ns.Money(st.usual))
-    pair("На основе", ("%d %s ваших сканов"):format(st.points, ns.Plural(st.points, "день", "дня", "дней")))
+    pair("На основе", ("%d %s ваших проверок"):format(st.points, ns.Plural(st.points, "день", "дня", "дней")))
     if st.points >= 4 and st.q1 ~= st.q3 then pair("Типично, в большинстве дней", ns.Money(st.q1) .. " — " .. ns.Money(st.q3)) end
     if st.listed then pair("В продаже каждый день", tostring(st.listed)) end
   end
   if d.speed then
-    pair("Sells", ns:SellSpeedText(d.speed))
-    pair("Оценка по", ("сравнено %d ч сканов"):format(math.floor(d.speed.hours + 0.5)))
+    pair("Сбыт", ns:SellSpeedText(d.speed))
+    pair("Оценка по", ("сравнено %d ч проверок"):format(math.floor(d.speed.hours + 0.5)))
   end
   -- Quest items sell to leveling players, once per character (QuestItems.lua).
   if ns.db.settings.tipQuest ~= false and ns.IsQuestItem and ns:IsQuestItem(d.id) then
@@ -935,7 +935,7 @@ function ns:DealExplain(d)
   L[#L + 1] = { head = "Насколько верно: " .. (ns.DEAL_LEVEL_TEXT[d.level] or d.level) }
   L[#L + 1] = { note = ns.DEAL_LEVEL_WHY[d.level] or "", color = { 0.75, 0.75, 0.75 } }
   for _, w in ipairs(d.warnings) do L[#L + 1] = { note = w, color = { 1, 0.6, 0.3 } } end
-  L[#L + 1] = { note = "The auction house shows what's listed, not what sold. \"Sells\" counts listings that vanished before they could have expired (bought, or canceled): a low estimate that gets better the more full scans you run, fastest with Watch flips.",
+  L[#L + 1] = { note = "Аукцион показывает выставленные лоты, а не проданные. «Сбыт» считает лоты, исчезнувшие раньше срока (купленные или снятые): оценка занижена, но уточняется с каждой полной проверкой; быстрее всего — при слежении за перепродажами.",
     color = { 0.5, 0.5, 0.5 } }
   return L
 end
@@ -991,7 +991,7 @@ local function announce(all, usual)
   for _, p in ipairs(poor) do
     if chat then
       ns:Print(("Найдено %s: %s (%s), но пока не хватает золота: %s за штуку, у вас %s."):format(
-        p.f.watched == "you" and "отслеживаемый предмет" or "флип у торговца", itemName(p.f.id),
+        p.f.watched == "you" and "отслеживаемый предмет" or "перепродажа торговцу", itemName(p.f.id),
         p.f.watched == "you" and ("до " .. ns.Money(p.f.maxBuy)) or ("торговец платит " .. ns.Money(p.f.opt.value)),
         ns.Money(p.one), ns.Money(cash)))
     end
@@ -1004,7 +1004,7 @@ local function announce(all, usual)
     if f.watched == "you" then
       text = ("Отслеживаемый предмет: %s по %s (до %s)"):format(itemName(f.id), ns.Money(f.cost), ns.Money(f.maxBuy))
     else
-      text = ("Флип у торговца: %s по %s (торговец платит %s)"):format(itemName(f.id), ns.Money(f.cost), ns.Money(f.opt.value))
+      text = ("Перепродажа торговцу: %s по %s (торговец платит %s)"):format(itemName(f.id), ns.Money(f.cost), ns.Money(f.opt.value))
     end
     if #flips > 1 then text = text .. (" и ещё %d"):format(#flips - 1) end
   else
@@ -1024,10 +1024,10 @@ local function announce(all, usual)
     if ns.db.settings.openFlips and ns.OpenFlips and ns.fullScanDone then ns:OpenFlips() end
     for _, f in ipairs(chat and flips or {}) do
       if f.watched == "you" then
-        ns:Print(("Отслеживаемый предмет: %s, %d по %s или дешевле. Он в очереди покупок, первым во «Флипах у торговца»."):format(
+        ns:Print(("Отслеживаемый предмет: %s, %d по %s или дешевле. Он в очереди покупок, в «Перепродажах торговцу»."):format(
           itemName(f.id), f.buys[1].listed or 1, ns.Money(f.maxBuy)))
       else
-        ns:Print(("Новый флип у торговца: %s, %d по %s или дешевле (торговец платит %s). Он в очереди покупок, во «Флипах у торговца»."):format(
+        ns:Print(("Новая перепродажа торговцу: %s, %d по %s или дешевле (торговец платит %s). Она в очереди покупок, в «Перепродажах торговцу»."):format(
           itemName(f.id), f.buys[1].listed or 1, ns.Money(f.maxBuy), ns.Money(f.opt.value)))
       end
     end
@@ -1100,7 +1100,7 @@ function ns:PrintDeals()
   end
   ns:Print("Сделки — это лоты " .. ns:DealRules() .. ".")
   if #deals == 0 then
-    print("  Сейчас нет — по сканам за последние 10 минут. Для сделок по обычной цене нужно 4 дня сканов.")
+    print("  Сейчас нет — по проверкам за последние 10 минут. Для сделок по обычной цене нужно 4 дня проверок.")
     return
   end
   printGrouped(deals, 20)

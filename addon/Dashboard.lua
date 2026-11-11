@@ -7,11 +7,11 @@ local T = ns.Theme
 ---------------------------------------------------------------------------
 local DAY = 86400
 local RANGES = {
-  { key = "day", label = "Day", secs = DAY },
-  { key = "week", label = "Week", secs = 7 * DAY },
-  { key = "month", label = "Month", secs = 30 * DAY },
+  { key = "day", label = "День", secs = DAY },
+  { key = "week", label = "Неделя", secs = 7 * DAY },
+  { key = "month", label = "Месяц", secs = 30 * DAY },
   { key = "3months", label = "3 месяца", secs = 91 * DAY },
-  { key = "year", label = "Year", secs = 365 * DAY },
+  { key = "year", label = "Год", secs = 365 * DAY },
   { key = "all", label = "Всё время" },
 }
 local SALES = { ahSale = true, vendorSell = true }
@@ -344,8 +344,8 @@ local PHRASE = { day = "за сегодня", week = "за неделю", month 
 local OVER = { day = "день", week = "неделю", month = "месяц", ["3months"] = "3 месяца", year = "год", all = "за всё время" }
 
 local SESSION_COLS = {   -- x (left edge), width, justify
-  { "When", 10, 110, "LEFT" }, { "Length", 124, 80, "LEFT" }, { "Gold", 210, 100, "RIGHT" },
-  { "Looted", 320, 100, "RIGHT" }, { "В час", 430, 100, "RIGHT" },
+  { "Когда", 10, 110, "LEFT" }, { "Длительность", 124, 90, "LEFT" }, { "Золото", 210, 100, "RIGHT" },
+  { "Добыто", 320, 100, "RIGHT" }, { "В час", 430, 100, "RIGHT" },
 }
 
 function ns:BuildDashboard(parent)
@@ -359,7 +359,7 @@ function ns:BuildDashboard(parent)
   end)(), function(v) settings().range = v; ns:RefreshDashboard(f) end)
   f.rangeChoice:SetPoint("TOPRIGHT", 0, 0)
   -- Start or stop a session (Sessions.lua), beside the character dropdown, as the main action.
-  f.sessionBtn = T:Button(f, "Начать сессию", 120, function()
+  f.sessionBtn = T:Button(f, "Начать сессию", 126, function()
     if ns:GeneralSessionRunning() then ns:StopGeneralSession() else ns:StartGeneralSession() end
     ns:RefreshDashboard(f)
   end, 22)
@@ -658,7 +658,7 @@ function ns:RefreshDashboard(f)
     { "Крупнейшая продажа", n.bigSale and (ns.Money(n.bigSale.a) .. "  " .. dim(n.bigSale.n)) or dim("пока нет") },
     { "Крупнейшая покупка", n.bigBuy and (ns.Money(n.bigBuy.a) .. "  " .. dim(n.bigBuy.n)) or dim("пока нет") },
   })
-  detail(f.actHead, f.act, hw + gap, "Activity", {
+  detail(f.actHead, f.act, hw + gap, "Активность", {
     { "Продаж на аукционе в день", tostring(math.floor(n.nSales / n.days + 0.5)) },
     { "Покупок на аукционе в день", tostring(math.floor(n.nBuys / n.days + 0.5)) },
     { "Продаж в день", ns.Money(math.floor(n.sales / n.days)) },
@@ -668,7 +668,7 @@ function ns:RefreshDashboard(f)
   local sTop = dBottom + gap
   local sBottom = H - 2
   nextCard(sTop, sBottom, 0, W)
-  T:StyleHeading(f.sesHead, "Sessions")
+  T:StyleHeading(f.sesHead, "Сессии")
   place(f.sesHead, 12, sTop + 9)
   f.sesAll:ClearAllPoints()
   f.sesAll:SetPoint("TOPRIGHT", f, "TOPLEFT", W - 10, -(sTop + 6))

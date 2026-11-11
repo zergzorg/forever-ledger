@@ -436,8 +436,8 @@ end
 
 -- Gold and sales go only if you say the other character is yours: they name your buyers.
 StaticPopupDialogs["FOREVER_LEDGER_SHARE_BOOKS"] = {
-  text = "Is this your own account?\n\nForever Ledger can share your gold, sales and purchases with it, so both Dashboards and Ledgers show the same. These include your buyers' names, so only say yes if it's yours. You can change this later in Settings, Global settings, Advanced.",
-  button1 = "Да, поделиться", button2 = "No",
+  text = "Это ваш собственный аккаунт?\n\nForever Ledger может делиться с ним золотом, продажами и покупками, чтобы Обзор и Журнал совпадали. В данных есть имена покупателей, поэтому отвечайте «да», только если аккаунт ваш. Позже это можно изменить в Настройках, «Глобальные настройки», «Дополнительно».",
+  button1 = "Да, поделиться", button2 = "Нет",
   OnAccept = function()
     -- The yes was about one character: a link changed since then doesn't get it.
     local p = partner()
@@ -452,12 +452,12 @@ StaticPopupDialogs["FOREVER_LEDGER_SHARE_BOOKS"] = {
 }
 
 StaticPopupDialogs["FOREVER_LEDGER_BANK_CHAR"] = {
-  text = "Is this your auction house character?\n\nForever Ledger can turn the game's sound off while the flip watch runs and play its chimes at full volume, even with the game in the background. You can change this later in Settings, Auction house, Alerts.",
-  button1 = "Да, включить", button2 = "No",
+  text = "Это ваш персонаж для аукциона?\n\nForever Ledger может выключать звук игры, пока работает слежение за перепродажами, и играть свои сигналы на полной громкости даже в фоне. Позже это можно изменить в Настройках, «Аукцион», «Оповещения».",
+  button1 = "Да, включить", button2 = "Нет",
   OnAccept = function()
     ns.db.settings.quietWatch = true
     if ns.UpdateQuiet then ns:UpdateQuiet() end
-    ns:Print("Тихий режим будет включаться во время слежения за флипами.")
+    ns:Print("Тихий режим будет включаться во время слежения за перепродажами.")
   end,
   timeout = 0, whileDead = true, hideOnEscape = true,
 }

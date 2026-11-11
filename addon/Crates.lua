@@ -175,7 +175,7 @@ function ns:CrateToShoppingList(r, bundle)
   ns:ScaleCrateList(list)
   ns:Print(("Добавлено %d %s за %s в список покупок «%s». Задайте «Нужно» у ящика там, чтобы заполнить несколько; отметьте «Покупать из этого списка» в очереди, чтобы докупить недостающее (/fl lists). Список исчезнет после последнего ящика.%s"):format(
     added, ns.Plural(added, "предмет", "предмета", "предметов"), r.name or "ящик", name,
-    #unknown > 0 and (" Не добавлено (ещё не видно в сканах): " .. table.concat(unknown, ", ") .. ".") or ""))
+    #unknown > 0 and (" Не добавлено (ещё не видно в проверках): " .. table.concat(unknown, ", ") .. ".") or ""))
   return list
 end
 
@@ -384,11 +384,11 @@ local rows, details = {}, {}
 local openID
 local COLS = {
   { key = "name", label = "Ящик" },
-  { key = "level", label = "Уровень", w = 44 },
+  { key = "level", label = "Уровень", w = 54 },
   { key = "fill", label = "Дешёвое заполнение", w = 150 },
-  { key = "fillCost", label = "Стоимость заполнения", w = 74 },
-  { key = "cratePrice", label = "Цена", w = 70 },
- { key = "total", label = "Чистая стоимость", w = 80 },
+  { key = "fillCost", label = "Цена заполнения", w = 104 },
+  { key = "cratePrice", label = "Цена", w = 66 },
+ { key = "total", label = "Чистая цена", w = 94 },
   { key = "perFavor", label = "За награду", w = 80 },
 }
 
@@ -414,7 +414,7 @@ function ns:BuildCrates(parent)
   f.sf:SetPoint("BOTTOMRIGHT")
   f.empty = T:Text(f.content, 12, T.dim)
   f.empty:SetPoint("TOPLEFT", 8, -8)
-  f.empty:SetText("Забытых ящиков пока не видно. Запустите полный скан или положите ящик в сумки.")
+  f.empty:SetText("Забытых ящиков пока не видно. Запустите полную проверку или положите ящик в сумки.")
   return f
 end
 
@@ -523,6 +523,7 @@ function ns:RefreshCrates()
     h:ClearAllPoints()
     h:SetPoint("LEFT", f.header, "LEFT", lay[c.key].x, 0)
     h:SetWidth(lay[c.key].w)
+    h:SetWordWrap(false)
     h:SetJustifyH((c.key == "name" or c.key == "fill") and "LEFT" or "RIGHT")
     h:SetText(c.label .. (c.key == "perFavor" and " ^" or ""))
   end
@@ -539,7 +540,7 @@ function ns:RefreshCrates()
   end)
 
   local favor = ns.db.favor[ns.CharKey()]
-  f.info:SetText(("Дешёвый способ заполнить каждый Забытый ящик по ценам последнего скана, сначала лучшая награда за золото. После первой сдачи (разовое задание) каждый ящик даёт 5с и 10 наград торговца; чистая стоимость вычитает 5с и зеленеет, если ящик окупается. У вас %s наград торговца.%s Клик по ящику — все наборы."):format(
+  f.info:SetText(("Дешёвый способ заполнить каждый Забытый ящик по ценам последней проверки, сначала лучшая награда за золото. После первой сдачи (разовое задание) каждый ящик даёт 5с и 10 наград торговца; чистая цена считается за вычетом 5с и зеленеет, если ящик окупается. У вас %s наград торговца.%s Клик по ящику — все наборы."):format(
     favor and tostring(favor) or "?", unread > 0 and (" %d ящиков ещё загружается."):format(unread) or ""))
 
   f.content:SetWidth(width)
@@ -562,9 +563,9 @@ function ns:RefreshCrates()
       level = r.level and tostring(r.level) or "",
       fill = #parts > 0 and table.concat(parts, " + ") .. (r.cheapest.have and dim(" (есть)") or "") or dim("цен пока нет"),
       fillCost = r.cheapest and money(r.cheapest.cost) or dim("?"),
-      cratePrice = r.owned and dim("owned") or money(r.cratePrice),
+      cratePrice = r.owned and dim("в сумках") or money(r.cratePrice),
      total = r.net and (r.net < 0 and ("|cff7fd39c+" .. money(-r.net) .. "|r") or money(r.net)) or dim("?"),
-      perFavor = r.net and r.net <= 0 and "|cff7fd39cfree|r" or r.perFavor and ("|cff7fd39c" .. money(r.perFavor) .. "|r") or dim("?"),
+      perFavor = r.net and r.net <= 0 and "|cff7fd39cбесплатно|r" or r.perFavor and ("|cff7fd39c" .. money(r.perFavor) .. "|r") or dim("?"),
     }
     for key, fs in pairs(row.cells) do
       fs:ClearAllPoints()

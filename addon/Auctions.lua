@@ -705,8 +705,8 @@ function ns:YourAuctionsFrame(side)
   header:SetPoint("TOPRIGHT", -6, -34)
   header:SetHeight(20)
   T:Fill(header, { 1, 1, 1, 0.05 })
-  for _, c in ipairs({ { "Item", 8, "LEFT" }, { "Qty", X.q, "RIGHT" }, { "Yours", X.each, "RIGHT" },
-                       { "Cheapest", X.now, "RIGHT" }, { "Status", X.now + 8, "LEFT" } }) do
+  for _, c in ipairs({ { "Лот", 8, "LEFT" }, { "Кол-во", X.q, "RIGHT" }, { "Ваши", X.each, "RIGHT" },
+                       { "Минимум", X.now, "RIGHT" }, { "Статус", X.now + 8, "LEFT" } }) do
     local fs = T:Text(header, 11, T.dim)
     if c[3] == "LEFT" then fs:SetPoint("LEFT", c[2], 0) else fs:SetPoint("RIGHT", header, "LEFT", c[2], 0) end
     fs:SetText(c[1])
@@ -724,7 +724,7 @@ function ns:YourAuctionsFrame(side)
   frame.check:HookScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
     GameTooltip:AddLine("Проверить цены", 1, 1, 1)
-    GameTooltip:AddLine("Проверяет все ваши лоты на аукционе по одному и отмечает перебитые. Полные сканы и слежение за флипами тоже их проверяют.", nil, nil, nil, true)
+    GameTooltip:AddLine("Проверяет все ваши лоты на аукционе по одному и отмечает перебитые. Полные проверки и слежение за перепродажами тоже их проверяют.", nil, nil, nil, true)
     GameTooltip:Show()
   end)
   frame.check:HookScript("OnLeave", function() GameTooltip:Hide() end)

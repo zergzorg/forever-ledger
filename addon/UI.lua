@@ -196,7 +196,7 @@ local function buildMain()
   main.views.shuffles, main.views.flips = main.table, main.table
 
   -- Footer buttons. Scan buttons show on Dashboard and Characters.
-  local full = T:Button(main, "Полный скан", 140, function() ns.Scan:Start("full") end)
+  local full = T:Button(main, "Полная проверка", 140, function() ns.Scan:Start("full") end)
   full:SetPoint("BOTTOMLEFT", 12, 12)
   full:SetPrimary(true)
   -- (Scan materials was here until November 10: full scans and the whole-list reading cover
@@ -216,7 +216,7 @@ local function buildMain()
     end)
     b:HookScript("OnLeave", function() GameTooltip:Hide() end)
   end
-  scanHover(full, "Полный скан", "Читает все лоты сразу. Игра разрешает примерно раз в 15 минут.")
+  scanHover(full, "Полная проверка", "Читает все лоты сразу. Игра разрешает примерно раз в 15 минут.")
   -- Help: the first-run welcome again (Welcome.lua), bottom left like the other tabs'
   -- buttons (owner, October 5: not under the topic list).
   local welcomeBtn = T:Button(main, "Показать «Что нового»", 180, function()
@@ -315,7 +315,7 @@ function ns:RefreshFlipsIfShown()
     if not (main:IsShown() and main.view == "flips") then return end
     if not main.shuffles then ns:RefreshShuffles(); return end
     main.shuffles.flips = ns:FindVendorFlips()
-    main.shuffleInfo:SetText(("Цепочек: %d, флипов у торговца: %d (%s). Клик — поиск на аукционе, правый клик — подробности."):format(
+    main.shuffleInfo:SetText(("Цепочек: %d, перепродаж торговцу: %d (%s). Клик — поиск на аукционе, правый клик — подробности."):format(
       #main.shuffles.vendor + #main.shuffles.ah + #main.shuffles.oneOff, #main.shuffles.flips, date("%H:%M")))
     layoutShuffles()
   end)
@@ -490,11 +490,11 @@ local SUBTABS = {
 local COLUMNS = {
   shuffles = {
     { key = "route", label = "Путь", width = 116, tip = "Значок на каждый шаг. Наведите на значок, чтобы прочитать шаг." },
-    { key = "name", label = "Цепочка", tip = "Что покупаете или крафтите первым. Клик по строке — что купить и все шаги." },
+    { key = "name", label = "Цепочка", tip = "Что покупаете или изготавливаете первым. Клик по строке — что купить и все шаги." },
     { key = "steps", label = "Шаги", width = 44, tip = "Сколько шагов, включая продажу." },
-    { key = "profit", label = "Прибыль", width = 90, tip = "Прибыль за один раз (за крафт или за купленный предмет)." },
+    { key = "profit", label = "Прибыль", width = 90, tip = "Прибыль за один раз (за изготовление или за купленный предмет)." },
     { key = "ret", label = "Доход", width = 58, tip = "Прибыль в процентах от затрат." },
-    { key = "hour", label = "В час", width = 96, tip = "Примерная прибыль в час, только время крафта (см. «Секунд на крафт» в настройках)." },
+    { key = "hour", label = "В час", width = 96, tip = "Примерная прибыль в час, только время изготовления (см. «Секунд на изготовление» в настройках)." },
     { key = "runs", label = "Раз", width = 62, tip = "Сколько раз это выгодно повторить при текущих лотах: считаются только достаточно дешёвые, а лимит задаёт самый дефицитный предмет с аукциона. \\\"без предела\\\", когда всё у торговцев." },
   },
   flips = {
@@ -597,7 +597,7 @@ buildTable = function()
   f.sf, f.content = T:Scroll(f)
   f.empty = T:Text(f.content, 12, T.dim)
   f.empty:SetPoint("TOPLEFT", 8, -8)
-  f.empty:SetText("При текущих ценах ничего нет. Просканируйте аукцион и нажмите «Обновить».")
+  f.empty:SetText("При текущих ценах ничего нет. Проверьте аукцион и нажмите «Обновить».")
   f.vendorNote = T:Text(f, 12, T.dim)
   f.vendorNote:SetPoint("BOTTOMLEFT", 8, 4)
   f.vendorNote:SetPoint("BOTTOMRIGHT", -8, 4)
@@ -680,7 +680,7 @@ local function getRow(i)
         ns:Print(("%s: купить до %s по %s или дешевле за штуку."):format(ns.ItemName(b.id) or "?", b.listed or "?",
           ns.Money(s.maxBuy or b.price)))
       else
-        ns:Print("Откройте аукцион и щёлкните флип, чтобы найти его. Правый клик по флипу — подробности.")
+        ns:Print("Откройте аукцион и щёлкните перепродажу, чтобы найти её. Правый клик по перепродаже — подробности.")
       end
       return
     end
@@ -985,7 +985,7 @@ layoutShuffles = function()
     end
     f.empty:SetText((chars > 0 and ticked == 0 and "Не отмечен ни один персонаж: выберите кнопкой персонажей выше.")
       or (recipes == 0 and "Рецепты ещё не сохранены. Откройте окно каждой профессии один раз и нажмите «Обновить».")
-      or "При текущих ценах ничего нет. Просканируйте аукцион и нажмите «Обновить».")
+      or "При текущих ценах ничего нет. Проверьте аукцион и нажмите «Обновить».")
   end
   content:SetHeight(math.max(y, 30))
   f.sf.UpdateScrollBar()
@@ -1025,7 +1025,7 @@ function ns:RefreshShuffles()
 
   main.shuffles = { vendor = vendor, ah = ah, oneOff = oneOff, flips = flips }
   -- Short, so it fits the smallest window (the tabs' own tips say the rest).
-  main.shuffleInfo:SetText(("Цепочек: %d, флипов у торговца: %d (%s). %s"):format(
+  main.shuffleInfo:SetText(("Цепочек: %d, перепродаж торговцу: %d (%s). %s"):format(
     #vendor + #ah + #oneOff, #flips, date("%H:%M"),
     main.view == "flips" and "Клик — поиск на аукционе, правый клик — подробности." or "Клик по столбцу — сортировка, по строке — подробности."))
   if main.view == "shuffles" or main.view == "flips" then layoutShuffles() end
@@ -1034,18 +1034,18 @@ end
 ---------------------------------------------------------------------------
 -- Scan buttons and status
 ---------------------------------------------------------------------------
--- "Полный скан: готов", or a countdown until Blizzard allows the next one.
+-- "Полная проверка: готов", or a countdown until Blizzard allows the next one.
 function ns:UpdateFullScanButtons()
   if not ns.db then return end
   local wait = ns.Scan:FullWait()
   local open = ns:IsAHOpen()
-  local label, ready = "Полный скан", false
+  local label, ready = "Полная проверка", false
   if wait == 0 then
     -- "Ready" only where it can be clicked (UI pass, November 9).
-    label, ready = open and "Полный скан: готов" or "Полный скан", true
+    label, ready = open and "Полная проверка: готова" or "Полная проверка", true
   elseif wait < math.huge then
     -- "in": it's a countdown to the next one Blizzard allows, not how long a scan takes.
-    label = ("Полный скан через %d:%02d"):format(math.floor(wait / 60), wait % 60)
+    label = ("Полная проверка через %d:%02d"):format(math.floor(wait / 60), wait % 60)
   end
   for _, b in ipairs({ main and main.fullBtn or false, ns.ahFullButton or false, ns.panelFullButton or false }) do
     if b then
@@ -1074,7 +1074,7 @@ function ns:SetStatusText(text)
 end
 
 function ns:UpdateScanStatus(done, total)
-  ns:SetStatusText(total and total > 0 and ("Сканирование: %d из %d"):format(done, total) or "")
+  ns:SetStatusText(total and total > 0 and ("Проверка: %d из %d"):format(done, total) or "")
   if done and total and done >= total then
     C_Timer.After(3, function() ns:SetStatusText("") end)
   end
@@ -1106,7 +1106,7 @@ function ns:OnAHShow()
     ns.ahButton:HookScript("OnEnter", function(self)
       GameTooltip:SetOwner(self, "ANCHOR_TOP")
       GameTooltip:AddLine("Пауза", 1, 1, 1)
-      GameTooltip:AddLine("Останавливает слежение за флипами и собственные запросы очереди покупок, чтобы ваши поиски и открытая страница оставались как есть. Нажмите «Продолжить», чтобы возобновить; закрытие аукциона тоже завершает паузу.", nil, nil, nil, true)
+      GameTooltip:AddLine("Останавливает слежение за перепродажами и собственные запросы очереди покупок, чтобы ваши поиски и открытая страница оставались как есть. Нажмите «Продолжить», чтобы возобновить; закрытие аукциона тоже завершает паузу.", nil, nil, nil, true)
       GameTooltip:Show()
     end)
     ns.ahButton:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -1116,7 +1116,7 @@ function ns:OnAHShow()
     local auctionator = Auctionator ~= nil or (isLoaded and isLoaded("Auctionator"))
     ns.ahButton:SetPoint("TOPRIGHT", ah, "BOTTOMRIGHT", -4, auctionator and -34 or -2)
     ns.ahButton:SetFrameLevel(ah:GetFrameLevel() + 20)
-    ns.ahFullButton = blizzButton(ah, "Полный скан", 130, function() ns.Scan:Start("full") end)
+    ns.ahFullButton = blizzButton(ah, "Полная проверка", 130, function() ns.Scan:Start("full") end)
     ns.ahFullButton:SetPoint("RIGHT", ns.ahButton, "LEFT", -4, 0)
     ns.ahFullButton:SetFrameLevel(ah:GetFrameLevel() + 20)
   end

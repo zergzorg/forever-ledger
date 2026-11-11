@@ -13,11 +13,11 @@ local MIN_LISTED = 5
 local MAX_ROWS = 300
 local ROW = 22
 local TYPES = {
-  shuffle = { label = "Флип или цепочка", short = "Shuffle", color = "7fd39c" },
-  sells = { label = "Крафт на продажу", short = "Sells", color = "ffd100" },
-  enchant = { label = "Услуги чар", short = "Enchants", color = "66bbff" },   -- no item to sell; sold as a service
+  shuffle = { label = "Перепродажа", short = "Перепродажа", color = "7fd39c" },
+  sells = { label = "Изготовление", short = "Продажа", color = "ffd100" },
+  enchant = { label = "Услуги чар", short = "Чары", color = "66bbff" },   -- no item to sell; sold as a service
   notsale = { label = "Не на продажу", short = "Не на продажу", color = "888888" },
-  loss = { label = "Невыгодно", short = "Loss", color = "ee8597" },
+  loss = { label = "Невыгодно", short = "Убыток", color = "ee8597" },
 }
 local ORDER = { "shuffle", "sells", "enchant", "notsale", "loss" }
 local typeRank = {}
@@ -323,11 +323,11 @@ local current     -- profession shown, or "Trainers:<profession>"
 -- num: sorts high to low first (text sorts A to Z first; Type in the usual group order).
 local COLS = {
   { key = "name", label = "Рецепт", w = 150, grow = 1 },
-  { key = "skill", label = "Навык", w = 36, num = true },
+  { key = "skill", label = "Навык", w = 42, num = true },
   { key = "known", label = "Известно", w = 110 },
-  { key = "source", label = "Откуда (наведите для всех)", w = 250, grow = 1 },
+  { key = "source", label = "Откуда (наведите для всех)", w = 230, grow = 1 },
   { key = "type", label = "Тип", w = 104 },
-  { key = "profit", label = "На крафт", w = 80, num = true },
+  { key = "profit", label = "На изготовление", w = 100, num = true },
   { key = "pin", label = "", w = 36 },
 }
 local NUMERIC = {}   -- [key] = true for numbers, false for text; columns with a label only
@@ -356,8 +356,8 @@ end
 
 -- The rank of a profession by its skill cap, as a coin: gold Artisan (300), silver Expert
 -- (225), copper Journeyman (150), none for Apprentice (owner, October 4).
-local RANKS = { { 300, "Artisan", "Interface\\MoneyFrame\\UI-GoldIcon" }, { 225, "Expert", "Interface\\MoneyFrame\\UI-SilverIcon" },
-  { 150, "Journeyman", "Interface\\MoneyFrame\\UI-CopperIcon" }, { 0, "Apprentice", "Interface\\COMMON\\Indicator-Gray" } }   -- (a grey dot, so every tab lines up: owner, October 4)
+local RANKS = { { 300, "Искусник", "Interface\\MoneyFrame\\UI-GoldIcon" }, { 225, "Эксперт", "Interface\\MoneyFrame\\UI-SilverIcon" },
+  { 150, "Подмастерье", "Interface\\MoneyFrame\\UI-CopperIcon" }, { 0, "Ученик", "Interface\\COMMON\\Indicator-Gray" } }   -- (a grey dot, so every tab lines up: owner, October 4)
 local function rankOf(max)
   for _, r in ipairs(RANKS) do if (max or 0) >= r[1] then return r[2], r[3] end end
 end
@@ -400,7 +400,7 @@ function ns:BuildRecipes(parent)
   f.second:SetHeight(24)
 
   local s = settings()
-  f.show = T:Choice(f.second, { { value = "all", label = "All" }, { value = "unknown", label = "Не изучено" }, { value = "known", label = "Known" } },
+  f.show = T:Choice(f.second, { { value = "all", label = "Все" }, { value = "unknown", label = "Не изучено" }, { value = "known", label = "Известно" } },
     function(v) s.view = v; ns:RefreshRecipes() end)
   f.show:SetPoint("LEFT", 0, 0)
   f.custom = T:Check(f.second, function(self) s.custom = self:GetChecked(); ns:RefreshRecipes() end)
@@ -424,7 +424,7 @@ function ns:BuildRecipes(parent)
   f.search = T:EditBox(f.second, 140, "LEFT")
   f.search:SetPoint("LEFT", f.type, "RIGHT", 14, 0)
   f.custom:SetPoint("LEFT", f.search, "RIGHT", 14, 0)
-  f.clear = T:Button(f.second, "Сбросить мои типы", 110, function()
+  f.clear = T:Button(f.second, "Сбросить типы", 110, function()
     local n = 0
     for _ in pairs(ns.db.recipeTypes) do n = n + 1 end
     if n == 0 then ns:Print("Вы ещё не задавали типы."); return end
@@ -488,7 +488,7 @@ local function layoutTabs(list, others)
       add(p, (icon and ("|T" .. icon .. ":12:12:0:0|t ") or "") .. p,
         ("%s %s/%s, %s"):format(p, tostring(info and info.rank or "?"), tostring(info and info.max or "?"), rank))
     end
-    add("trainers", "Trainers")
+    add("trainers", "Тренеры")
     -- Other professions: a dropdown after the tabs.
     if not f.other then
       f.other = T:Dropdown(f, 170, function(v) if v ~= "" then current = v; ns:RefreshRecipes() end end)
@@ -590,10 +590,10 @@ local function getRow(i)
     if price then
       GameTooltip:AddLine(" ")
       GameTooltip:AddDoubleLine("Рецепт на аукционе", ns.Money(price), 1, 0.82, 0, 1, 1, 1)
-      GameTooltip:AddLine(("лотов: %d, скан %s"):format(rec.q or 0, ns.Age(rec.t)), 0.8, 0.8, 0.8)
+      GameTooltip:AddLine(("лотов: %d, проверка %s"):format(rec.q or 0, ns.Age(rec.t)), 0.8, 0.8, 0.8)
     elseif rec and rec.none then
       GameTooltip:AddLine(" ")
-      GameTooltip:AddLine(("Рецепта нет на аукционе (скан %s)"):format(ns.Age(rec.t)), 0.8, 0.8, 0.8)
+      GameTooltip:AddLine(("Рецепта нет на аукционе (проверка %s)"):format(ns.Age(rec.t)), 0.8, 0.8, 0.8)
     end
     GameTooltip:AddLine(" ")
     GameTooltip:AddLine("Правый клик — задать свой тип, Shift+правый клик — автоматический.", T.accent[1], T.accent[2], T.accent[3])
@@ -746,24 +746,38 @@ local function recipeRows(prof, width, lay)
 end
 
 -- The Trainers view has its own column widths (same keys, so rows can be shared).
+local TRAINER_PROF_RU = {
+  Alchemy = "Алхимия", Blacksmithing = "Кузнечное дело", Enchanting = "Наложение чар",
+  Engineering = "Инженерное дело", Herbalism = "Травничество", Leatherworking = "Кожевничество",
+  Mining = "Горное дело", Skinning = "Снятие шкур", Tailoring = "Портняжное дело",
+  Cooking = "Кулинария", Fishing = "Рыбная ловля", ["First Aid"] = "Первая помощь",
+}
+local TIER_RU = { Apprentice = "Ученик", Journeyman = "Подмастерье", Expert = "Эксперт", Artisan = "Искусник", Master = "Мастер" }
 local TRAINER_COLS = {
-  { key = "name", label = "Trainer", w = 150, grow = 1 },
+  { key = "name", label = "Тренер", w = 150, grow = 1 },
   { key = "skill", label = "", w = 0 },
-  { key = "known", label = "Profession", w = 110 },
-  { key = "source", label = "Where", w = 240, grow = 1 },
-  { key = "type", label = "Tier", w = 90 },
-  { key = "profit", label = "Заголовок или заметка", w = 140 },   -- (330 + 230 ran off the window at its smallest: October 4)
+  { key = "known", label = "Профессия", w = 110 },
+  { key = "source", label = "Где", w = 240, grow = 1 },
+  { key = "type", label = "Уровень", w = 90 },
+  { key = "profit", label = "Заголовок или заметка", w = 150 },   -- (330 + 230 ran off the window at its smallest: October 4)
   { key = "pin", label = "", w = 36 },
 }
 
 -- Profession and tier from a trainer's title: "Expert Tailor", "Tailoring Trainer".
 local TITLE_PROF = {
   { "Tailor", "Tailoring" }, { "Enchant", "Enchanting" }, { "Cook", "Cooking" }, { "First Aid", "First Aid" },
-  { "Physician", "First Aid" }, { "Первая помощь", "First Aid" }, { "Fish", "Fishing" }, { "Alchemist", "Alchemy" }, { "Alchemy", "Alchemy" },
+  { "Physician", "First Aid" }, { "First Aid", "First Aid" }, { "Первая помощь", "First Aid" }, { "Fish", "Fishing" }, { "Alchemist", "Alchemy" }, { "Alchemy", "Alchemy" },
   { "Blacksmith", "Blacksmithing" }, { "Leatherwork", "Leatherworking" }, { "Engineer", "Engineering" },
   { "Herbalis", "Herbalism" }, { "Miner", "Mining" }, { "Mining", "Mining" }, { "Skinn", "Skinning" },
+  { "Портн", "Tailoring" }, { "Зачаров", "Enchanting" }, { "Наложение чар", "Enchanting" },
+  { "Кулинар", "Cooking" }, { "Повар", "Cooking" }, { "Рыбн", "Fishing" }, { "Рыбак", "Fishing" },
+  { "Алхим", "Alchemy" }, { "Кузнец", "Blacksmithing" }, { "Кожевн", "Leatherworking" },
+  { "Инженер", "Engineering" }, { "Травник", "Herbalism" }, { "Травнич", "Herbalism" },
+  { "Горн", "Mining" }, { "Шахт", "Mining" }, { "Шкур", "Skinning" }, { "Первая помощь", "First Aid" },
 }
-local TIERS = { Apprentice = true, Journeyman = true, Expert = true, Artisan = true }
+local TIERS = { Apprentice = true, Journeyman = true, Expert = true, Artisan = true, Master = true }
+local TIER_WORDS = { { "подмастерье", "Journeyman" }, { "искусник", "Artisan" }, { "ученик", "Apprentice" },
+  { "эксперт", "Expert" }, { "мастер", "Master" } }
 local function fromTitle(title)
   if not title then return end
   local prof
@@ -771,7 +785,12 @@ local function fromTitle(title)
     if title:find(p[1], 1, true) then prof = p[2]; break end
   end
   local first = title:match("^(%a+)")
-  return prof, TIERS[first or ""] and first or nil
+  if TIERS[first or ""] then return prof, first end
+  local low = title:lower()
+  for _, t in ipairs(TIER_WORDS) do
+    if low:find(t[1], 1, true) then return prof, t[2] end
+  end
+  return prof
 end
 function ns.ProfessionFromTitle(title) return (fromTitle(title)) end
 ns.TrainerFromTitle = fromTitle
@@ -871,10 +890,10 @@ local function trainerRows(width, lay)
     local values = {
       name = e.v.name or "?",
       skill = "",
-      known = e.profession or dim("?"),
+      known = (e.profession and (TRAINER_PROF_RU[e.profession] or e.profession)) or dim("?"),
       source = ("%s%s%s"):format(e.v.zone or "?", e.v.x and ("  (%.1f, %.1f)"):format(e.v.x * 100, e.v.y * 100) or "",
         e.classic and dim("  (Classic)") or e.guard and "  |cff7fd39c(стражник)|r" or ""),
-      type = e.tier or (e.guard and not e.named and dim("shop") or dim("?")),
+      type = e.tier and (TIER_RU[e.tier] or e.tier) or (e.guard and not e.named and dim("магазин") or dim("?")),
       profit = e.v.title and dim(e.v.title) or "",
     }
     for key, fs in pairs(row.cells) do

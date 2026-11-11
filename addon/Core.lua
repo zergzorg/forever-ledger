@@ -1157,7 +1157,7 @@ SlashCmdList.FOREVERLEDGER = function(msg)
     ns:TestCustomer(msg:match("^customer (.+)$"))
   elseif msg == "stop" then
     if ns.StopFlipWatch then ns:StopFlipWatch(true) end
-    ns.Scan:Stop("Scan stopped.")
+    ns.Scan:Stop("Проверка остановлена.")
   elseif msg == "pull" then
     ns:PullExternal()
   elseif msg == "export" then
@@ -1193,7 +1193,7 @@ SlashCmdList.FOREVERLEDGER = function(msg)
   elseif msg == "sellcheck" then
     -- The saved sell speed check lines (Prices.lua), for testing.
     local log = ns.db.sellCheckLog or {}
-    if #log == 0 then ns:Print("Проверок скорости продажи пока нет: они появятся после двух полных сканов.") end
+    if #log == 0 then ns:Print("Проверок скорости продажи пока нет: они появятся после двух полных проверок.") end
     for _, line in ipairs(log) do print("  " .. line) end
   elseif msg:match("^deals") then
     local set = ns.db.settings
@@ -1304,9 +1304,9 @@ SlashCmdList.FOREVERLEDGER = function(msg)
     local n = tonumber(msg:match("^seconds%s+(%S+)"))
     if n and n > 0 then
       ns.db.settings.actionSeconds = n
-      ns:Print(("Прибыль в час теперь считается из %g с на крафт, распыление или разбор."):format(n))
+      ns:Print(("Прибыль в час теперь считается из %g с на изготовление, распыление или разбор."):format(n))
     else
-      ns:Print(("Прибыль в час считается из %g с на крафт, распыление или разбор. Изменить: /fl seconds 3"):format(ns.db.settings.actionSeconds or 3))
+      ns:Print(("Прибыль в час считается из %g с на изготовление, распыление или разбор. Изменить: /fl seconds 3"):format(ns.db.settings.actionSeconds or 3))
     end
   elseif msg:match("^cut") then
     local n = tonumber(msg:match("^cut%s+(%S+)"))
