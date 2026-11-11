@@ -2408,7 +2408,7 @@ local function buildListsView(parent)
   v.any:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
   -- Add an item: shift-click, drag, or type its name; the most you'd pay; how many.
-  v.add = hinted(v, 196, "Shift+клик, перетащите или введите предмет", "LEFT")
+  v.add = hinted(v, 196, "Shift+клик, перетащите или имя", "LEFT")
   v.add:SetPoint("TOPLEFT", 10, -98)
   v.add:HookScript("OnTextChanged", function(self) v.pendingID = ns.ItemIDFromLink(self:GetText()) end)
 
@@ -2490,7 +2490,7 @@ local function buildListsView(parent)
   T:MoneyPreview(v.max, "g")
   v.max:SetPoint("LEFT", v.add, "RIGHT", 4, 0)
   v.max:SetScript("OnEnterPressed", function() addFromBox(v) end)
-  v.qty = hinted(v, 44, "want")
+  v.qty = hinted(v, 44, "нужно")
   v.qty:SetPoint("LEFT", v.max, "RIGHT", 4, 0)
   v.qty:SetScript("OnEnterPressed", function() addFromBox(v) end)
   local addB = T:Button(v, "Добавить", 74, function() addFromBox(v) end, 22)

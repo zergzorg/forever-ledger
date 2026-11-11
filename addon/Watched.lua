@@ -329,7 +329,7 @@ local function build(parent)
   info:SetText("Слежение проверяет их каждый проход сверх обычных. Всё по «До» или дешевле попадает во «Перепродажи торговцу» первыми и звенит. «До» = «торговец»: только когда торговец даёт больше.")
 
   -- Add: shift-click, drag or type an item; the most you'd pay (empty: vendor price).
-  v.add = hinted(v, 214, "Shift+клик, перетащите или введите предмет", "LEFT")
+  v.add = hinted(v, 214, "Shift+клик, перетащите или имя", "LEFT")
   v.add:SetPoint("TOPLEFT", 10, -84)
   v.add:HookScript("OnTextChanged", function(self, userInput) if userInput then v.pendingID = ns.ItemIDFromLink(self:GetText()) end end)
   v.add:SetScript("OnEnterPressed", function() addFromBox(v) end)
