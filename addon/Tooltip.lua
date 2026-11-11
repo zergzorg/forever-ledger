@@ -1,0 +1,418 @@
+local _, ns = ...
+
+local LR, LG, LB = 0.73, 0.64, 1.0   -- label colour
+
+-- What shows is set in Settings (tester feedback: the tooltip grew long): compact mode
+-- shows one line and the rest while Shift is held; each section can be turned off; and
+-- "Worth to you" lists only the best few ways.
+-- The item on GameTooltip right now, and whether its full lines are already there
+-- (compact mode: pressing Shift adds them to the tooltip that's showing).
+local shownID, shownFull, shownHistory, shownCopyPrice
+local debugLinks = {}   -- tooltip links already shown in debug
+
+-- Price history while Ctrl is held (ForeverForge has the same; owner, October 3):
+-- the range of the cheapest price over the last 14 days, which way it's heading, the
+-- usual price this month, how many are usually listed and the lowest price ever seen.
+local function historyLines(tt, id)
+  local days = ns.PriceHistory and ns:PriceHistory(id) or {}
+  if #days == 0 then
+    tt:AddLine("No price history yet: it builds up with each scan", 0.5, 0.5, 0.5, true)
+    return
+  end
+  -- The range of each day's typical price (the average of the cheapest 20): the very
+  -- cheapest swings with one odd listing (owner's test, October 3: Strange Dust showed
+  -- "20c to 2s 31c" from a single 20c listing). The lowest ever seen is still below.
+  local lo, hi
+  for _, d in ipairs(days) do
+    lo, hi = math.min(lo or d[3], d[3]), math.max(hi or d[3], d[3])
+  end
+  tt:AddLine("Price history", LR, LG, LB)
+  tt:AddDoubleLine("  typical, last " .. #days .. (#days == 1 and " day" or " days"),
+    lo == hi and ns.Money(lo) or (ns.Money(lo) .. " to " .. ns.Money(hi)), 0.7, 0.7, 0.7, 1, 1, 1)
+  -- Trend: the last 3 days' typical price against the days before them.
+  if #days >= 5 then
+    local recent, older, rn, pn = 0, 0, 0, 0
+    for i, d in ipairs(days) do
+      if i > #days - 3 then recent, rn = recent + d[3], rn + 1 else older, pn = older + d[3], pn + 1 end
+    end
+    local change = older > 0 and (recent / rn) / (older / pn) - 1 or 0
+    local text, r, g, b = "steady", 0.7, 0.7, 0.7
+    if change >= 0.1 then text, r, g, b = ("rising, %d%% up"):format(change * 100 + 0.5), 0.5, 0.83, 0.61
+    elseif change <= -0.1 then text, r, g, b = ("falling, %d%% down"):format(-change * 100 + 0.5), 1, 0.5, 0.4 end
+    tt:AddDoubleLine("  heading", text, 0.7, 0.7, 0.7, r, g, b)
+  end
+  local stats = ns.PriceStats and ns:PriceStats(id, "month")
+  if stats then
+    tt:AddDoubleLine("  usual this month", ns.Money(stats.usual), 0.7, 0.7, 0.7, 1, 1, 1)
+    if stats.listed then
+      tt:AddDoubleLine("  usually listed", tostring(math.floor(stats.listed + 0.5)), 0.7, 0.7, 0.7, 1, 1, 1)
+    end
+  end
+  -- Lowest ever: the all-time record only gets finished days, so today's (and the
+  -- recent days' cheapest, and what's listed now) count too (Magic, October 3: "lowest
+  -- ever seen 35g" with one listed at 20g).
+  local allLow = ns.AllTimePrice and ns:AllTimePrice(id)
+  for _, d in ipairs(days) do allLow = math.min(allLow or d[2], d[2]) end
+  local rec = (ns.db.prices[ns.MarketKey()] or {})[id]
+  if rec and rec.m and not rec.none then allLow = math.min(allLow or rec.m, rec.m) end
+  if allLow then tt:AddDoubleLine("  lowest ever seen", ns.Money(allLow), 0.7, 0.7, 0.7, 1, 1, 1) end
+end
+
+---------------------------------------------------------------------------
+-- Bag value (roadmap, October 4): on a bag, what one slot costs at today's cheapest
+-- price (auction house or a vendor), and which bag is the cheapest per slot right now,
+-- so you buy the cheapest space first. Plain bags only (not profession bags).
+---------------------------------------------------------------------------
+local bagSlots = {}   -- [itemID] = slots, or false (not a plain bag / unknown), this session
+local SLOTS_PATTERN = (CONTAINER_SLOTS or "%d Slot %s"):gsub("%%d", "(%%d+)"):gsub("%%s", ".+")
+local instant = (C_Item and C_Item.GetItemInfoInstant) or GetItemInfoInstant
+
+local function slotsOf(id)
+  if bagSlots[id] ~= nil then return bagSlots[id] end
+  local slots = false
+  local ok, _, _, _, _, _, classID, subclassID = pcall(instant, id)
+  local container = (Enum and Enum.ItemClass and Enum.ItemClass.Container) or 1
+  if ok and classID == container and subclassID == 0 and C_TooltipInfo and C_TooltipInfo.GetItemByID then
+    local ok2, data = pcall(C_TooltipInfo.GetItemByID, id)
+    for _, line in ipairs(ok2 and data and data.lines or {}) do
+      local n = line.leftText and tonumber(line.leftText:match(SLOTS_PATTERN))
+      if n then slots = n; break end
+    end
+  end
+  bagSlots[id] = slots
+  return slots
+end
+
+-- The cheapest one costs now: the auction house's cheapest or a vendor's price.
+local function bagCost(id, market)
+  local rec = market[id]
+  local ah = rec and not rec.none and rec.m
+  local buy = ns.db.vendorBuy[id]
+  local vendor = buy and buy.p
+  if ah and vendor then return math.min(ah, vendor) end
+  return ah or vendor
+end
+
+local cheapestBag, cheapestAt = nil, 0
+local function cheapestPerSlot()
+  if cheapestBag ~= nil and GetTime() - cheapestAt < 300 then return cheapestBag end
+  cheapestAt = GetTime()
+  local market, best = ns.db.prices[ns.MarketKey()] or {}, false
+  local ids = {}
+  for id in pairs(market) do ids[id] = true end
+  for id in pairs(ns.db.vendorBuy) do ids[id] = true end
+  for id in pairs(ids) do
+    local slots = slotsOf(id)
+    local cost = slots and slots > 0 and bagCost(id, market)
+    if cost then
+      local per = cost / slots
+      if not best or per < best.per then best = { id = id, per = per, slots = slots } end
+    end
+  end
+  cheapestBag = best
+  return best
+end
+
+-- What a disenchant gives and what each material brings, so the number can be checked by
+-- hand (Magic and the owner, November 6). True if anything was added.
+function ns:AddDisenchantLines(tt, id)
+  local total, parts = ns:DisenchantSaleValue(id)
+  if not total then return end
+  if #parts == 0 then
+    local names = {}
+    for _, y in ipairs(ns:DisenchantYield(id)) do
+      names[#names + 1] = ("%.2f %s"):format(y[2], ns:DisenchantMaterialName(y[1]))
+    end
+    tt:AddLine("Disenchants to about " .. table.concat(names, ", "), LR, LG, LB, true)
+    return true
+  end
+  tt:AddDoubleLine("Disenchants to, average after the cut", ns.Money(total), LR, LG, LB, 1, 1, 1)
+  for _, p in ipairs(parts) do
+    local amount = p.low == p.high and tostring(p.low) or (p.low .. "-" .. p.high)
+    tt:AddDoubleLine(("  %d%%: %s %s at %s"):format(p.chance, amount, ns:DisenchantMaterialName(p.id), ns.Money(p.each)),
+      ns.Money(p.when), 0.7, 0.7, 0.7, 0.7, 0.7, 0.7)
+  end
+  tt:AddLine("  You get one of these each time.", 0.5, 0.5, 0.5)
+  return true
+end
+
+local function bagLines(tt, id)
+  local slots = slotsOf(id)
+  if not slots or slots <= 0 then return end
+  local market = ns.db.prices[ns.MarketKey()] or {}
+  local cost = bagCost(id, market)
+  if not cost then return end
+  tt:AddDoubleLine(("Per slot (%d slots)"):format(slots), ns.Money(math.floor(cost / slots + 0.5)), LR, LG, LB, 1, 1, 1)
+  local best = cheapestPerSlot()
+  if best and best.id ~= id and best.per < cost / slots then
+    tt:AddDoubleLine("  cheapest per slot now", ("%s, %s"):format(ns.ItemName(best.id) or "?", ns.Money(math.floor(best.per + 0.5))),
+      0.7, 0.7, 0.7, 0.5, 0.83, 0.61)
+  elseif best and best.id == id then
+    tt:AddLine("  the cheapest bag per slot right now", 0.5, 0.83, 0.61)
+  end
+end
+
+-- copyPrice: what a vendor pays for this copy (ns.TooltipSellPrice), if the game said.
+local function addLines(tt, id, forceFull, copyPrice)
+  local s = ns.db and ns.db.settings
+  if not id or not s or not s.tooltip then return end
+  ns:RememberItem(id)
+  if tt == GameTooltip then
+    copyPrice = copyPrice or (forceFull and shownCopyPrice) or nil   -- (Shift pressed later)
+    shownCopyPrice = copyPrice
+  end
+  local full = forceFull or s.tipMode ~= "compact" or IsShiftKeyDown()
+  local function on(key) return s[key] ~= false end
+  -- (Shift pressed on a compact tooltip calls this again: don't repeat the history.)
+  local had = forceFull and tt == GameTooltip and shownHistory
+  local withHistory = not had and on("tipHistory") and IsControlKeyDown()
+  if tt == GameTooltip then shownID, shownFull, shownHistory = id, full, had or withHistory end
+
+  local price, src, t, rec = ns:GetPrice(id)
+  -- Quest turn-ins (QuestItems.lua): "keep it" in yellow when this character will want
+  -- it for a quest later.
+  local function questLines(compact)
+    if not (on("tipQuest") and ns.QuestLines) then return end
+    for _, q in ipairs(ns:QuestLines(id, compact) or {}) do
+      if q.keep then tt:AddLine(q.text .. ": keep it", 1, 0.82, 0, true)
+      else tt:AddLine(q.text, LR, LG, LB, true) end
+    end
+  end
+  -- Why Worth to you is under today's price (CurseForge comment, October 22: "tooltip
+  -- prices don't update after scans"): an auction sale is valued at the lowest of today's
+  -- cheapest, the average of the cheapest 20 and, with under 20 listed, this month's usual
+  -- cheapest, after the cut and a deposit. When the auction house line is under what
+  -- today's cheapest would bring, say why.
+  local function whyLower(best, options)
+    if not (rec and rec.m and not rec.none and src ~= "Auctionator" and src ~= "TSM" and src ~= "Auctioneer") then return end
+    local o
+    for _, x in ipairs(options or {}) do if x.kind == "ah" then o = x; break end end
+    if not o then return end
+    local today = ns:AfterCut(rec.m) - (o.deposit or 0)
+    if o.value < today - 1 then
+      tt:AddLine("  Auction house value is below today's cheapest: with few listed it uses this month's usual price, so a sudden rise doesn't count yet.", 0.5, 0.5, 0.5, true)
+    end
+  end
+
+  if not full then
+    questLines(true)
+    -- Today's cheapest too, so a new scan shows at once (CurseForge comment, October 22).
+    local shownCheapest
+    if price and on("tipPrice") and rec and rec.m and not rec.none and src ~= "Auctionator" and src ~= "TSM" and src ~= "Auctioneer" then
+      local age = t and ns.Age(t) or ""
+      tt:AddDoubleLine("Auction, cheapest", ns.Money(rec.m) .. (age ~= "" and (" |cff999999" .. age .. "|r") or ""), LR, LG, LB, 1, 1, 1)
+      shownCheapest = true
+    end
+    local best, options = ns:GetValue(id, true)
+    best, options = ns:WorthOfCopy(best, options, copyPrice)
+    if best then
+      local how = options and options[1] and options[1].label
+      tt:AddDoubleLine("Worth to you" .. (how and (" |cff999999(" .. how .. ")|r") or ""), ns.Money(best), LR, LG, LB, 1, 1, 1)
+      whyLower(best, options)
+    elseif price then
+      -- (Not again when "Auction, cheapest" above already says it: owner's screenshot,
+      -- October 22, Small Glimmering Shard showed 3s 4c twice.)
+      if not (shownCheapest and price == rec.m) then
+        tt:AddDoubleLine("Auction price", ns.Money(price), LR, LG, LB, 1, 1, 1)
+      end
+    elseif not shownCheapest then
+      return
+    end
+    if withHistory then historyLines(tt, id) end
+    tt:AddLine((on("tipHistory") and "Hold Shift for Forever Ledger details, Ctrl for price history"
+      or "Hold Shift for Forever Ledger details") .. (on("priceWindow") and (", " .. ns:PriceClickName() .. " for a graph") or ""), 0.5, 0.5, 0.5, true)
+    return
+  end
+
+  -- The cheapest listing first (what people expect), then the average of the cheapest
+  -- 20 (what values use, so one odd listing doesn't sway them), only when it differs.
+  -- Was "Ledger price" + "cheapest listing": Magic, October 3, asked which was which.
+  if price and on("tipPrice") then
+    local age = t and ns.Age(t) or ""
+    age = age ~= "" and (" |cff999999" .. age .. "|r") or ""
+    local own = rec and rec.m and src ~= "Auctionator" and src ~= "TSM" and src ~= "Auctioneer"
+    if own then
+      local listed = rec.q and (" |cff999999" .. rec.q .. " listed|r") or ""
+      tt:AddDoubleLine("Auction, cheapest", ns.Money(rec.m) .. listed .. age, LR, LG, LB, 1, 1, 1)
+      if rec.a and rec.a ~= rec.m then
+        -- With 20 or fewer listed it's the average of all of them, so say so (Magic, October 3).
+        tt:AddDoubleLine((rec.q and rec.q <= 20) and ("  avg of all " .. rec.q) or "  avg of cheapest 20",
+          ns.Money(rec.a), 0.7, 0.7, 0.7, 1, 1, 1)
+      end
+    else
+      tt:AddDoubleLine("Auction price (" .. (src or "?") .. ")", ns.Money(price) .. age, LR, LG, LB, 1, 1, 1)
+    end
+  elseif rec and rec.none and on("tipPrice") then
+    tt:AddDoubleLine("Auction, cheapest", "none listed " .. ns.Age(rec.t), LR, LG, LB, 0.7, 0.7, 0.7)
+  end
+
+  -- How fast it sells, once there are enough scans to say (History.lua SellSpeed).
+  if on("tipSpeed") and ns.SellSpeed then
+    local ok, sp = pcall(ns.SellSpeed, ns, id)
+    if ok and sp then tt:AddDoubleLine("Sells", ns:SellSpeedText(sp), LR, LG, LB, 1, 1, 1) end
+  end
+
+  -- Gear with random stats: the price of this exact version ("of the Eagle"). An auction
+  -- house group ("Items in this group may vary") has no one version: its link carries a
+  -- general bonus ID (3524, beta September 30) and the plain name, so it lists the
+  -- cheapest versions on sale instead.
+  if on("tipPrice") and tt.GetItem then
+    local _, link = tt:GetItem()
+    local rec = (ns.db.prices[ns.MarketKey()] or {})[id]
+    local suffix = ns:VersionOfLink(id, link)
+    if suffix then
+      ns:LearnVersionName(id, suffix, link)
+      local m, q = ns:SuffixPrice(id, suffix)
+      local vname = ns:VersionName(suffix) or "these stats"
+      if m and m > 0 then
+        tt:AddDoubleLine("  this version (" .. vname .. ")", ns.Money(m) .. " |cff999999" .. q .. " listed|r",
+          0.7, 0.7, 0.7, 1, 1, 1)
+      elseif m == 0 then
+        tt:AddDoubleLine("  this version (" .. vname .. ")", "none listed", 0.7, 0.7, 0.7, 0.7, 0.7, 0.7)
+      end
+    elseif rec and rec.sx then
+      local list = {}
+      for s, m, q in rec.sx:gmatch("(%-?%d+):(%d+):(%d+)") do
+        list[#list + 1] = { s = tonumber(s), m = tonumber(m), q = tonumber(q) }
+      end
+      table.sort(list, function(a, b) return a.m < b.m end)
+      if #list > 0 then
+        tt:AddDoubleLine("  versions on sale", tostring(#list), 0.7, 0.7, 0.7, 0.7, 0.7, 0.7)
+        for i = 1, math.min(3, #list) do
+          local v = list[i]
+          tt:AddDoubleLine("    " .. (ns:VersionName(v.s) or "other stats"), ns.Money(v.m) .. " |cff999999" .. v.q .. " listed|r",
+            0.7, 0.7, 0.7, 1, 1, 1)
+        end
+      end
+    end
+    -- Checking tooltip links against the scan (/fl debug), once per link.
+    if link and rec and rec.sx and ns.db.settings.debug and not debugLinks[link] then
+      debugLinks[link] = true
+      ns:Debug("Tooltip version:", link:match("%[(.-)%]") or "?", "=", link:match("item:[%-%d:]*") or "?",
+        "version:", suffix or "none (group)", "scan has:", rec.sx:sub(1, 80))
+    end
+  end
+
+  -- Booty Bay, only when it's clearly better there (owner, October 5: neutral prices
+  -- mustn't muddle these; off by default, and never while you're at a neutral one,
+  -- where the prices above are its own already).
+  if s.tipNeutral and not ns.neutralAH and ns.NeutralCompare then
+    local c = ns:NeutralCompare(id)
+    if c and c.gain > 0 and c.pct >= 0.25 then
+      tt:AddDoubleLine("Booty Bay (15% cut)", ("%s, |cff7fd39c+%d%%|r %s"):format(ns.Money(c.there),
+        math.floor(c.pct * 100 + 0.5), "|cff999999" .. ns.Age(c.t) .. "|r"), LR, LG, LB, 1, 1, 1)
+    end
+  end
+
+  local buy = ns.db.vendorBuy[id]
+  if buy and on("tipPrice") then
+    -- The standing it was seen at, when above Neutral (reputation discounts).
+    local standing = buy.rep and buy.rep > 4 and (_G["FACTION_STANDING_LABEL" .. buy.rep] or ("standing " .. buy.rep))
+    -- Under a copper each (ammo): the stack price, "1c for 5".
+    local shown = (buy.p < 1 and buy.n) and (ns.Money(math.floor(buy.p * buy.n + 0.5)) .. " for " .. buy.n) or ns.Money(buy.p)
+    tt:AddDoubleLine("Vendor sells it for", shown .. (buy.lim and " |cff999999limited|r" or "")
+      .. (standing and (" |cff999999at " .. standing .. "|r") or ""), LR, LG, LB, 1, 1, 1)
+  end
+
+  local best, options = ns:GetValue(id, true)
+  best, options = ns:WorthOfCopy(best, options, copyPrice)
+  if best and on("tipWorth") then
+    tt:AddDoubleLine("Worth to you", ns.Money(best), LR, LG, LB, 1, 1, 1)
+    whyLower(best, options)
+    local limit = s.tipOptions or 3
+    for i, o in ipairs(options) do
+      if i > limit then
+        tt:AddLine(("  and %d more ways"):format(#options - limit), 0.5, 0.5, 0.5)
+        break
+      end
+      if i == 1 then
+        tt:AddDoubleLine("  " .. o.label, ns.Money(o.value), 0.5, 0.83, 0.61, 0.5, 0.83, 0.61)
+      else
+        tt:AddDoubleLine("  " .. o.label, ns.Money(o.value), 0.7, 0.7, 0.7, 0.7, 0.7, 0.7)
+      end
+    end
+  end
+
+  -- Green when the auction price is already at or below it.
+  local maxBuy = on("tipBuy") and ns:BuyAtOrBelow(id, true)
+  if maxBuy then
+    if price and price <= maxBuy then
+      tt:AddDoubleLine("Buy at or below", ns.Money(maxBuy), LR, LG, LB, 0.5, 0.83, 0.61)
+    else
+      tt:AddDoubleLine("Buy at or below", ns.Money(maxBuy), LR, LG, LB, 1, 1, 1)
+    end
+  end
+
+  local crateLine = on("tipCrate") and ns.CrateTooltipLine and ns:CrateTooltipLine(id)
+  if crateLine then tt:AddLine(crateLine, LR, LG, LB, true) end
+
+  if on("tipBagSlot") then bagLines(tt, id) end
+
+  if on("tipDisenchant") and ns:AddDisenchantLines(tt, id) then ns.disenchantLinesFor = id end
+
+  local users = on("tipUsedBy") and ns.usage and ns.usage[id]
+  if users then
+    local shown = 0
+    for k, count in pairs(users) do
+      if shown >= 4 then break end
+      local name, prof = k:match("^(.-)|(.*)$")
+      tt:AddLine(("Used by %s: %s, %d recipe%s"):format(name or "?", prof or "?", count, count == 1 and "" or "s"), LR, LG, LB)
+      shown = shown + 1
+    end
+  end
+  questLines(false)
+  -- Dungeon drops you've had (Dungeons.lua): "Dropped for you: Deadmines, 2 in 14 runs".
+  local drops = on("tipDrops") and ns.DropLine and ns:DropLine(id)
+  if drops then tt:AddLine(drops, LR, LG, LB, true) end
+  if withHistory then
+    historyLines(tt, id)
+  elseif not had and on("tipHistory") and price and #(ns:PriceHistory(id)) > 1 then
+    tt:AddLine("Hold Ctrl for price history" .. (on("priceWindow") and (", " .. ns:PriceClickName() .. " for a graph") or ""), 0.5, 0.5, 0.5)
+  elseif not had and on("priceWindow") and price then
+    tt:AddLine(ns:PriceClickName() .. " for a price graph", 0.5, 0.5, 0.5)
+  end
+end
+
+if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall and Enum and Enum.TooltipDataType then
+  TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, function(tt, data)
+    if tt == GameTooltip or tt == ItemRefTooltip then addLines(tt, data and data.id, nil, ns.TooltipSellPrice(data)) end
+  end)
+else
+  local function hook(tt)
+    local _, link = tt:GetItem()
+    addLines(tt, ns.ItemIDFromLink(link))
+  end
+  GameTooltip:HookScript("OnTooltipSetItem", hook)
+  ItemRefTooltip:HookScript("OnTooltipSetItem", hook)
+end
+
+addLines = ns.Timed("Tooltip lines", addLines)   -- for /fl perf
+
+-- Compact mode: pressing Shift adds the full details to the tooltip that's showing.
+-- (Tests 1 and 2: asking the game to redraw the tooltip, by RefreshData or by hovering
+-- the item again, did nothing with the owner's EllesmereUI bags, so add the lines
+-- directly.) They stay until the next hover; holding Shift before hovering shows them too.
+GameTooltip:HookScript("OnHide", function() shownID, shownFull, shownHistory, shownCopyPrice = nil, nil, nil, nil end)
+if GameTooltip.HookScript then
+  pcall(GameTooltip.HookScript, GameTooltip, "OnTooltipCleared", function() shownID, shownFull, shownHistory, shownCopyPrice = nil, nil, nil, nil end)
+end
+ns:On("MODIFIER_STATE_CHANGED", function(key, down)
+  if not key then return end
+  -- Pressed is 1 in most clients; some report true. Anything else is a release.
+  local pressed = down == 1 or down == true
+  if not pressed then return end   -- (tested September 30: works in bags with EllesmereUI)
+  -- Ctrl adds the price history the same way (the hint line stays; harmless).
+  if key:find("CTRL") then
+    if not (ns.db and ns.db.settings.tooltip and ns.db.settings.tipHistory ~= false) then return end
+    if not GameTooltip:IsShown() or not shownID or shownHistory then return end
+    shownHistory = true
+    historyLines(GameTooltip, shownID)
+    GameTooltip:Show()
+    return
+  end
+  if not key:find("SHIFT") then return end
+  if not (ns.db and ns.db.settings.tipMode == "compact") then return end
+  if not GameTooltip:IsShown() or not shownID or shownFull then return end
+  addLines(GameTooltip, shownID, true)
+  GameTooltip:Show()   -- resize to fit the new lines
+end)
