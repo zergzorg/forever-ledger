@@ -16,7 +16,10 @@ local _, ns = ...
 ---------------------------------------------------------------------------
 local lastRead   -- the last trainer read: { name, npc, prof, list }
 
-local function isRiding(name) return name and (name:find("Riding", 1, true) ~= nil or name:find("езда", 1, true) ~= nil) end
+local function isRiding(name)
+  if not name then return false end
+  return name:find("Riding", 1, true) ~= nil or name:find("езд", 1, true) ~= nil or name:find("наездник", 1, true) ~= nil
+end
 
 function ns:TrainerRead(list, npc, npcID, prof)
   lastRead = { npc = npc, prof = prof, list = list, t = time() }
@@ -106,7 +109,7 @@ function ns:RidingTier()
   if best > 0 then return best end
   -- The spellbook, by name (Forever has no Classic skill list: owner's /fl api, October 5).
   for _, name in ipairs(ns:SpellbookRiding()) do
-    local tier = (name:find("Apprentice", 1, true) and 1) or 2
+    local tier = ((name:find("Apprentice", 1, true) or name:find("Ученик", 1, true)) and 1) or 2
     if tier > best then best = tier end
   end
   if best > 0 then return best end
@@ -300,8 +303,8 @@ end
 -- training (owner's estimate: 10g and 100g; mounts are per character, so each needs
 -- its own). The fund is the two together: 100g, then 1,000g.
 local RIDING_GUESS = {
-  { name = "Apprentice Riding", short = "Езда на 40", level = 40, training = 900000, mount = 100000, match = "Apprentice" },
-  { name = "Journeyman Riding", short = "Эпическая езда на 60", level = 60, training = 9000000, mount = 1000000, match = "Journeyman" },
+  { name = "Ученик наездника", short = "Езда на 40", level = 40, training = 900000, mount = 100000, match = { "Apprentice", "Ученик наездника" } },
+  { name = "Наездник", short = "Эпическая езда на 60", level = 60, training = 9000000, mount = 1000000, match = { "Journeyman", "Наездник" } },
 }
 function ns:RidingFund(goldNow, totals, goldFirst)
   if ns.db.settings.ridingFund == false or ns.db.settings.moduleLevelling == false then return end
@@ -314,7 +317,9 @@ function ns:RidingFund(goldNow, totals, goldFirst)
     mount = want.mount, seen = false }
   -- Seen at a riding trainer: the service whose name says its tier (Apprentice Riding...).
   for svc, r in pairs(ns.db.riding or {}) do
-    if svc:find(want.match, 1, true) and r.cost then
+    local hit = false
+    for _, m in ipairs(want.match) do if svc:find(m, 1, true) then hit = true end end
+    if hit and r.cost then
       out.training, out.seen, out.name = r.cost, true, svc
       if r.level and r.level > 0 then out.level = r.level end
     end

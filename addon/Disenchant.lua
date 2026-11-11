@@ -59,7 +59,7 @@ end
 -- minutes (you may have walked away), nil otherwise.
 local function salvagerState()
   for _, name in ipairs(buffNames()) do
-    if name:find("Salvager", 1, true) then return "buff" end
+    if name:find("Salvager", 1, true) or name:find("тилизатор", 1, true) then return "buff" end
   end
   if GetTime() - salvagerPlaced < SALVAGER_TIME then return "placed" end
 end

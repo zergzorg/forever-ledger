@@ -2631,7 +2631,7 @@ local function onModifiedClick(link)
   unpark({ id })
   Q.built = 0
   ns:Print(ns:IsSearchList(list) and ("Добавлено %s в %s."):format(link, list.name)
-    or ("Added %s to %s. Check Want and Up to on the list."):format(link, list.name))
+    or ("Добавлено %s в %s. Проверьте «Нужно» и «До» в списке."):format(link, list.name))
   refreshLists()
 end
 if HandleModifiedItemClick then hooksecurefunc("HandleModifiedItemClick", onModifiedClick) end
@@ -2984,8 +2984,8 @@ local function estimateText(list)
     if m.buy > 0 and (not m.vendor or m.vendorAH) then add(m.id, m.buy) end
   end
   if total <= 0 then return "" end
-  return ("About %s to buy the rest%s. "):format(ns.Money(total),
-    unknown > 0 and (" (%d not priced)"):format(unknown) or "")
+  return ("Около %s на остальное%s. "):format(ns.Money(total),
+    unknown > 0 and (" (%d без цены)"):format(unknown) or "")
 end
 
 local function showRow(r, kind)
@@ -3089,7 +3089,7 @@ refreshLists = function()
       show[#show + 1] = { kind = "head", text = "Материалы для изготовления" }
       for _, m in ipairs(mats) do show[#show + 1] = { kind = "mat", m = m } end
       for _, id in ipairs(missing) do
-        show[#show + 1] = { kind = "note", text = ("|cffee8597No recipe known for %s:|r open its profession window on the character who makes it."):format(ns.ItemName(id)) }
+        show[#show + 1] = { kind = "note", text = ("|cffee8597Нет известного рецепта для %s:|r откройте окно профессии на персонаже, который это делает."):format(ns.ItemName(id)) }
       end
     end
   end
@@ -3288,7 +3288,7 @@ refreshLists = function()
     v.info:SetText("Добавьте предметы выше или импортируйте общий список.")
   elseif done == #list.items then
     v.info:SetText(buyMode and "|cff7fd39cГотово: всё из списка куплено. «Купить снова» начнёт заново.|r"
-      or "|cff7fd39cComplete: you have everything on this list.|r")
+      or "|cff7fd39cГотово: у вас есть всё из этого списка.|r")
   elseif craftsReady > 0 and matsShort == 0 and done + craftsReady == #list.items then
     v.info:SetText(("|cff7fd39cУ вас есть все материалы:|r изготовить %d, и готово."):format(craftsReady))
   elseif not ns:IsAHOpen() then
