@@ -583,7 +583,7 @@ local function build()
   end
   f.addItem = T:Button(f, "В список покупок", SIDE - 24, function()
     local list = ns:QuickAddToShoppingList(f.id, state.suffix)
-    ns:Print(("%s добавлен в список покупок «%s» (/fl lists)."):format(ns.ItemName(f.id) or "it", list.name))
+    ns:Print(("%s добавлен в список покупок «%s» (/fl lists)."):format(ns.ItemName(f.id) or "предмет", list.name))
   end, 22)
   f.addItem:HookScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")

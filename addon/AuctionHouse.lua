@@ -573,7 +573,7 @@ local function buildFinder(side)
   finder.empty:SetPoint("RIGHT", finder.content, "RIGHT", -8, 0)
   finder.empty:SetJustifyH("LEFT")
 
-  local refresh = T:Button(finder, "Refresh", 90, changed, 22)
+  local refresh = T:Button(finder, "Обновить", 90, changed, 22)
   refresh:SetPoint("BOTTOMLEFT", 10, 8)
   finder.count = T:Text(finder, 11, T.dim)
   finder.count:SetPoint("LEFT", refresh, "RIGHT", 10, 0)
@@ -713,6 +713,8 @@ end
 function ns:UpdateWatchButton()
   if ns.UpdatePanelScanButtons then ns:UpdatePanelScanButtons() end
   if ns.RefreshQueueView then ns:RefreshQueueView() end
+  -- Pause / Resume under the auction house window (UI.lua), like the panel's.
+  if ns.ahButton then ns.ahButton:SetText(ns.IsScanPaused and ns:IsScanPaused() and "Продолжить" or "Пауза") end
   local w = ns.ahWatchButton
   if not w then return end
   local on = ns:IsFlipWatching()
@@ -755,7 +757,7 @@ ns:On("AUCTION_HOUSE_SHOW", function()
       w:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
         GameTooltip:AddLine("Слежение за флипами", 1, 1, 1)
-        GameTooltip:AddLine("Ищет предметы дешевле цены торговца, пока аукцион открыт: полный скан каждые 15 минут, между ними быстрые проверки. Звенит при находке, новые флипы попадают в очередь покупок.", nil, nil, nil, true)
+        GameTooltip:AddLine("Ищет предметы дешевле цены торговца, пока аукцион открыт: полный скан каждые 15 минут, а между ними — чтение всего списка аукциона примерно раз в полминуты. Звенит при находке, новые флипы попадают в очередь покупок.", nil, nil, nil, true)
         GameTooltip:Show()
       end)
       w:SetScript("OnLeave", function() GameTooltip:Hide() end)

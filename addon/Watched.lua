@@ -190,7 +190,7 @@ local function addFromBox(v)
     return
   end
   ns:WatchItem(id, max)
-  ns:Print(("Следим за %s, %s. Слежение за флипами проверяет его каждый проход."):format(ns.ItemName(id) or "it",
+  ns:Print(("Следим за %s, %s. Слежение за флипами проверяет его каждый проход."):format(ns.ItemName(id) or "предмет",
     max > 0 and ("до " .. ns.Money(max)) or "по цене торговца"))
   v.add:SetText(""); v.max:SetText("")
   v.pendingID = nil
@@ -350,9 +350,9 @@ local function build(parent)
   T:MoneyPreview(v.max, "g")
   v.max:SetPoint("LEFT", v.add, "RIGHT", 4, 0)
   v.max:SetScript("OnEnterPressed", function() addFromBox(v) end)
-  local addB = T:Button(v, "Watch", 70, function() addFromBox(v) end, 22)
+  local addB = T:Button(v, "Следить", 70, function() addFromBox(v) end, 22)
   addB:SetPoint("LEFT", v.max, "RIGHT", 4, 0)
-  tip(addB, "Watch", "Добавляет предмет. Пустая цена — покупать только как флип у торговца; или введите максимум: 2s, 1g 50s или число для золота.")
+  tip(addB, "Следить", "Добавляет предмет. Пустая цена — покупать только как флип у торговца; или введите максимум: 2s, 1g 50s или число для золота.")
 
   local header = CreateFrame("Frame", nil, v)
   header:SetPoint("TOPLEFT", 6, -114)

@@ -2,7 +2,7 @@
 ## Title: Forever Ledger
 ## Notes: Учитывает профессии и рецепты персонажей, цены торговцев и аукциона для флипов и цепочек.
 ## Author: Forever Ledger
-## Version: 0.20.0
+## Version: 0.21.0
 ## SavedVariables: ForeverLedgerDB
 ## X-Curse-Project-ID: 1720193
 ## X-Wago-ID: qGYBBzNg
@@ -10,6 +10,7 @@
 Core.lua
 Locale.lua
 Prices.lua
+Sweep.lua
 Quiet.lua
 History.lua
 Inventory.lua

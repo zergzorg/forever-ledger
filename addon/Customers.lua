@@ -557,12 +557,12 @@ refresh = function()
       r.msg:SetWordWrap(false)
       r.done = T:Button(r, "x", 22, function(self) self:GetParent().entry.done = true; refresh() end, 20)
       r.done:SetPoint("RIGHT", -6, 0)
-      r.invite = T:Button(r, "Invite", 54, function(self)
+      r.invite = T:Button(r, "Пригласить", 80, function(self)
         local who = self:GetParent().entry.who
         if C_PartyInfo and C_PartyInfo.InviteUnit then C_PartyInfo.InviteUnit(who) elseif InviteUnit then InviteUnit(who) end
       end, 20)
       r.invite:SetPoint("RIGHT", r.done, "LEFT", -4, 0)
-      r.whisper = T:Button(r, "Whisper", 64, function(self)
+      r.whisper = T:Button(r, "Шёпот", 64, function(self)
         local who = self:GetParent().entry.who
         if ChatFrame_SendTell then ChatFrame_SendTell(who) end
       end, 20)

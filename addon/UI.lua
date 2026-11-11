@@ -199,13 +199,13 @@ local function buildMain()
   local full = T:Button(main, "Полный скан", 140, function() ns.Scan:Start("full") end)
   full:SetPoint("BOTTOMLEFT", 12, 12)
   full:SetPrimary(true)
-  local scan = T:Button(main, "Скан материалов", 132, function() ns.Scan:Start("watch") end)
-  scan:SetPoint("LEFT", full, "RIGHT", 6, 0)
+  -- (Scan materials was here until November 10: full scans and the whole-list reading cover
+  -- it, and /fl scan materials still does it.)
   -- One button for copying data across (owner's test, October 4: like the shopping
   -- lists' Share/import); Export, Import and Prices as text are tabs in its window.
-  local dataBtn = T:Button(main, "Экспорт и импорт", 120, function() ns:ShowExport() end)
-  dataBtn:SetPoint("LEFT", scan, "RIGHT", 18, 0)
-  main.scanBtn, main.fullBtn = scan, full
+  local dataBtn = T:Button(main, "Экспорт / импорт", 120, function() ns:ShowExport() end)
+  dataBtn:SetPoint("LEFT", full, "RIGHT", 18, 0)
+  main.fullBtn = full
   -- Away from the auction house they can't be clicked: say why (UI pass, November 9).
   local function scanHover(b, title, text)
     b:HookScript("OnEnter", function(self)
@@ -217,7 +217,6 @@ local function buildMain()
     b:HookScript("OnLeave", function() GameTooltip:Hide() end)
   end
   scanHover(full, "Полный скан", "Читает все лоты сразу. Игра разрешает примерно раз в 15 минут.")
-  scanHover(scan, "Скан материалов", "Ищет материалы ваших рецептов по одному предмету.")
   -- Help: the first-run welcome again (Welcome.lua), bottom left like the other tabs'
   -- buttons (owner, October 5: not under the topic list).
   local welcomeBtn = T:Button(main, "Показать «Что нового»", 180, function()
@@ -226,19 +225,19 @@ local function buildMain()
   welcomeBtn:SetPoint("BOTTOMLEFT", 12, 12)
   -- What's new (the release notes, Welcome.lua), bottom right on Help and the Dashboard
   -- (owner, October 5).
-  local newsBtn = T:Button(main, "What's new", 100, function()
+  local newsBtn = T:Button(main, "Что нового", 100, function()
     if ns.ShowWhatsNewCard then ns:ShowWhatsNewCard() end
   end)
   newsBtn:SetPoint("BOTTOMRIGHT", -12, 12)
   main.newsBtn = newsBtn
   main.footer = {
-    dashboard = { full, scan, newsBtn },
-    deals = { full, scan },
-    characters = { full, scan, dataBtn },
+    dashboard = { full, newsBtn },
+    deals = { full },
+    characters = { full, dataBtn },
     help = { welcomeBtn, newsBtn },
   }
 
-  main.refreshBtn = T:Button(main, "Refresh", 90, function() ns:RefreshShuffles() end)
+  main.refreshBtn = T:Button(main, "Обновить", 90, function() ns:RefreshShuffles() end)
   main.refreshBtn:SetPoint("BOTTOMLEFT", 12, 12)
   main.footer.shuffles = { main.refreshBtn }
   main.footer.flips = { main.refreshBtn }
@@ -397,7 +396,6 @@ function ns:RefreshUI()
     sf.content:SetHeight(sf.text:GetStringHeight() + 12)
     sf.UpdateScrollBar()
   end
-  main.scanBtn:SetEnabled(ns:IsAHOpen() and not ns.Scan.active)
   ns:UpdateFullScanButtons()
 end
 
@@ -1103,7 +1101,15 @@ function ns:OnAHShow()
   if ah and not ns.ahButton then
     -- Just below the window's bottom-right corner, level with Blizzard's Buy/Sell/Auctions
     -- tabs. Inside the window they covered the bid and buyout boxes on item pages.
-    ns.ahButton = blizzButton(ah, "Скан материалов", 132, function() ns.Scan:Start("watch") end)
+    -- Pause / Resume, as on the Buy queue panel (BuyQueue.lua; owner, November 10).
+    ns.ahButton = blizzButton(ah, "Пауза", 120, function() ns:ToggleScanPause() end)
+    ns.ahButton:HookScript("OnEnter", function(self)
+      GameTooltip:SetOwner(self, "ANCHOR_TOP")
+      GameTooltip:AddLine("Пауза", 1, 1, 1)
+      GameTooltip:AddLine("Останавливает слежение за флипами и собственные запросы очереди покупок, чтобы ваши поиски и открытая страница оставались как есть. Нажмите «Продолжить», чтобы возобновить; закрытие аукциона тоже завершает паузу.", nil, nil, nil, true)
+      GameTooltip:Show()
+    end)
+    ns.ahButton:HookScript("OnLeave", function() GameTooltip:Hide() end)
     -- Auctionator adds its own tabs (Shopping, Selling, Cancelling, Auctionator) along the
     -- bottom, reaching the right side: go one row lower so we don't cover them.
     local isLoaded = (C_AddOns and C_AddOns.IsAddOnLoaded) or IsAddOnLoaded

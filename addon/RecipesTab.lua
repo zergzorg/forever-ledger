@@ -555,7 +555,7 @@ local function getRow(i)
       r.cells[c.key] = fs
     end
   end
-  r.pin = T:Button(r, "Pin", 34, function(self)
+  r.pin = T:Button(r, "Метка", 46, function(self)
     local s = self:GetParent().src
     if s then ns:PinOnMap(s.mapID, s.x, s.y, s.npc or s.name) end
   end, 18)

@@ -212,10 +212,10 @@ local function helper(frame, name)
   h.text:SetJustifyH("CENTER")
   if h.text.SetMaxLines then h.text:SetMaxLines(2) end
   -- The two buttons side by side under the text, centred.
-  h.under_b = T:Button(h.box, "Undercut", 90, function() setPrice(frame, h.under) end, 18)
+  h.under_b = T:Button(h.box, "Перебить", 90, function() setPrice(frame, h.under) end, 18)
   h.under_b:SetPoint("BOTTOMRIGHT", h.box, "BOTTOM", -2, 0)
   h.under_b:GetFontString():SetFont(T.font, 10, "")
-  h.usual_b = T:Button(h.box, "Usual", 90, function() setPrice(frame, h.usual) end, 18)
+  h.usual_b = T:Button(h.box, "Обычная", 90, function() setPrice(frame, h.usual) end, 18)
   h.usual_b:SetPoint("BOTTOMLEFT", h.box, "BOTTOM", 2, 0)
   h.usual_b:GetFontString():SetFont(T.font, 10, "")
   for _, b in ipairs({ h.under_b, h.usual_b }) do

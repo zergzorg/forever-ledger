@@ -495,7 +495,7 @@ local function getRow(i)
   r.status:SetJustifyH("LEFT")
   r.status:SetWordWrap(false)
   -- One auction: two clicks (the deposit is lost).
-  r.cancel = T:Button(r, "Cancel", 52, function(self)
+  r.cancel = T:Button(r, "Отменить", 64, function(self)
     local e = self:GetParent().entry
     if not (e and e.a) then return end
     if armed[e.a] and GetTime() - armed[e.a] < 4 then

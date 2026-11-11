@@ -611,7 +611,7 @@ function ns:RefreshDashboard(f)
     elseif fund.perDay and fund.perDay > 0 then
       eta = dim(("  примерно %d дн при вашем темпе"):format(math.ceil((fund.cost - fund.gold) / fund.perDay)))
     end
-    f.fundText:SetText(("%s: %s of %s (%d%%)%s"):format(fund.short, ns.Money(math.max(fund.gold, 0)), ns.Money(fund.cost),
+    f.fundText:SetText(("%s: %s из %s (%d%%)%s"):format(fund.short, ns.Money(math.max(fund.gold, 0)), ns.Money(fund.cost),
       math.floor(pct * 100), eta))
     f.fundHide:ClearAllPoints()
     f.fundHide:SetPoint("TOPRIGHT", f, "TOPLEFT", W - 8, -(fTop + 6))
