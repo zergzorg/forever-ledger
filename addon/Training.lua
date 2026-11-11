@@ -16,6 +16,26 @@ local _, ns = ...
 ---------------------------------------------------------------------------
 local lastRead   -- the last trainer read: { name, npc, prof, list }
 
+-- The advice table is keyed by English spell names, but the client names spells in
+-- its own language. Match by spell ID too: the same entry under the name the client
+-- gives that spell.
+local adviceIndex = {}
+function ns:TrainerAdviceFor(class, name)
+  local list = ns.TRAINER_ADVICE and ns.TRAINER_ADVICE[class or ""]
+  if not list then return nil end
+  local index = adviceIndex[class]
+  if not index then
+    index = {}
+    for key, entry in pairs(list) do
+      index[key] = entry
+      local shown = entry.id and ns.SpellName and ns.SpellName(entry.id)
+      if shown and shown ~= "" then index[shown] = entry end
+    end
+    adviceIndex[class] = index
+  end
+  return index[name]
+end
+
 local function isRiding(name)
   if not name then return false end
   return name:find("Riding", 1, true) ~= nil or name:find("езд", 1, true) ~= nil or name:find("наездник", 1, true) ~= nil
@@ -57,9 +77,8 @@ function ns:TrainerRead(list, npc, npcID, prof)
     ns:Debug(("Training: %s teaches %d %s spells (%d services)."):format(npc or "?", n, class or "?", #list))
     -- The advice panel only where the trainer teaches spells on your class's list (owner,
     -- October 6: not at the riding trainer; the portal trainer is fine).
-    local advice = ns.TRAINER_ADVICE and ns.TRAINER_ADVICE[class or ""]
     local known = false
-    for name in pairs(spells) do if advice and advice[name] then known = true end end
+    for name in pairs(spells) do if ns:TrainerAdviceFor(class, name) then known = true end end
     if known and ns.ShowTrainingAdvice then ns:ShowTrainingAdvice(list) end
   end
   if riding > 0 then ns:Debug(("Training: %d riding services seen at %s."):format(riding, npc or "?")) end

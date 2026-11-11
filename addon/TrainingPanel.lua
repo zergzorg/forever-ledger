@@ -22,7 +22,7 @@ local GROUPS = {
 -- One spell's advice: group key, and the reasons to show on hover.
 function ns:SpellAdvice(name, knowsLower)
   local _, class = UnitClass("player")
-  local a = ns.TRAINER_ADVICE and ns.TRAINER_ADVICE[class or ""] and ns.TRAINER_ADVICE[class or ""][name]
+  local a = ns:TrainerAdviceFor(class, name)
   if not a then return "unknown", { reason = "Этого пока нет в списке Forever Ledger для вашего класса.", notes = {} } end
   local tree = ns.LevellingTree and ns:LevellingTree()
   -- Hover sections (owner, October 6: readable, not one block): verdict, reason, when to
