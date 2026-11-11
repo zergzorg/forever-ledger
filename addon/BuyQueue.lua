@@ -2984,7 +2984,7 @@ local function estimateText(list)
     if m.buy > 0 and (not m.vendor or m.vendorAH) then add(m.id, m.buy) end
   end
   if total <= 0 then return "" end
-  return ("Около %s на остальное%s. "):format(ns.Money(total),
+  return ("На остальное — около %s%s. "):format(ns.Money(total),
     unknown > 0 and (" (%d без цены)"):format(unknown) or "")
 end
 
