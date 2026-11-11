@@ -157,8 +157,8 @@ do
   local low = 1
   for _, band in ipairs(DISENCHANT) do
     local levels = low == 1 and ("up to " .. band.maxLevel) or (low .. "-" .. band.maxLevel)
-    band.armor.label = "Item level " .. levels .. " green armor"
-    band.weapon.label = "Item level " .. levels .. " green weapons"
+    band.armor.label = "Зелёная броня, уровень предмета " .. levels
+    band.weapon.label = "Зелёное оружие, уровень предмета " .. levels
     band.armor.band, band.weapon.band = band.maxLevel, band.maxLevel
     band.armor.kind, band.weapon.kind = "armor", "weapon"
     -- Enchanting skill needed (Classic: 1 up to level 20, then 25 more per 5 levels).

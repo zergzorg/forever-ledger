@@ -33,13 +33,16 @@ def main() -> int:
         for number, line in enumerate(text.splitlines(), 1):
             if line.lstrip().startswith("--"):
                 continue
-            if not (DISPLAY.search(line) or LABEL.search(line)):
+            is_display = bool(DISPLAY.search(line))
+            if not (is_display or LABEL.search(line)):
+                continue
+            if 'key = "' in line and not is_display:
                 continue
             for value in literals(line):
                 if CYR.search(value) or "\\" in value or "|c" in value:
                     continue
                 words = re.findall(r"[A-Za-z]{3,}", value)
-                if len(words) < 2 and not LABEL.search(line):
+                if len(words) < 2:
                     continue
                 if TECH.match(value):
                     continue
