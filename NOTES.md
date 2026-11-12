@@ -1,4 +1,4 @@
-# Автор, репозиторий и вклад (на 11.11.2026)
+# Автор, репозиторий и вклад (на 12.11.2026)
 
 ## Официальный репозиторий
 
@@ -9,6 +9,12 @@
 - Страницы аддона: [CurseForge](https://www.curseforge.com/wow/addons/forever-ledger), [Wago](https://addons.wago.io/addons/forever-ledger).
 - Discord: <https://discord.gg/WKsCtvupeC> — автор просит сообщать об ошибках и идеях туда (`/bug`, `/idea`).
 
+## Состояние на 12.11.2026
+
+- `main` ушёл на **0.23.0** (плюс `/fl api` после релиза); ядро локализации из PR #17 в `main` ещё не влито.
+- Ветка `ru` содержит полный перевод **0.23.0** и установлена в игру.
+- Ветка `locale-ru` (отдельные `Locale.lua` и `Locales/ruRU.lua`) остаётся на базе 0.21.1 и ждёт слияния ядра из PR #17.
+
 ## Локализация в основной ветке
 
 В `main` **нет** локализации: `GetLocale()` встречается только в тестовых заглушках.
@@ -17,8 +23,8 @@
 ## Китайский PR — важный прецедент
 
 - PR **#17**: «Add zhCN localization and optional ROI sorting for vendor flips»
-- Автор: **yippp**, открыт 09.11.2026, обновлён 11.11.2026, **не влит**.
-- 43 файла, +4419/−468; `mergeable: false` (конфликтует с текущим `main`), ревью людей нет.
+- Автор: **yippp**, открыт 09.11.2026, обновлён 12.11.2026, **не влит**.
+- 43 файла, +4419/−468; `mergeable: true`, но `mergeStateStatus: UNSTABLE`; ревью людей нет.
 - Подход: отдельные `Locale_zhCN.lua`, `Translations_zhCN.lua`,
   `ExtraTranslations_zhCN.lua`, `LocaleHooks_zhCN.lua` + обёртки
   `ns.LocalizeText(...)` в местах вывода. Английский источник сохраняется,
