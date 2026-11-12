@@ -593,14 +593,15 @@ local function build()
   end)
   f.addItem:HookScript("OnLeave", function() GameTooltip:Hide() end)
 
-  -- Watch it (Watched.lua; owner, November 10): the flip watch checks it every pass and
-  -- the Buy queue buys it at or under the price beside it. Typing a price watches it too.
+  -- Watch it (Watched.lua; owner, November 10): the flip watch looks for it in every reading
+  -- of the auction house and the Buy queue buys it at or under the price beside it. Typing a
+  -- price watches it too.
   local function watchTip(self)
     GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
     GameTooltip:AddLine("Следить за предметом", 1, 1, 1)
-    GameTooltip:AddLine("Слежение проверяет его каждый проход, а очередь покупает первым в «Перепродажах торговцу» по цене отсюда или дешевле. «торговец»: только когда торговец даёт больше. Все отслеживаемые — кнопка на очереди покупок.", 0.8, 0.8, 0.8, true)
+    GameTooltip:AddLine("Слежение за перепродажами ищет его при каждом чтении аукциона (примерно раз в 20 секунд), а очередь покупок покупает его первым в «Перепродажах торговцу» по цене отсюда или дешевле. «торговец»: только когда торговец даёт больше. Все отслеживаемые — кнопка «Отслеживаемые» на очереди покупок.", 0.8, 0.8, 0.8, true)
     if f.id and ns:IsGearItem(f.id) then
-      GameTooltip:AddLine("Снаряжение проверяется полной проверкой (примерно каждые 15 минут), любая версия.", 0.7, 0.7, 0.7, true)
+      GameTooltip:AddLine("Снаряжение: любая версия характеристик по цене или дешевле.", 0.7, 0.7, 0.7, true)
     end
     GameTooltip:Show()
   end

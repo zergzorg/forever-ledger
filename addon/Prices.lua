@@ -171,7 +171,25 @@ end
 -- buy it", 667 of them with a vendor price on the other account (Scalemail Boots, Jade,
 -- Lesser Healing Potion), so their vendor flips were gone until a reload (owner,
 -- November 9). A price saved as 0 that way comes back the next time the item is looked at.
+-- Items the game gives a vendor price that vendors won't take, so they're never a vendor
+-- flip or valued at a vendor: rogue poisons (owner, November 11: Instant Poison was a
+-- vendor flip at its 5c, and the vendor wouldn't buy it). Every rank, so none is bought by
+-- accident. The tooltip check above can't be used for them: it misreads too many items
+-- that vendors do buy.
+local VENDOR_WONT_BUY = {
+  [6947] = true, [6949] = true, [6950] = true, [8926] = true, [8927] = true, [8928] = true,   -- Instant Poison to VI
+  [2892] = true, [2893] = true, [8984] = true, [8985] = true, [20844] = true,                 -- Deadly Poison to V
+  [3775] = true, [3776] = true,                                                                -- Crippling Poison, II
+  [5237] = true, [6951] = true, [9186] = true,                                                 -- Mind-numbing Poison to III
+  [10918] = true, [10920] = true, [10921] = true, [10922] = true,                              -- Wound Poison to IV
+}
+ns.VENDOR_WONT_BUY = VENDOR_WONT_BUY
+
 function ns:GetSellPrice(id)
+  if VENDOR_WONT_BUY[id] then
+    if (ns.db.vendorSell[id] or 0) > 0 then ns.db.vendorSell[id] = 0 end
+    return nil
+  end
   local saved = ns.db.vendorSell[id]
   local name, _, _, _, _, _, _, _, _, _, live = getItemInfo(id)
   if name and live and live > 0 and live <= 1 and not canSell(id) then live = 0 end
@@ -409,10 +427,18 @@ function ns:CheapListings(id, price)
   return n, n > 0 and cost / n or nil
 end
 
+-- When each item's saved price last changed from a live look (a search, a purchase, the
+-- auction house list), on the GetTime clock. The Buy queue looks up and buys while a full
+-- scan is on its way, and the scan may have been taken before that, so a full scan leaves
+-- these items' prices as they are (Codex review of a6f26af). Only this session's: a full
+-- scan asked for before a reload is compared with nothing.
+local liveAt = {}
+
 -- You bought `qty` of an item at `each` (or less) per unit: take them off its saved price
 -- ladder, so flips and deals drop without waiting for the next full scan. Takes from
 -- the dearest level at or below what you paid (what you most likely bought).
 function ns:RemoveBought(id, qty, each)
+  if id then liveAt[id] = GetTime() end
   local rec = (ns.db.prices[ns.MarketKey()] or {})[id]
   if not (rec and rec.l and not rec.none) then return end
   local levels, prev = {}, 0
@@ -494,6 +520,7 @@ function ns:DropBelow(id, price, quiet)
   rec.q = math.max(0, (rec.q or 0) - gone)
   rec.l = table.concat(out, ",")
   rec.m = price
+  liveAt[id] = GetTime()
   ns.LadderTypical(rec)
   if ns.CheckFlip then
     local ok, err = pcall(ns.CheckFlip, ns, id)
@@ -535,6 +562,7 @@ function ns:AddCheapest(id, price, listed)
     rec.t = time()
     ns.LadderTypical(rec)
   end
+  liveAt[id] = GetTime()
   if ns.CheckFlip then
     local ok, err = pcall(ns.CheckFlip, ns, id)
     if not ok then ns:Debug("Flip check failed for", id, err) end
@@ -585,11 +613,17 @@ function ns.TypicalPrice(units)
 end
 
 -- units: list of { unitPrice, quantity }
-local function record(id, units, src)
+-- liveSince (full scans): when the scan was asked for, on the GetTime clock. An item whose
+-- price changed from a live look since then keeps it; the scan adds only its versions
+-- and price history.
+local function record(id, units, src, liveSince)
   if ns.InvalidateValues then ns:InvalidateValues() end
   local key = ns.MarketKey()
   ns.db.prices[key] = ns.db.prices[key] or {}
+  local keep = src == "full" and liveSince and liveAt[id] and liveAt[id] >= liveSince
+  if src ~= "full" then liveAt[id] = GetTime() end
   if #units == 0 then
+    if keep then return end
     ns.db.prices[key][id] = { t = time(), src = src or "scan", none = true }
     if ns.CheckFlip then pcall(ns.CheckFlip, ns, id) end   -- forgets a flip that sold out
     return
@@ -640,7 +674,11 @@ local function record(id, units, src)
     sx = #sx > 0 and table.concat(sx, ";") or nil,
     sxt = sxt,
   }
-  ns.db.prices[key][id] = rec
+  if keep and old then
+    old.sx, old.sxt = rec.sx, rec.sxt
+  else
+    ns.db.prices[key][id] = rec
+  end
   -- A watch pass or your own search: alert straight away if this made a new vendor
   -- flip (full scans check everything at once when they finish).
   if src ~= "full" and ns.CheckFlip then
@@ -819,7 +857,10 @@ local function soldTracker()
   return t
 end
 
-local Scan = { queue = {}, active = false, done = 0, total = 0 }
+-- session: counts stops. A new scan can only start once the last has stopped (Start and
+-- StartList refuse while one is active), so a full scan still saving after a stop can tell
+-- that the scan now running isn't its own (Codex review of 028e8f5).
+local Scan = { queue = {}, active = false, done = 0, total = 0, session = 0 }
 ns.Scan = Scan
 
 -- "45s" or "2m 5s" since the scan started.
@@ -978,6 +1019,7 @@ function Scan:Stop(reason)
   -- The flip watch's browse sweep is part of its pass (Sweep.lua).
   if self.sweep and ns.StopSweep then ns:StopSweep() end
   self.active, self.pending, self.full, self.waiting, self.sweep = false, nil, false, false, nil
+  self.session = self.session + 1
   self.queue = {}
   -- The flip watch's quiet checks don't announce each pass.
   if was and not (self.quiet and not reason) then
@@ -1054,6 +1096,24 @@ local function saveLive(id, units, complete)
   end
 end
 
+-- Who sent a search, from debugstack's text (/fl debug): the addons in the call chain,
+-- nearest first, leaving this one out, and the script handlers it came through, the first
+-- one started it ("OnClick": you; "OnEvent" or "OnUpdate": the window by itself). Owner,
+-- November 11: the list reading was put off for "your" search a second after the Buy
+-- queue bought a stack, with no search made by hand.
+function ns.SearchCaller(stack)
+  if type(stack) ~= "string" then return nil end
+  local addons, handlers, seen = {}, {}, {}
+  for name in stack:gmatch("AddOns[/\\]([%w_%-]+)[/\\]") do
+    if name ~= "ForeverLedger" and not seen[name] then seen[name] = true; addons[#addons + 1] = name end
+  end
+  for h in stack:gmatch("(On%u%a+)") do
+    if not seen[h] then seen[h] = true; table.insert(handlers, 1, h) end
+  end
+  return ("%s; %s"):format(#addons > 0 and table.concat(addons, " < ") or "no addon",
+    #handlers > 0 and table.concat(handlers, " > ") or "no handler")
+end
+
 -- Your own searches (not the addon's): noted so the flip watch can wait for you.
 if C_AuctionHouse and hooksecurefunc then
   for _, fn in ipairs({ "SendSearchQuery", "SendBrowseQuery", "SearchForItemKeys" }) do
@@ -1062,7 +1122,12 @@ if C_AuctionHouse and hooksecurefunc then
       -- (Which one, for the browse sweep's log: owner, November 10, the sweep waited for a
       -- search with none made by hand, so the game's own window may send them.)
       hooksecurefunc(C_AuctionHouse, fn, function()
-        if not Scan.sending and not ns.queueSending then ns.lastUserSearch, ns.lastUserSearchBy = GetTime(), fn end
+        if Scan.sending or ns.queueSending then return end
+        ns.lastUserSearch, ns.lastUserSearchBy, ns.lastUserSearchFrom = GetTime(), fn, nil
+        if ns.db.settings.debug and debugstack then
+          local ok, stack = pcall(debugstack, 2, 12, 0)
+          if ok then ns.lastUserSearchFrom = ns.SearchCaller(stack) end
+        end
       end)
     end
   end
@@ -1167,7 +1232,7 @@ end)
 -- seen: every item it listed, priced or not. since: when the listings were taken, at the
 -- earliest.
 local NEW_SIZE_AFTER = 86400
-local function markGone(seen, unread, n, since)
+local function markGone(seen, unread, n, since, liveSince)
   if n <= 0 or unread > 0 then return 0 end   -- (a row it couldn't read could be any item)
   local key, now = ns.MarketKey(), time()
   ns.db.lastFullListings = ns.db.lastFullListings or {}
@@ -1184,7 +1249,8 @@ local function markGone(seen, unread, n, since)
   ns.db.lastFullListings[key] = { n = n, t = now }
   local market, gone = ns.db.prices[key] or {}, 0
   for id, rec in pairs(market) do
-    if not seen[id] and not rec.none and (rec.t or 0) < since and (rec.src == "full" or rec.src == "scan") then
+    if not seen[id] and not rec.none and (rec.t or 0) < since and (rec.src == "full" or rec.src == "scan")
+      and not (liveAt[id] and liveAt[id] >= liveSince) then
       market[id] = { t = now, src = "full", none = true }
       gone = gone + 1
     end
@@ -1196,8 +1262,20 @@ end
 -- The results arrive for every addon, so a full scan started by another addon
 -- (Auctionator, TSM...) is read too. They share Blizzard's 15-minute limit.
 local readingFull, lastFullRead = false, 0
+-- Milliseconds of saving a full scan's prices per frame, and the clock for it.
+local SAVE_MS = 10
+local function msNow() return debugprofilestop and debugprofilestop() or GetTime() * 1000 end
 ns:On("REPLICATE_ITEM_LIST_UPDATE", function()
   local mine = Scan.active and Scan.full
+  -- Still our scan, not stopped since (closing the auction house, /fl stop, Pause) with
+  -- another started in its place: reading and saving take a few seconds, and the scan
+  -- state, its progress line and the flip watch's next pass are the new scan's then
+  -- (Codex review of 028e8f5: a list search stopped after its first item).
+  local session = Scan.session
+  local function stillOurs() return mine and Scan.session == session end
+  local function showProgress(done, total)
+    if stillOurs() or not Scan.active then ns:UpdateScanStatus(done, total) end
+  end
   if readingFull and GetTime() - lastFullRead < 120 then return end   -- (unstick after an error)
   -- Another addon's scan: once per scan (ignore repeat events for a minute).
   if not mine and GetTime() - lastFullRead < 60 then return end
@@ -1210,7 +1288,9 @@ ns:On("REPLICATE_ITEM_LIST_UPDATE", function()
   Scan.askedAt = nil
   local started = mine and Scan.started or GetTime()
   -- (Not knowing when another addon asked: a minute back is plenty for what's newer.)
-  local since = time() - (mine and (GetTime() - started) or waited or 60)
+  local back = mine and (GetTime() - started) or waited or 60
+  local since = time() - back
+  local liveSince = GetTime() - back   -- (the same moment on the GetTime clock, for liveAt)
   local n = C_AuctionHouse.GetNumReplicateItems() or 0
   if not mine then ns:Debug("Reading another addon's full scan:", n, "listings") end
   local byItem, i = {}, 0
@@ -1254,7 +1334,9 @@ ns:On("REPLICATE_ITEM_LIST_UPDATE", function()
     end
     return suffix
   end
-  local function chunk()
+  -- Timed for /fl perf: each part of 2,000 listings, and the last, which saves them all.
+  local chunk
+  chunk = ns.Timed("Full scan: reading", function()
     local stop = math.min(i + 2000, n)
     for idx = i, stop - 1 do
       local _, _, count, _, _, _, _, minBid, _, buyout, bidAmount, _, _, owner, ownerFull, _, itemID = C_AuctionHouse.GetReplicateItemInfo(idx)
@@ -1286,63 +1368,86 @@ ns:On("REPLICATE_ITEM_LIST_UPDATE", function()
     end
     i = stop
     if i < n then
-      ns:UpdateScanStatus(i, n)
+      showProgress(i, n)
       C_Timer.After(0, chunk)
     else
       local items, versions, gearWith = 0, 0, 0
       local sold = soldTracker()
-      for id, units in pairs(byItem) do
-        record(id, units, "full"); items = items + 1
-        sold.add(id, units)
-        local has = false
-        for _, u in ipairs(units) do if u[3] then versions = versions + 1; has = true end end
-        if has then gearWith = gearWith + 1 end
+      local savingFrom = GetTime()
+      -- Once every item is saved.
+      local function done()
+        sold.finish()
+        ns:Debug(("Full scan: %d items no longer listed."):format(markGone(seen, unread, n, since, liveSince)))
+        wipe(liveAt)   -- (older than any full scan still to come)
+        -- For checking gear versions (/fl debug): did the scan see any "of the Eagle" listings?
+        ns:Debug(("Gear versions: %d listings with random stats across %d items (link function: %s)."):format(
+          versions, gearWith, getLink and "yes" or "missing"))
+        if probe then
+          local bands = {}
+          for b, c in pairs(probe.bands) do bands[#bands + 1] = tostring(b) .. "=" .. c end
+          table.sort(bands)
+          ns:Debug(("Listing details: seller name on %d of %d; time left %s; a bid at the buyout on %d (left out), a starting bid at it on %d."):format(
+            probe.owner, n, probe.tl and (#bands > 0 and table.concat(bands, ", ") or "none read") or "function missing",
+            probe.bidUp, probe.startUp))
+        end
+        ns.db.lastFullScan = time()
+        fullNote(("done: %d listings%s"):format(n, mine and "" or waited and (", %d seconds after asking"):format(waited) or ", not asked for by this request"))
+        ns:Debug(("Full scan: %d items saved over %.1f s."):format(items, GetTime() - savingFrom))
+        readingFull = false
+        if not ahOpen and ns.neutralAH then
+          ns.neutralAH = nil
+          if ns.InvalidateValues then ns:InvalidateValues(true) end
+        end
+        local ours = stillOurs()
+        if ours then Scan.active = false end
+        showProgress(n, n)
+        local secs = math.floor(GetTime() - started + 0.5)
+        if mine then
+          ns:Print(("Полная проверка готова: %d лотов по %d предметам за %s."):format(n, items, took()))
+        elseif waited then
+          -- Says when, not whose: another addon may have asked meanwhile, and the results
+          -- don't say who asked (Codex review, November 7).
+          ns:Print(("Полная проверка готова: %d лотов по %d предметам, примерно через %d мин после запроса Forever Ledger."):format(n, items, math.max(1, math.floor(waited / 60 + 0.5))))
+        else
+          ns:Print(("Другой аддон запустил полную проверку; Forever Ledger тоже её прочитал: %d лотов по %d предметам за %d с."):format(n, items, secs))
+        end
+        -- ns.fullScanDone: alerts from this check may open the Buy queue (Shuffles.lua).
+        if ns.CheckDeals then
+          C_Timer.After(0.5, function()
+            ns.fullScanDone = true
+            ns:CheckDeals()
+            ns.fullScanDone = nil
+          end)
+        end
+        if ns.SyncSoon then ns:SyncSoon() end
+        ns:RefreshUI()
+        if ours and ns.FlipWatchNext then ns.FlipWatchNext() end
       end
-      sold.finish()
-      ns:Debug(("Full scan: %d items no longer listed."):format(markGone(seen, unread, n, since)))
-      -- For checking gear versions (/fl debug): did the scan see any "of the Eagle" listings?
-      ns:Debug(("Gear versions: %d listings with random stats across %d items (link function: %s)."):format(
-        versions, gearWith, getLink and "yes" or "missing"))
-      if probe then
-        local bands = {}
-        for b, c in pairs(probe.bands) do bands[#bands + 1] = tostring(b) .. "=" .. c end
-        table.sort(bands)
-        ns:Debug(("Listing details: seller name on %d of %d; time left %s; a bid at the buyout on %d (left out), a starting bid at it on %d."):format(
-          probe.owner, n, probe.tl and (#bands > 0 and table.concat(bands, ", ") or "none read") or "function missing",
-          probe.bidUp, probe.startUp))
-      end
-      ns.db.lastFullScan = time()
-      fullNote(("done: %d listings%s"):format(n, mine and "" or waited and (", %d seconds after asking"):format(waited) or ", not asked for by this request"))
-      readingFull = false
-      if not ahOpen and ns.neutralAH then
-        ns.neutralAH = nil
-        if ns.InvalidateValues then ns:InvalidateValues(true) end
-      end
-      if mine then Scan.active = false end
-      ns:UpdateScanStatus(n, n)
-      local secs = math.floor(GetTime() - started + 0.5)
-      if mine then
-        ns:Print(("Полная проверка готова: %d лотов по %d предметам за %s."):format(n, items, took()))
-      elseif waited then
-        -- Says when, not whose: another addon may have asked meanwhile, and the results
-        -- don't say who asked (Codex review, November 7).
-        ns:Print(("Полная проверка готова: %d лотов по %d предметам, примерно через %d мин после запроса Forever Ledger."):format(n, items, math.max(1, math.floor(waited / 60 + 0.5))))
-      else
-        ns:Print(("Другой аддон запустил полную проверку; Forever Ledger тоже её прочитал: %d лотов по %d предметам за %d с."):format(n, items, secs))
-      end
-      -- ns.fullScanDone: alerts from this check may open the Buy queue (Shuffles.lua).
-      if ns.CheckDeals then
-        C_Timer.After(0.5, function()
-          ns.fullScanDone = true
-          ns:CheckDeals()
-          ns.fullScanDone = nil
-        end)
-      end
-      if ns.SyncSoon then ns:SyncSoon() end
-      ns:RefreshUI()
-      if mine and ns.FlipWatchNext then ns.FlipWatchNext() end
+      -- Saving every item at once froze the game for 1.4 seconds at the end of each full
+      -- scan (owner's /fl perf, November 11, 5,300 items): SAVE_MS of it a frame instead. The
+      -- market stays this scan's meanwhile (readingFull), and a price looked up or bought
+      -- meanwhile stays as it is (liveAt).
+      local ids, k = {}, 0
+      for id in pairs(byItem) do ids[#ids + 1] = id end
+      local save
+      save = ns.Timed("Full scan: saving", function()
+        local from = msNow()
+        while k < #ids do
+          k = k + 1
+          local id = ids[k]
+          local units = byItem[id]
+          record(id, units, "full", liveSince); items = items + 1
+          sold.add(id, units)
+          local has = false
+          for _, u in ipairs(units) do if u[3] then versions = versions + 1; has = true end end
+          if has then gearWith = gearWith + 1 end
+          if msNow() - from >= SAVE_MS then break end
+        end
+        if k < #ids then C_Timer.After(0, save) else done() end
+      end)
+      save()
     end
-  end
+  end)
   chunk()
 end)
 
@@ -1375,18 +1480,29 @@ end)
 ---------------------------------------------------------------------------
 -- Flip watch (/fl watch): while the auction house stays open, keep looking for vendor
 -- flips. A full scan whenever Blizzard allows one (about every 15 minutes); in between,
--- slow re-checks of the items closest to their vendor price. New flips chime and open
--- the Vendor flips tab (through CheckDeals). It only looks; buying is always your click.
+-- the auction house's whole list (Sweep.lua), with a close look at what just got cheap
+-- enough. New flips chime and go to the Buy queue. It only looks; buying is always your
+-- click. (The old item checks, about 120 likely items searched one by one, were the
+-- fallback until November 11, 2026, when the owner had them removed; the last commit with
+-- them is ab3fd99.)
 ---------------------------------------------------------------------------
-local WATCH_PAUSE = 30      -- seconds between passes
-local WATCH_ITEMS = 120     -- items re-checked per pass
--- Between browse sweeps (Sweep.lua): auxForever read 7,718 items in 8.5 seconds on Forever,
--- so a fresh look at every item about every half minute (owner, November 10).
-local SWEEP_PAUSE = 15
+-- Before trying again after a few readings in a row couldn't be read, or, in a client
+-- that can't read the list, before looking whether a full scan is allowed yet.
+local WATCH_PAUSE = 30
+-- After one reading that couldn't be read: tried again this soon.
+local FAILED_PAUSE = 5
+-- Between browse sweeps (Sweep.lua): auxForever read 7,718 items in 8.5 seconds on Forever.
+-- 15 seconds at first (owner, November 10); a reading takes about 16, and flips were bought
+-- by others within seconds, so a short breath only: every item about every 20 seconds
+-- (owner, November 11). The reading still gives way to the Buy queue and to your searches,
+-- so half a second is enough: every item about every 17 seconds, the auction house's own
+-- pace (about two requests a second, November 11).
+local SWEEP_PAUSE = 0.5
 -- Put off for you (Sweep.lua "held"): tried again when its wait is over, at least this soon,
 -- or this often while an item's page stays open.
 local HELD_MIN, HELD_PAGE = 5, 10
 local sweepAfter   -- (GetTime) when a reading put off for you may go ahead
+local heldFor      -- why it was put off: "search" (yours) or "page" (an item's page open)
 local paused = false   -- the Pause button (ns:ToggleScanPause, below)
 local nextPause = WATCH_PAUSE
 local watching, watchTimer = false, nil
@@ -1395,11 +1511,8 @@ local watching, watchTimer = false, nil
 -- the auction house (owner, October 3).
 local watchWasOn = false
 
--- Items whose cheapest listing was within 50% of what a vendor pays, best bets first
--- (flipCandidates below).
--- Gear is left out: its stat versions ("of the Eagle") share one item ID, and each
--- quick search came back with a different version's listings, so prices (and
--- disenchant shuffles) jumped back and forth every pass. Full scans see all versions.
+-- Gear (weapons and armor): its stat versions ("of the Eagle") share one item ID, so one
+-- search shows only one version's listings.
 local instantInfo = (C_Item and C_Item.GetItemInfoInstant) or GetItemInfoInstant
 local function isGear(id)
   if not instantInfo then return false end
@@ -1408,60 +1521,7 @@ local function isGear(id)
 end
 function ns:IsGearItem(id) return isGear(id) end
 
--- Crafted items (any recipe's output in the recipe book): crafters post them in bulk to
--- level their professions, so cheap ones turn up often.
-local craftedSet, craftedAt
-local function crafted(id)
-  if not craftedSet or GetTime() - (craftedAt or 0) > 600 then
-    craftedSet, craftedAt = {}, GetTime()
-    for _, book in pairs(ns.db.recipeBook or {}) do
-      for _, r in pairs(book) do if r.out then craftedSet[r.out] = true end end
-    end
-  end
-  return craftedSet[id]
-end
-
--- Which items to re-check (owner, October 7: not only the closest to vendor price, but
--- the ones that get posted a lot: Linen Cloth over a rare item that happens to be cheap).
--- Score = closeness x how busy: closeness runs from 1.5 (half the vendor price or less)
--- down to 0 at 150% of it; busy is 1 + the units bought a day (sell speed, which new
--- posts replace) on a log scale, or the number listed when there's no sell speed yet;
--- crafted items count half again.
-function ns.FlipWatchScore(ratio, perDay, listed, isCrafted)
-  local close = math.max(0, 1.5 - ratio)
-  local busy = 1 + math.log(1 + (perDay or (listed or 0) * 0.2))
-  return close * busy * (isCrafted and 1.5 or 1)
-end
-
--- watchedOnly: just the watched items (while the browse sweep waits for you).
-local function flipCandidates(watchedOnly)
-  local market = ns.db.prices[ns.MarketKey()] or {}
-  local list = {}
-  for id, rec in pairs(watchedOnly and {} or market) do
-    local sell = rec.m and not rec.none and ns:GetSellPrice(id)
-    if sell and sell >= 5 and rec.m <= sell * 1.5 and not ns:GetVendorBuyPrice(id) and not isGear(id) then
-      local ok, sp = pcall(ns.SellSpeed, ns, id)
-      local perDay = ok and sp and sp.perDay or nil
-      list[#list + 1] = { id = id, r = ns.FlipWatchScore(rec.m / sell, perDay, rec.q, crafted(id)) }
-    end
-  end
-  table.sort(list, function(a, b) return a.r > b.r end)
-  -- Watched items first, every pass, on top of the ones picked here (Watched.lua; owner,
-  -- November 10). Gear stays with the full scans, for the reason above.
-  local ids, seen = {}, {}
-  for _, id in ipairs(ns.WatchedCheckIDs and ns:WatchedCheckIDs() or {}) do
-    if not isGear(id) then seen[id] = true; ids[#ids + 1] = id end
-  end
-  local picked = 0
-  for _, c in ipairs(list) do
-    if picked >= WATCH_ITEMS then break end
-    if not seen[c.id] then ids[#ids + 1] = c.id; picked = picked + 1 end
-  end
-  return ids
-end
-ns.FlipWatchCandidates = flipCandidates   -- (for the tests)
-
--- One pass of quiet item checks: the items picked above, or the browse sweep's close looks.
+-- One pass of quiet item checks: the browse sweep's close looks at what just got cheap.
 local function itemPass(ids, what)
   Scan.quiet = true
   Scan.queue = ids
@@ -1472,35 +1532,25 @@ local function itemPass(ids, what)
 end
 
 -- The browse sweep is over (Sweep.lua). "done": ids are the items that just got cheap enough
--- to look at closely; changed: saved prices changed. "failed": the list couldn't be read, so
--- the item checks run this time instead. "held": you're searching or on an item's page, so
--- only your watched items are checked (they wait for you their own way), and the list is
--- read as soon as wait is over (owner, November 10: the 120 item checks took two minutes,
--- so one search put the whole list off for that long). "broken": another search replaced
--- the list; the next pass tries again.
+-- to look at closely; changed: saved prices changed. "failed": the list couldn't be read,
+-- so it's read again in a few seconds, or every half minute after a few in a row (full
+-- scans carry on). "held": you're searching or on an item's page, so the list is read as
+-- soon as wait is over. "broken": another search replaced the list; the next pass tries
+-- again.
 local function sweepDone(outcome, ids, changed, wait)
   if not (Scan.active and Scan.sweep) then return end   -- (stopped meanwhile)
   Scan.sweep = nil
   if outcome == "held" then
     nextPause = SWEEP_PAUSE
     sweepAfter = GetTime() + math.max(HELD_MIN, wait or HELD_PAGE)
-    local list = flipCandidates(true)
-    if #list > 0 then
-      itemPass(list, "watched items (the whole list is read once you've finished searching)")
-      return
-    end
+    heldFor = wait and "search" or "page"   -- (no wait: for as long as an item's page is open)
   elseif outcome == "failed" then
-    nextPause = WATCH_PAUSE
-    local list = flipCandidates()
-    if #list > 0 then
-      itemPass(list, "items near vendor price or watched (the auction house list couldn't be read)")
-      return
-    end
+    nextPause = (ns.SweepSlower and ns:SweepSlower()) and WATCH_PAUSE or FAILED_PAUSE
   elseif ids and #ids > 0 then
     itemPass(ids, "possible flips from the auction house list")
     return
   end
-  -- Nothing to look at closely: the pass ends here. (No deal check every half minute: each
+  -- Nothing to look at closely: the pass ends here. (No deal check after every reading: each
   -- changed item was checked for a flip as it changed.)
   Scan.active, Scan.quiet = false, nil
   if changed and ns.SyncSoon then ns:SyncSoon() end
@@ -1520,7 +1570,7 @@ local function watchPass()
     return
   end
   -- Between full scans: the whole auction house list (Sweep.lua), with a close look only at
-  -- what just got cheap enough (owner, November 10). Today's item checks when it can't.
+  -- what just got cheap enough (owner, November 10).
   if ns.SweepOn and ns:SweepOn() then
     nextPause = SWEEP_PAUSE
     Scan.quiet, Scan.sweep, Scan.active = true, true, true
@@ -1528,21 +1578,19 @@ local function watchPass()
     if not ns:StartSweep(sweepDone) then sweepDone("failed", {}, false) end   -- (one already going: never stuck)
     return
   end
+  -- A client that can't read the whole list: full scans only.
+  ns:Debug("Flip watch: this client can't read the auction house list; waiting for the next full scan.")
   nextPause = WATCH_PAUSE
-  local ids = flipCandidates()
-  if #ids == 0 then
-    ns:Debug("Слежение: рядом с ценой торговца или в отслеживаемых ничего нет; ждём следующую полную проверку.")
-    watchTimer = C_Timer.NewTimer(WATCH_PAUSE, watchPass)
-    return
-  end
-  itemPass(ids, "items near vendor price or watched")
+  ns.FlipWatchNext()
 end
 
 -- Called when any scan ends: queue the next pass.
 -- While waiting, the status corner counts down to the next check, so a quiet spell
 -- doesn't look like the watch has stopped (owner test, September 30).
 local countdown
-local function showCountdown(untilTime)
+-- held: why the list waits for you ("search" or "page"), so the line says so (UI pass,
+-- November 11: it only counted down, and the old item checks it replaced said why).
+local function showCountdown(untilTime, held)
   if countdown then countdown:Cancel() end
   countdown = C_Timer.NewTicker(1, function(self)
     local left = math.ceil(untilTime - GetTime())
@@ -1550,21 +1598,31 @@ local function showCountdown(untilTime)
       self:Cancel(); countdown = nil
       return
     end
-    local full = Scan:FullWait()
-    ns:SetStatusText(("Слежение за перепродажами: следующая проверка через %d с%s"):format(left,
-      full > 0 and full < math.huge and (", полная проверка через %d мин"):format(math.ceil(full / 60)) or ""))
+    -- (Коротко: «читаю список аукциона, часть N» обрезалось; владелец, 11 ноября.)
+    if held == "page" then
+      ns:SetStatusText("Слежение: ждём страницу предмета")
+    elseif held then
+      ns:SetStatusText(("Слежение: ваш поиск, список через %d с"):format(left))
+    else
+      local full = Scan:FullWait()
+      ns:SetStatusText(("Слежение: следующая проверка через %d с%s"):format(left,
+        full > 0 and full < math.huge and (", полная проверка через %d мин"):format(math.ceil(full / 60)) or ""))
+    end
   end)
 end
 
 function ns.FlipWatchNext()
   if watching and ns.RefreshFlipsIfShown then C_Timer.After(1, function() ns:RefreshFlipsIfShown() end) end
   if watching and not watchTimer and not paused then
-    local pause = nextPause
+    local pause, held = nextPause, nil
     -- A reading put off for you goes ahead once its wait is over, counted from when it was
-    -- put off, not from the end of the watched items' checks.
-    if sweepAfter then pause = math.max(HELD_MIN, sweepAfter - GetTime()); sweepAfter = nil end
+    -- put off.
+    if sweepAfter then
+      pause, held = math.max(HELD_MIN, sweepAfter - GetTime()), heldFor
+      sweepAfter, heldFor = nil, nil
+    end
     watchTimer = C_Timer.NewTimer(pause, watchPass)
-    showCountdown(GetTime() + pause)
+    showCountdown(GetTime() + pause, held)
   end
 end
 
@@ -1593,8 +1651,8 @@ function ns:ToggleFlipWatch(quiet)
   watching, paused = true, false
   if not quiet then
     ns:Print("Слежение включено: полная проверка каждые 15 минут, а между ними — " ..
-      (ns.SweepOn and ns:SweepOn() and "чтение всего списка аукциона примерно раз в полминуты. "
-        or "перепроверка предметов у цены торговца. ") ..
+      (ns.SweepOn and ns:SweepOn() and "весь список аукциона читается примерно раз в 20 секунд. "
+        or "ничего: этот клиент не может прочитать весь список. ") ..
       "Звонок означает новую перепродажу. Слежение встаёт на паузу при закрытии аукциона и продолжается при возвращении.")
   end
   if ns.UpdateWatchButton then ns:UpdateWatchButton() end

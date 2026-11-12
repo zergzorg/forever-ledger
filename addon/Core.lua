@@ -48,7 +48,7 @@ local DEFAULTS = {
   quietChars = {},   -- [charKey] = true: quiet mode turned on with /fl quiet there, kept until turned off (Quiet.lua)
   shopping = { lists = {} }, -- shopping lists: { lists = { { name, on, items = { { id, max, qty } } } }, current } (ShoppingLists.lua)
   watchItems = {},   -- [itemID] = { max = copper or nil for the vendor price, t = added }: watched items (Watched.lua)
-  settings = { source = "auto", maxAgeHours = 12, tooltip = true, debug = false, watch = {}, ahCut = 5, margin = 10, actionSeconds = 3, skipChars = {}, minimap = true, minimapAngle = 200, dealSound = true, dealScreen = true, dealChat = true, sellGuard = true, watchResume = true, watchSweep = true, sessionValue = "best", saleSound = true, deRolls = true, keepGold = 0, vendorItemsAH = false, undercutAlerts = true, undercutSound = true, updateNotice = true, priceHelper = true, soldSummary = true,
+  settings = { source = "auto", maxAgeHours = 12, tooltip = true, debug = false, watch = {}, ahCut = 5, margin = 10, actionSeconds = 3, skipChars = {}, minimap = true, minimapAngle = 200, dealSound = true, dealScreen = true, dealChat = true, sellGuard = true, watchResume = true, stackTwoClicks = false, sessionValue = "best", saleSound = true, deRolls = true, keepGold = 0, vendorItemsAH = false, undercutAlerts = true, undercutSound = true, updateNotice = true, priceHelper = true, soldSummary = true,
     dealUsualPct = 20, dealWindow = "all", dealVendorPct = 10, dealVendorMin = 0, dealHistory = "auto", dealUsualMin = 1000, dealShowThin = false, dealsSort = {}, window = {}, ahHighlight = true, dashboard = {}, ledger = {}, deFinder = {}, crates = true, recipes = {}, openFlips = true, customers = true, customerSound = true, customerWindow = true, customerChat = false,
     svcCrafting = true, svcFood = true, svcPortal = true, svcSummon = true, svcLockpick = true,
     -- Buy queue (BuyQueue.lua): what goes in it, scroll anywhere to buy, the side panel's tab.
@@ -549,16 +549,24 @@ frame:SetScript("OnEvent", function(_, event, ...)
   end
 end)
 
-function ns:PrintPerf(reset)
-  if reset then ns.perf, ns.perfSince = {}, GetTime(); ns:Print("Счётчики сброшены. Поиграйте минуту и повторите /fl perf."); return end
+-- The slowest tasks as lines of text, slowest single moment first (/fl perf, and the copy
+-- kept at logout with /fl debug on).
+function ns.PerfLines(n)
   local rows = {}
   for label, p in pairs(ns.perf) do rows[#rows + 1] = { label = label, p = p } end
   table.sort(rows, function(a, b) return a.p.max > b.p.max end)
-  ns:Print(("Время Forever Ledger за последние %d с, сначала самые медленные места:"):format(GetTime() - ns.perfSince))
-  for i = 1, math.min(12, #rows) do
+  local lines = {}
+  for i = 1, math.min(n, #rows) do
     local r = rows[i]
-    print(("  %s: худший %.0f мс, вызовов %d, всего %.0f мс"):format(r.label, r.p.max, r.p.n, r.p.ms))
+    lines[i] = ("%s: slowest %.0f ms, %d times, %.0f ms total"):format(r.label, r.p.max, r.p.n, r.p.ms)
   end
+  return lines
+end
+
+function ns:PrintPerf(reset)
+  if reset then ns.perf, ns.perfSince = {}, GetTime(); ns:Print("Timing reset. Play for a minute, then /fl perf."); return end
+  ns:Print(("Time used by Forever Ledger over the last %d seconds, slowest single moment first:"):format(GetTime() - ns.perfSince))
+  for _, line in ipairs(ns.PerfLines(12)) do print("  " .. line) end
   -- Memory and loading, to see whether the data files (ClassicItems.lua) cost much.
   local update = (C_AddOns and C_AddOns.UpdateAddOnMemoryUsage) or UpdateAddOnMemoryUsage
   local usage = (C_AddOns and C_AddOns.GetAddOnMemoryUsage) or GetAddOnMemoryUsage
@@ -657,6 +665,11 @@ function ns:ApplyCharSettings()
 end
 
 ns:On("PLAYER_LOGOUT", function()
+  -- With /fl debug on, this session's /fl perf, to read after a reload (owner, November 11:
+  -- how long the Buy queue takes to rebuild when a flip comes in).
+  if ns.db and ns.db.settings and ns.db.settings.debug and ns.PerfLines then
+    ns.db.perfLog = { t = time(), secs = math.floor(GetTime() - ns.perfSince), lines = ns.PerfLines(25) }
+  end
   if ns.db and ns.accountSettings then
     ns.db.settings, ns.db.settingsAccount = ns.accountSettings, nil
   end
@@ -1060,6 +1073,45 @@ function ns:ApiReport()
       end
     end
     return table.concat(found, " ")
+  end)
+  -- The WoW Forever look (owner, November 11: make the addon fit the game's own windows;
+  -- planning/UI_OVERHAUL_PREP.md): which of the game's frame art this client has, and at
+  -- what size, and which of Blizzard's window and control templates. The names are the
+  -- ones EllesmereUI's WoW Forever look draws with.
+  try("Forever art", function()
+    local found = {}
+    if not (C_Texture and C_Texture.GetAtlasInfo) then return "no atlas lookup" end
+    for _, a in ipairs({ "UI-Frame-Metal-CornerTopLeft", "_UI-Frame-Metal-EdgeTop", "!UI-Frame-Metal-EdgeLeft",
+                         "UI-Frame-Metal-CornerBottomRight", "UI-HUD-ActionBar-Frame", "ui-frame-portraitmetal",
+                         "uiframe-tab-left", "common-dropdown-bg", "common-search-border-left",
+                         "common-button-tertiary-square-normal", "common-coinbox-left", "uitools-icon-close",
+                         "Ui-Dialog-New-Background" }) do
+      local info = C_Texture.GetAtlasInfo(a)
+      found[#found + 1] = info and ("+%s %dx%d"):format(a, info.width or 0, info.height or 0) or ("-" .. a)
+    end
+    -- Kept (the last /fl api only) so it can be read from the saved data after a reload.
+    local text = table.concat(found, " ")
+    ns.db.apiLook = { t = time(), art = text, templates = ns.db.apiLook and ns.db.apiLook.templates }
+    return text
+  end)
+  try("Window templates", function()
+    local found = {}
+    for _, t in ipairs({ "ButtonFrameTemplate", "PortraitFrameTemplate", "BasicFrameTemplateWithInset", "DefaultPanelTemplate",
+                         "UIPanelButtonTemplate", "UICheckButtonTemplate", "InputBoxTemplate", "SearchBoxTemplate",
+                         "ScrollFrameTemplate", "UIPanelScrollFrameTemplate", "WowStyle1DropdownTemplate", "UIDropDownMenuTemplate" }) do
+      local ok
+      if C_XMLUtil and C_XMLUtil.GetTemplateInfo then ok = C_XMLUtil.GetTemplateInfo(t) ~= nil
+      else ok = pcall(CreateFrame, "Frame", nil, nil, t) end
+      found[#found + 1] = (ok and "+" or "-") .. t
+    end
+    local layouts = type(NineSliceLayouts) == "table" and NineSliceLayouts or nil
+    for _, l in ipairs({ "ButtonFrameTemplateNoPortrait", "PortraitFrameTemplate" }) do
+      found[#found + 1] = ((layouts and layouts[l]) and "+" or "-") .. "layout " .. l
+    end
+    local text = table.concat(found, " ")
+    ns.db.apiLook = ns.db.apiLook or { t = time() }
+    ns.db.apiLook.templates = text
+    return text
   end)
   try("Spells cast saved", function()
     local n = 0

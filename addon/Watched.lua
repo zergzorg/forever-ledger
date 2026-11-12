@@ -4,8 +4,8 @@ local T = ns.Theme
 ---------------------------------------------------------------------------
 -- Watched items (owner, November 10: Silk Cloth turns into bandages, so buy it up to 2s,
 -- "but I want it actively watched"). Items you pick, each with the most you'd pay. The
--- flip watch checks them every pass, on top of the items it picks itself (Prices.lua),
--- and the Buy queue buys them with the vendor flips, first in the list. Added with the
+-- flip watch looks for them in every reading of the auction house list (Sweep.lua), and
+-- the Buy queue buys them with the vendor flips, first in the list. Added with the
 -- price window's Watch box, or on the Watched items list (Buy queue, Vendor flips).
 --
 -- ns.db.watchItems[itemID] = { max = copper, or nil for "vendor price", t = time added }
@@ -113,14 +113,6 @@ function ns:WatchedFind(id)
   }
 end
 
--- Every watched item, for the flip watch's checks (Prices.lua leaves gear out).
-function ns:WatchedCheckIDs()
-  local ids = {}
-  for id in pairs(data()) do ids[#ids + 1] = id end
-  table.sort(ids)
-  return ids
-end
-
 function ns:WatchedCount()
   local n = 0
   for _ in pairs(data()) do n = n + 1 end
@@ -150,7 +142,9 @@ end
 local view
 local ROW_H = 24
 -- Columns, from a row's left: name, Up to box, Now (right edge), Vendor pays (right edge), remove.
-local C = { name = 22, max = 214, now = 354, vendor = 410, x = 416 }
+-- (Up to further left than at first: a price over 1g under Now ran into its box; owner,
+-- UI pass checks, November 11. Long names are cut and shown whole on hover.)
+local C = { name = 22, max = 178, now = 340, vendor = 410, x = 416 }
 
 local function tip(frame, title, text, anchor)
   frame:HookScript("OnEnter", function(self)
@@ -190,7 +184,7 @@ local function addFromBox(v)
     return
   end
   ns:WatchItem(id, max)
-  ns:Print(("Следим за %s, %s. Слежение за перепродажами проверяет его каждый проход."):format(ns.ItemName(id) or "предмет",
+  ns:Print(("Следим за %s, %s. Слежение ищет его при каждом чтении аукциона."):format(ns.ItemName(id) or "предмет",
     max > 0 and ("до " .. ns.Money(max)) or "по цене торговца"))
   v.add:SetText(""); v.max:SetText("")
   v.pendingID = nil
@@ -229,7 +223,7 @@ local function row(v, i)
       GameTooltip:AddLine("Пока не покупается: торговцы его не покупают. Введите максимум в «До».", 1, 0.82, 0, true)
     end
     if ns.IsGearItem and ns:IsGearItem(r.id) then
-      GameTooltip:AddLine("Снаряжение проверяется полной проверкой (примерно каждые 15 минут), а не между ними.", 0.7, 0.7, 0.7, true)
+      GameTooltip:AddLine("Снаряжение: любая версия характеристик по цене или дешевле.", 0.7, 0.7, 0.7, true)
     end
     GameTooltip:AddLine("Клик — найти на аукционе.", 0.6, 0.6, 0.6)
     GameTooltip:Show()
@@ -326,7 +320,7 @@ local function build(parent)
   info:SetPoint("RIGHT", v, "RIGHT", -12, 0)
   info:SetJustifyH("LEFT")
   info:SetWordWrap(true)
-  info:SetText("Слежение проверяет их каждый проход сверх обычных. Всё по «До» или дешевле попадает во «Перепродажи торговцу» первыми и звенит. «До» = «торговец»: только когда торговец даёт больше.")
+  info:SetText("Слежение ищет их при каждом чтении аукциона, примерно раз в 20 секунд. Всё по «До» или дешевле попадает во «Перепродажи торговцу» первыми и звенит. «До» = «торговец»: только когда торговец даёт больше.")
 
   -- Add: shift-click, drag or type an item; the most you'd pay (empty: vendor price).
   v.add = hinted(v, 214, "Shift+клик, перетащите или имя", "LEFT")
@@ -382,7 +376,7 @@ local function build(parent)
   v.count = T:Text(v, 11, T.dim)
   v.count:SetPoint("BOTTOMLEFT", 12, 12)
 
-  -- Keep Now current while it's open (the flip watch checks these every pass).
+  -- Keep Now current while it's open (the flip watch sees these in every reading).
   local elapsed = 0
   v:SetScript("OnUpdate", function(_, dt)
     elapsed = elapsed + dt
