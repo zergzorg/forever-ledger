@@ -1605,8 +1605,8 @@ local function showCountdown(untilTime, held)
       ns:SetStatusText(("Слежение: ваш поиск, список через %d с"):format(left))
     else
       local full = Scan:FullWait()
-      ns:SetStatusText(("Слежение: следующая проверка через %d с%s"):format(left,
-        full > 0 and full < math.huge and (", полная проверка через %d мин"):format(math.ceil(full / 60)) or ""))
+      ns:SetStatusText(("Слежение: проверка через %d с%s"):format(left,
+        full > 0 and full < math.huge and (", полная через %d мин"):format(math.ceil(full / 60)) or ""))
     end
   end)
 end

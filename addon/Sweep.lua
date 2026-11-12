@@ -311,7 +311,7 @@ ask = function(first)
   S.state, S.askedAt = "waiting", GetTime()
   -- (sentClock: prices saved from now on are newer than the list's rows, judge.)
   if first then S.sent, S.sentAt, S.sentClock, owns = true, GetTime(), time(), true end
-  status(("Слежение: читаю список аукциона, часть %d"):format(S.groups + 1))
+  status(("Слежение: список аукциона, часть %d"):format(S.groups + 1))
   local wait = S.afterQueue and AFTER_QUEUE_WAIT or GROUP_WAIT
   C_Timer.After(wait, function()
     if S.tok == tok and S.state == "waiting" then
