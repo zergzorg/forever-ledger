@@ -202,7 +202,7 @@ end
 
 -- ...and a section is armed: only then does anything get looked up or bought.
 local function active()
-  return shown() and Q.armed ~= nil
+  return Q.forceActive or (shown() and Q.armed ~= nil)   -- (forceActive: for the tests)
 end
 
 -- The last 200 steps, to see why a purchase goes round again (owner, November 5: looking
@@ -226,11 +226,18 @@ local function holdScans()
 end
 
 local function setState(state)
-  Q.state, Q.tok = state, Q.tok + 1
+  Q.state, Q.tok, Q.waitKind, Q.confirmWhenReady = state, Q.tok + 1, nil, nil
   if state == "ready" or state == "confirm" then holdScans() end
   local throttle = AH.IsThrottledMessageSystemReady and not AH.IsThrottledMessageSystemReady()
-  trace(("%s item=%s qty=%s note=%s%s%s"):format(state, tostring(Q.cur and Q.cur.id), tostring(Q.plan and Q.plan.qty),
-    tostring(Q.note), throttle and " throttled" or "", ns.Scan.active and " scanning" or ""))
+  -- The same step again (the queue settles on "idle" several times a second while the
+  -- list is read) is written once, so the log reaches further back (owner, November 11:
+  -- a test from a few minutes before had already gone from the 200 lines).
+  local step = ("%s item=%s qty=%s note=%s"):format(state, tostring(Q.cur and Q.cur.id), tostring(Q.plan and Q.plan.qty),
+    tostring(Q.note))
+  if step ~= Q.lastStep then
+    Q.lastStep = step
+    trace(step .. (throttle and " throttled" or "") .. (ns.Scan.active and (ns.Scan.full and " full scan" or " scanning") or ""))
+  end
   if refreshQueue then refreshQueue() end
 end
 Q.setState = setState   -- (for the tests)
@@ -267,6 +274,14 @@ end
 local search, prepare, updateBinding, rebuildNow
 local spendable, sortFlips
 
+-- Look again in secs, unless the state changes or a newer retry is asked for first (so a
+-- wait never runs two of them at once).
+local function retry(secs)
+  Q.retryTok = (Q.retryTok or 0) + 1
+  local tok, rt = Q.tok, Q.retryTok
+  C_Timer.After(secs, function() if Q.tok == tok and Q.retryTok == rt then search() end end)
+end
+
 -- The auction house keeps one item search at a time: when the queue looks up the next
 -- item, a page still showing the last one spins on "Searching..." for good (owner,
 -- October 2). Go back to the search list instead, which shows the queue's lookups.
@@ -288,8 +303,8 @@ local function finishTarget(note, wakeIn, gone)
     if gone and e.lane == "flips" then
       checkedFlips[e.id] = time()
       -- The whole-list reading judges it afresh next time, so one listed again at the
-      -- same price brings it back (Sweep.lua).
-      if ns.SweepForget then ns:SweepForget(e.id) end
+      -- same price brings it back (Sweep.lua); the versions it saw are out of date.
+      if ns.SweepForget then ns:SweepForget(e.id, true) end
     end
     if wakeIn then C_Timer.After(wakeIn, function() Q.built = 0; rebuildNow() end) end
     local list = Q.lanes[e.lane] or {}
@@ -305,7 +320,7 @@ local function finishTarget(note, wakeIn, gone)
   Q.clicked = nil
   Q.cur, Q.plan, Q.key, Q.keys = nil, nil, nil, nil
   setState("idle")
-  C_Timer.After(0.3, prepare)
+  C_Timer.After(0, prepare)   -- (the next one straight away: owner, November 11)
 end
 
 -- The search can show listings the auction house won't sell: Shadowgems at 2s 25c, each
@@ -458,20 +473,30 @@ function search()
   if pausedNow() then
     Q.waitText, Q.waitHint = PAUSED, "Click Resume below to carry on, or Go now to look this one up."
     if Q.state ~= "wait" then setState("wait") end
+    Q.waitKind = nil   -- (not waiting for the auction house: its ready event leaves this alone)
     timeout(2, search)
     return
   end
-  -- Only a full scan (a few seconds) is waited for. Other scans pause for a moment after
-  -- each lookup and purchase of ours instead (Prices.lua Scan:Next). Asked before waiting:
-  -- a scan that carries on keeps the game busy, and flips went while the queue waited
-  -- 3 seconds for it (owner's test, November 5: Golem Isospring).
+  -- Scans pause for a moment after each lookup and purchase of ours (Prices.lua Scan:Next).
+  -- Asked before waiting: a scan that carries on keeps the game busy, and flips went while
+  -- the queue waited 3 seconds for it (owner's test, November 5: Golem Isospring).
   ns.queueBusyUntil = math.max(ns.queueBusyUntil or 0, GetTime() + 2)
-  -- (And a part of the flip watch's auction house list already on its way, a moment at most:
+  -- A full scan isn't waited for any more (owner, November 11: 22-24 seconds each with
+  -- 222,000 listings, every 15 minutes, with nothing bought meanwhile). Being tried: the
+  -- full scan log says whether it still arrives whole.
+  -- (A part of the flip watch's auction house list already on its way is, a moment at most:
   -- the sweep waits for the queue before asking for the next one, Sweep.lua.)
-  if throttled() or (ns.Scan.active and ns.Scan.full) or (ns.SweepWaiting and ns:SweepWaiting()) then
-    Q.waitFor = ns.Scan.full and "the full scan to finish" or "the auction house"
-    setState("wait")
-    timeout(1, search)
+  if throttled() or (ns.SweepWaiting and ns:SweepWaiting()) then
+    -- The auction house is free again in a moment (a purchase's throttle, a part of the
+    -- whole list on its way): looked at again every quarter second, and at once when the
+    -- game says it's ready, not a whole second later (owner, November 11). Said once.
+    if not (Q.state == "wait" and Q.waitKind == "ah") then
+      Q.waitFor = "the auction house"
+      Q.waitText, Q.waitHint = nil, nil   -- (not "Paused." from before)
+      setState("wait")
+      Q.waitKind = "ah"
+    end
+    retry(0.25)
     return
   end
   -- You're searching the auction house yourself (a flip clicked in the main window, the
@@ -488,6 +513,18 @@ function search()
   leaveStalePage()
   Q.tries = (Q.tries or 0) + 1
   if Q.tries > 3 then finishTarget("no reply from the auction house."); return end
+  -- Gear: the stat versions the whole-list reading just saw cheap enough (Sweep.lua), searched
+  -- straight away: searching the name first took a moment and replaced the list being read
+  -- (owner, November 11). Flips only: a list's limit isn't the one the reading used.
+  if e.gear and not Q.key and e.lane == "flips" and not e.noVersions and ns.SweepVersions then
+    local keys, partial = ns:SweepVersions(e.id, e.limit)
+    if keys then
+      trace(("versions from the auction house list: %d%s"):format(#keys, partial and ", maybe more further on" or ""))
+      e.versionsPartial = partial
+      Q.key = table.remove(keys, 1)
+      Q.keys = keys
+    end
+  end
   -- Gear: find its stat versions first (one row each in the search list).
   if e.gear and not Q.key then
     local name = ns.GetItemInfo(e.id) or ns.ItemName(e.id)
@@ -517,6 +554,7 @@ function search()
   if not ok then ns:Debug("Buy queue: search failed", err); finishTarget("couldn't search for it."); return end
   timeout(5, search)
 end
+Q.search = function() return search() end   -- (for the tests)
 
 -- The cheapest one costs more than you have (the last scan's price, or what a lookup
 -- found). Those stay in the list, greyed, and are skipped until you have the gold: they
@@ -592,7 +630,7 @@ local function tooPoor(price)
   end
   Q.cur, Q.plan, Q.key, Q.keys = nil, nil, nil, nil
   setState("idle")
-  C_Timer.After(0.3, prepare)
+  C_Timer.After(0, prepare)   -- (the next one straight away: owner, November 11)
 end
 
 -- Start on the first item in the queue, if nothing's under way.
@@ -610,6 +648,10 @@ function prepare()
     if not x.waiting and not cantAfford(x) then e = x; break end
   end
   if not e then
+    -- Nothing to buy or waiting for your click: the whole-list reading and other scans carry
+    -- on now, not up to 4 seconds after the last purchase (holdScans; owner, November 11).
+    -- A purchase still waiting for its answer keeps them back (ns:BuyQueueBusy).
+    ns.queueBusyUntil = math.min(ns.queueBusyUntil or 0, GetTime())
     setState("idle")
     return
   end
@@ -840,6 +882,17 @@ local function planItem(key)
       search()
       return
     end
+    -- Versions from only part of the list (Sweep.lua): others under the limit may come
+    -- further on, so the name is searched after all before saying none are left, or that
+    -- the cheapest is more than you can spend (Codex review, November 11: one version
+    -- dearer now, another at a price you could pay not seen yet).
+    if e.versionsPartial then
+      trace("versions from the list all gone or too dear: searching the name")
+      e.versionsPartial, e.noVersions = nil, true
+      Q.key, Q.keys, Q.tries = nil, nil, 0
+      search()
+      return
+    end
     if poorest then tooPoor(poorest); return end
     finishTarget(("none left at %s or less."):format(limitText(e)), nil, true)
     return
@@ -917,6 +970,80 @@ local function limitDropped(e)
 end
 Q.limitDropped = limitDropped   -- (for the tests)
 
+-- Right before a purchase step, its limits once more: they may have changed since it was
+-- planned. False if it stopped (it looks again, or lets the item go).
+local function withinLimits(e, p)
+  -- The limit (or your gold) may have changed since this was planned: never over it.
+  local need = p and ((Q.state == "confirm" and p.total) or (Q.state == "ready" and (p.cost or p.price)))
+  if need and need > spendable() then
+    if Q.state == "confirm" then pcall(AH.CancelCommoditiesPurchase) end
+    Q.note = "That costs more than you can spend now: checking again."
+    again()
+    return false
+  end
+  -- Vendor flips and watched items: never over what the most to pay is now.
+  if p and (Q.state == "ready" or Q.state == "confirm") and limitDropped(e) then return false end
+  -- A shopping list item: never more than the list still wants, checked again against
+  -- the list itself right before buying, counting purchases still waiting for an answer.
+  if p and e and e.reason == "list" and (Q.state == "ready" or Q.state == "confirm") and ns.ListStillWanted then
+    local units = p.kind == "commodity" and p.qty or 1
+    local left = listLeft(e.id)
+    if units > left then
+      if Q.state == "confirm" then pcall(AH.CancelCommoditiesPurchase) end
+      ns:Debug(("Buy queue: stopped buying %d %s, the list only wants %d more."):format(units, ns.ItemName(e.id), left))
+      e.want = left
+      if left <= 0 then
+        listHasAll(e)
+      else
+        Q.note = "Checking how many the list still wants."
+        again()
+      end
+      return false
+    end
+  end
+  return true
+end
+
+-- A stack whose final price came back: buy it.
+local function confirmStack()
+  local e, p = Q.cur, Q.plan
+  Q.buyAt, Q.lastMoney, Q.buyFrom, Q.lastPlan = GetTime(), GetMoney(), GetMoney(), p
+  local tok = Q.tok
+  local ok, err = pcall(AH.ConfirmCommoditiesPurchase, e.id, p.qty)
+  if not ok then ns:Print("Couldn't confirm that purchase: " .. tostring(err)); again(); return end
+  -- The game blocked it while the call ran (blocked, below, already moved the state on):
+  -- nothing is on its way, so no waiting for an answer (Codex review, November 11).
+  if Q.tok ~= tok then return end
+  setState("buying")
+  timeout(10, Q.noReply)
+end
+
+-- One tick buys a stack (owner, November 11; Settings: Confirm stacks with a second click, off). The game
+-- needs your click to start a stack's purchase (StartCommoditiesPurchase), not to confirm
+-- it, so the confirm goes ahead by itself once the final price has come back within the
+-- limit and what you can spend: the same checks a second tick would get. If the game
+-- wants a click for it after all, that stack waits for your next tick and later ones take
+-- two again (blocked, below).
+local autoBlocked = false
+local function autoConfirm()
+  if Q.state ~= "confirm" or not (Q.cur and Q.plan) then return end
+  if throttled() then
+    Q.confirmWhenReady = true   -- (the moment it's ready: AUCTION_HOUSE_THROTTLED_SYSTEM_READY)
+    return
+  end
+  Q.confirmWhenReady = nil
+  if not withinLimits(Q.cur, Q.plan) then return end
+  trace("confirming by itself: the final price is within the limit")
+  Q.autoAt = GetTime()
+  confirmStack()
+end
+Q.autoConfirm = autoConfirm   -- (for the tests)
+function Q.autoBlockedNow(reset)   -- (for the tests)
+  if reset then autoBlocked = false end
+  return autoBlocked
+end
+Q.prepare = function() return prepare() end   -- (for the tests)
+
 -- One tick of the mouse wheel or a click on Buy: the next step of the purchase.
 -- A click can arrive as both "down" and "up", so two within 0.15 s count once.
 local lastAct = 0
@@ -971,52 +1098,25 @@ function ns:BuyQueueAct(clicked)
     again()
     return
   end
-  -- The limit (or your gold) may have changed since this was planned: never over it.
-  local need = p and ((Q.state == "confirm" and p.total) or (Q.state == "ready" and (p.cost or p.price)))
-  if need and need > spendable() then
-    if Q.state == "confirm" then pcall(AH.CancelCommoditiesPurchase) end
-    Q.note = "That costs more than you can spend now: checking again."
-    again()
-    return
-  end
-  -- Vendor flips and watched items: never over what the most to pay is now.
-  if p and (Q.state == "ready" or Q.state == "confirm") and limitDropped(e) then return end
-  -- A shopping list item: never more than the list still wants, checked again against
-  -- the list itself right before buying, counting purchases still waiting for an answer.
-  if p and e and e.reason == "list" and (Q.state == "ready" or Q.state == "confirm") and ns.ListStillWanted then
-    local units = p.kind == "commodity" and p.qty or 1
-    local left = listLeft(e.id)
-    if units > left then
-      if Q.state == "confirm" then pcall(AH.CancelCommoditiesPurchase) end
-      ns:Debug(("Buy queue: stopped buying %d %s, the list only wants %d more."):format(units, ns.ItemName(e.id), left))
-      e.want = left
-      if left <= 0 then
-        listHasAll(e)
-      else
-        Q.note = "Checking how many the list still wants."
-        again()
-      end
-      return
-    end
-  end
+  if not withinLimits(e, p) then return end
   if Q.state == "ready" and p and p.kind == "commodity" then
+    local tok = Q.tok
     local ok, err = pcall(AH.StartCommoditiesPurchase, e.id, p.qty)
     if not ok then ns:Print("Couldn't start that purchase: " .. tostring(err)); again(); return end
+    if Q.tok ~= tok then return end   -- (blocked while the call ran)
     setState("price")
     timeout(6, function() pcall(AH.CancelCommoditiesPurchase); Q.note = "No final price came back: checking again."; again() end)
   elseif Q.state == "confirm" and p and p.kind == "commodity" then
-    Q.buyAt, Q.lastMoney, Q.buyFrom, Q.lastPlan = GetTime(), GetMoney(), GetMoney(), p
-    local ok, err = pcall(AH.ConfirmCommoditiesPurchase, e.id, p.qty)
-    if not ok then ns:Print("Couldn't confirm that purchase: " .. tostring(err)); again(); return end
-    setState("buying")
-    timeout(10, Q.noReply)
+    confirmStack()
   elseif Q.state == "ready" and p and p.kind == "item" then
     -- So the purchase is logged under the right item (History.lua's PlaceBid hook).
     ns.queueBidItem = e.id
     Q.buyAt, Q.lastMoney, Q.buyFrom, Q.lastPlan = GetTime(), GetMoney(), GetMoney(), p
+    local tok = Q.tok
     local ok, err = pcall(AH.PlaceBid, p.auctionID, p.price)
     ns.queueBidItem = nil
     if not ok then ns:Print("Couldn't buy that: " .. tostring(err)); again(); return end
+    if Q.tok ~= tok then return end   -- (blocked while the call ran)
     setState("buying")
     timeout(6, Q.noReply)
   elseif Q.state == "wait" and Q.waitText then
@@ -1037,8 +1137,8 @@ function ns:BuyQueueAct(clicked)
       if left > 0 then
         Q.endSaid = true
         local limited = spendable() < GetMoney()
-        local text = ("That's everything you can buy: the %d left %s more than %s or wait for a lower price.")
-          :format(left, left == 1 and "costs" or "cost", limited and "your limit allows" or "you have")
+        local text = ("That's everything you can buy: the %d left %s more than %s, or %s waiting for a lower price.")
+          :format(left, left == 1 and "costs" or "cost", limited and "your limit allows" or "you have", left == 1 and "is" or "are")
         if UIErrorsFrame and ns.db.settings.dealScreen ~= false then UIErrorsFrame:AddMessage(text, 1, 0.3, 0.3) end
         if ns.db.settings.dealSound ~= false then pcall(PlaySound, (SOUNDKIT and SOUNDKIT.IG_QUEST_FAILED) or 847, "Master") end
         Q.note = text
@@ -1063,6 +1163,22 @@ ns:On("AUCTION_HOUSE_BROWSE_RESULTS_UPDATED", function()
   end
   ns:Debug(("Buy queue: looking up %s: %d rows, %d of them this item, cheapest %s, limit %s."):format(ns.ItemName(e.id),
     rows, ours, cheapest and ns.MoneyPlain(cheapest) or "-", e.limit == math.huge and "any" or ns.MoneyPlain(e.limit)))
+  -- Whether the auction house's version numbers are the full scan's (from item links): if
+  -- they are, a gear flip a full scan finds could be searched without this name search
+  -- first (owner, November 11). Item key level:suffix@cheapest, the item's own level, and
+  -- the full scan's versions (suffix:cheapest:listed).
+  if ns.db.settings.debug and ours > 0 then
+    local seen = {}
+    for _, r in ipairs(AH.GetBrowseResults() or {}) do
+      local k = r.itemKey
+      if k and k.itemID == e.id and #seen < 8 then
+        seen[#seen + 1] = ("%s:%s@%s"):format(tostring(k.itemLevel), tostring(k.itemSuffix), tostring(r.minPrice))
+      end
+    end
+    local rec = (ns.db.prices[ns.MarketKey()] or {})[e.id]
+    trace(("versions by name: %s; item level %s; full scan saw %s"):format(table.concat(seen, ", "),
+      tostring(select(4, ns.GetItemInfo(e.id))), rec and rec.sx or "none"))
+  end
   if #keys == 0 then
     -- A list without this item at all isn't the answer yet: the first one can be empty
     -- or the previous search's (owner's test, October 2: every gear flip dropped at once
@@ -1095,6 +1211,15 @@ ns:On("AUCTION_HOUSE_BROWSE_RESULTS_UPDATED", function()
   search()
 end)
 
+-- The auction house is ready for the next request: a lookup waiting for it goes now.
+ns:On("AUCTION_HOUSE_THROTTLED_SYSTEM_READY", function()
+  if Q.state == "wait" and Q.waitKind == "ah" then retry(0) end
+  if Q.state == "confirm" and Q.confirmWhenReady then
+    local tok = Q.tok
+    C_Timer.After(0, function() if Q.tok == tok then autoConfirm() end end)
+  end
+end)
+
 ns:On("COMMODITY_SEARCH_RESULTS_UPDATED", function(itemID)
   if not (Q.cur and itemID == Q.cur.id) then return end
   if Q.state == "search" or (Q.state == "ready" and Q.plan and Q.plan.kind == "commodity") then planCommodity() end
@@ -1118,6 +1243,7 @@ ns:On("COMMODITY_PRICE_UPDATED", function(unitPrice, totalPrice)
   if total and total <= Q.cur.limit * Q.plan.qty and total <= spendable() then
     Q.plan.total = total
     setState("confirm")
+    if not ns.db.settings.stackTwoClicks and not autoBlocked then autoConfirm() end
   else
     pcall(AH.CancelCommoditiesPurchase)
     if total and refusedTwice(("the real price is %s each, over %s."):format(money(math.ceil(total / Q.plan.qty)), limitText(Q.cur))) then return end
@@ -1180,6 +1306,15 @@ local function lateSuccess(kind, auctionID, paidOnly)
     if not plan.stack then
       e.boughtIDs = e.boughtIDs or {}
       e.boughtIDs[plan.auctionID] = true
+    end
+    -- Error 10 first, then the purchase went through: 10 of 12 "refused" purchases in the
+    -- owner's log of November 11, the gold leaving 0.3-0.8 s after the error. It wasn't a
+    -- refusal, so it doesn't count toward setting the item aside (two of those gave up on
+    -- rows still listed), and the queue goes on now, from the page it has, instead of
+    -- searching again after 2 seconds.
+    if Q.cur == e then
+      e.refused = math.max((e.refused or 0) - 1, 0)
+      if Q.state == "wait" and Q.plan == plan then again(true) end
     end
   end
   return true
@@ -1363,6 +1498,19 @@ end
 -- If the game won't let an addon buy (it could restrict these calls), say so plainly.
 local function blocked(addon, fn)
   if addon ~= ADDON then return end
+  -- A purchase call blocked: nothing was bought, so no gold leaving now is its.
+  local name = tostring(fn)
+  if name:find("PlaceBid", 1, true) or name:find("CommoditiesPurchase", 1, true) then Q.buyAt, Q.lastPlan = nil, nil end
+  -- A stack's confirm done by itself (autoConfirm): the game wants your click for it after
+  -- all, so this stack waits for your next tick, and later ones take two ticks again. (This
+  -- can come while the call is still running, or just after it: Codex review, November 11.)
+  if Q.autoAt and GetTime() - Q.autoAt < 2 and tostring(fn):find("ConfirmCommoditiesPurchase", 1, true) then
+    autoBlocked, Q.autoAt = true, nil
+    ns:Print("The game wants your click to confirm a stack of materials, so the Buy queue asks for a second tick again.")
+    Q.note = "The game wants your click to confirm: one more tick buys them."
+    setState("confirm")
+    return
+  end
   ns:Print(("The game blocked %s for addons. Buy from the auction house page instead, and tell us on Discord."):format(tostring(fn)))
   Q.note = "The game blocked buying from the addon."
   setState("idle")
@@ -1430,7 +1578,8 @@ local function statusText()
   local name = e and ("|cffffffff" .. ns.ItemName(e.id) .. (e.suffix and (" " .. ns:VersionLabel(e.suffix)) or "") .. "|r") or ""
   local st = Q.state
   -- How to buy, said where you'd look (Magic, October 3: "which area do I scroll in?").
-  local how = S().wheel and "Scroll down over this strip, or click Buy." or "Click Buy (or tick Scroll to buy and scroll here)."
+  local how = S().wheel and (Q.armed == "flips" and "Scroll anywhere over Vendor flips, or click Buy." or "Scroll over this strip, or click Buy.")
+    or "Click Buy (or tick Scroll to buy and scroll here)."
   local GREY = "|cff888888%s|r"
   if st == "wait" then
     if Q.waitText then return Q.waitText, Q.waitHint or "Carries on a few seconds after you stop, or click Go now.", "Go now" end
@@ -1446,7 +1595,10 @@ local function statusText()
     return ("Buy %d %s for %s"):format(p.qty, name, money(p.cost)),
       ("%s each, up to %s. %s"):format(money(p.cost / p.qty), limitText(e), how), "Buy"
   end
-  if st == "price" then return "Getting the final price for " .. name .. "...", "Stacks are bought in two steps: price, then confirm.", GREY:format("Wait") end
+  if st == "price" then
+    return "Getting the final price for " .. name .. "...", (not ns.db.settings.stackTwoClicks and not autoBlocked)
+      and "Bought as soon as the final price comes back within your limit." or "Stacks are bought in two steps: price, then confirm.", GREY:format("Wait")
+  end
   if st == "confirm" and p then
     return ("|cffffd100Confirm:|r %d %s for %s"):format(p.qty, name, money(p.total)),
       ("%s each. %s"):format(money(p.total / p.qty), S().wheel and "Scroll or click once more to buy them." or "Click Confirm to buy them."), "Confirm"
@@ -1595,14 +1747,21 @@ local function buildLane(v, d)
   L.edge:Hide()
   strip:SetScript("OnClick", function() arm(d.key) end)
   -- The wheel over the strip: makes this the section you buy from, then (with Scroll to
-  -- buy ticked) each tick down buys. Over the list below, the wheel scrolls the list.
-  strip:EnableMouseWheel(true)
-  strip:SetScript("OnMouseWheel", function(_, delta)
+  -- buy ticked) each tick buys, up or down (owner, November 11: only down did). Vendor
+  -- flips buy with the wheel anywhere over the section, its list too (the bar on the right
+  -- drags the list); over a shopping list the wheel scrolls the list.
+  local function wheel()
     noteListUse()
-    if delta >= 0 then return end
     if Q.armed ~= d.key then arm(d.key)
     elseif S().wheel then ns:BuyQueueAct() end
-  end)
+  end
+  L.wheel = wheel   -- (for the tests)
+  strip:EnableMouseWheel(true)
+  strip:SetScript("OnMouseWheel", wheel)
+  if d.key == "flips" then
+    L:EnableMouseWheel(true)
+    L:SetScript("OnMouseWheel", function() if S().wheel then wheel() end end)
+  end
   L.title = T:Text(strip, 11, T.accent)
   L.title:SetPoint("TOPLEFT", 12, -4)   -- (12: room for the edge and the glow)
   L.title:SetPoint("RIGHT", strip, "RIGHT", -116, 0)
@@ -1682,7 +1841,12 @@ local function buildLane(v, d)
     fs:SetText(c[1])
   end
   L.sf, L.content = T:Scroll(L)
-  L.sf:HookScript("OnMouseWheel", noteListUse)
+  local scrollList = L.sf:GetScript("OnMouseWheel")
+  L.sf:SetScript("OnMouseWheel", function(self, delta)
+    if d.key == "flips" and S().wheel then wheel(); return end
+    noteListUse()
+    if scrollList then scrollList(self, delta) end
+  end)
   L.sf:SetPoint("TOPLEFT", header, "BOTTOMLEFT", -2, -1)
   L.sf:SetPoint("BOTTOMRIGHT", -3, 3)
   L.rows = {}
@@ -1744,7 +1908,7 @@ local function buildQueueView(parent)
   wheel:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
     GameTooltip:AddLine("Scroll to buy", 1, 1, 1)
-    GameTooltip:AddLine("With the mouse over the top strip (it glows when there's something to buy), each tick of the wheel down buys the next item; stacks of materials take a second tick to confirm. It keeps working while the list is empty, so new flips can be bought the moment they show up. Off: only clicking Buy buys.", nil, nil, nil, true)
+    GameTooltip:AddLine("Each tick of the mouse wheel, up or down, buys the next item: anywhere over Vendor flips (drag the bar on the right to scroll its list), or over the top strip of Shopping lists. A stack of materials is confirmed in the same tick (unless Confirm stacks with a second click is ticked in Settings, Auction house). It keeps working while the list is empty, so new flips can be bought the moment they show up. Off: only clicking Buy buys.", nil, nil, nil, true)
     GameTooltip:Show()
   end)
   wheel:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -1756,7 +1920,7 @@ local function buildQueueView(parent)
   v.watched:HookScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
     GameTooltip:AddLine("Watched items", 1, 1, 1)
-    GameTooltip:AddLine("Items you always want checked, each with the most you'd pay. Watch flips checks them every pass, and they're bought here, first in the list. Add one here or with Watch in its price window.", nil, nil, nil, true)
+    GameTooltip:AddLine("Items you always want checked, each with the most you'd pay. Watch flips looks for them about every 20 seconds, and they're bought here, first in the list. Add one here or with Watch in its price window.", nil, nil, nil, true)
     GameTooltip:Show()
   end)
   v.watched:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -1791,7 +1955,7 @@ local function buildQueueView(parent)
       GameTooltip:AddLine("Checks the auction house for everything on your lists ticked \"Buy from this list in the Buy queue\" (and the materials you're short of), one item at a time. What's at or under your price shows up here.", nil, nil, nil, true)
     else
       GameTooltip:AddLine("Watch flips", 1, 1, 1)
-      GameTooltip:AddLine("Keeps looking for flips while the auction house stays open: a full scan whenever the game allows one (about every 15 minutes), and the whole auction house list read about every half minute in between. New flips chime and join the queue. Click again to stop.", nil, nil, nil, true)
+      GameTooltip:AddLine("Keeps looking for flips while the auction house stays open: a full scan whenever the game allows one (about every 15 minutes), and the whole auction house list read about every 20 seconds in between. New flips chime and join the queue as soon as the part of the list they're in arrives. Click again to stop.", nil, nil, nil, true)
     end
     GameTooltip:Show()
   end)
@@ -1805,9 +1969,11 @@ local function buildQueueView(parent)
   v.pauseBtn = T:Button(v, "Pause", 118, function() ns:ToggleScanPause() end, 22)
   v.pauseBtn:SetPoint("LEFT", v.fullBtn, "RIGHT", 6, 0)
   tip(v.pauseBtn, "Pause", "Holds the flip watch and the Buy queue's own lookups, so your searches and the page you're on stay as you leave them. Buy, Go now and clicking a row still work. Click Resume to carry on; closing the auction house ends it too.")
-  -- Above the buttons: the scan's progress on the left, what you've bought on the right.
+  -- Above the buttons: the flip watch's status line, the whole width; above it, what you've
+  -- bought. (They shared one line, and the status was cut off once the totals grew: owner,
+  -- UI pass checks, November 11.)
   v.totals = T:Text(v, 11, T.dim)
-  v.totals:SetPoint("BOTTOMRIGHT", -10, 36)
+  v.totals:SetPoint("BOTTOMRIGHT", -10, 52)
   v.totals:SetJustifyH("RIGHT")
   v.totals:SetWordWrap(false)
   v.totalsHit = CreateFrame("Frame", nil, v)
@@ -1827,7 +1993,7 @@ local function buildQueueView(parent)
   v.totalsHit:SetScript("OnLeave", function() GameTooltip:Hide() end)
   v.status = T:Text(v, 11, { 0.73, 0.64, 1, 1 })
   v.status:SetPoint("BOTTOMLEFT", 12, 36)
-  v.status:SetPoint("RIGHT", v.totals, "LEFT", -10, 0)
+  v.status:SetPoint("RIGHT", v, "RIGHT", -10, 0)
   v.status:SetJustifyH("LEFT")
   v.status:SetWordWrap(false)
 
@@ -1835,8 +2001,8 @@ local function buildQueueView(parent)
   -- something; what's left shows beside it, teal, yellow when nearly gone, red when
   -- spent. The gold you always keep is in Settings, as it's set once (keepGold).
   local row = CreateFrame("Frame", nil, v)
-  row:SetPoint("BOTTOMLEFT", 10, 56)
-  row:SetPoint("BOTTOMRIGHT", -10, 56)
+  row:SetPoint("BOTTOMLEFT", 10, 70)
+  row:SetPoint("BOTTOMRIGHT", -10, 70)
   row:SetHeight(22)
   local lab = T:Text(row, 11, T.dim)
   lab:SetPoint("LEFT", 2, 0)
@@ -1894,7 +2060,7 @@ end
 -- Stack the ticked sections, splitting the height between them.
 local function layoutLanes(v)
   local t = ticked()
-  local top, bottom, gap = 38, 82, 6   -- bottom: Spend at most, the totals line and the scan buttons
+  local top, bottom, gap = 38, 96, 6   -- bottom: Spend at most, the totals, the status line and the scan buttons
   local h = v:GetHeight() - top - bottom
   local n = #t
   v.empty:SetShown(n == 0)
@@ -1955,7 +2121,8 @@ local function fillLane(L)
     L:SetScript("OnUpdate", nil)
   end
   L.title:SetText(("%s  |cff888888%d to buy|r%s"):format(d.title, ready,
-    wheel and ("   |cff" .. (lit and hex(c) or "888888") .. "scroll down here to buy|r") or "   |cff888888click Buy, or tick Scroll to buy|r"))
+    wheel and ("   |cff" .. (lit and hex(c) or "888888") .. (d.key == "flips" and "scroll anywhere here to buy|r" or "scroll here to buy|r"))
+      or "   |cff888888click Buy, or tick Scroll to buy|r"))
   local a, b, label
   if armed then
     a, b, label = statusText()
@@ -3564,8 +3731,9 @@ end
 -- queue within a second, not at the end of the pass, which could be 2 minutes (owner,
 -- October 2: flips showed on the Vendor flips tab before the queue).
 local flipRebuild = false
+local pendingRebuild = false   -- (a new flip's rebuild next frame, ns:FlipPending below)
 local function soonForFlip(_, id)
-  if flipRebuild or not shown() or view() ~= "flips" or not ns:FlipOrWatched(id) then return end
+  if flipRebuild or pendingRebuild or not shown() or view() ~= "flips" or not ns:FlipOrWatched(id) then return end
   flipRebuild = true
   C_Timer.After(1, function() flipRebuild = false; rebuildNow() end)
 end
@@ -3573,6 +3741,18 @@ end
 ns:OnReady(function()
   hooksecurefunc(ns, "CheckFlip", soonForFlip)
 end)
+
+-- A new flip on its way to the chime (Shuffles.lua CheckFlip): into the queue next frame,
+-- even one set aside after "none left", not after the chime's second of gathering (owner,
+-- November 11: flips were bought by others a second or two after the chime). Several in
+-- one go make one rebuild.
+function ns:FlipPending(f)
+  if not f then return end
+  done[f.id] = nil
+  if pendingRebuild or not shown() or view() ~= "flips" then return end
+  pendingRebuild = true
+  C_Timer.After(0, function() pendingRebuild = false; rebuildNow() end)
+end
 
 -- New flips just announced (Shuffles.lua): into the queue at once, even an item set
 -- aside for its two minutes after "none left" (owner's test, October 3: a flip was

@@ -172,10 +172,14 @@ end
 -- { ..., fix = true } a fix (a wrench). The small ones share one card.
 ---------------------------------------------------------------------------
 ns.WHATS_NEW = {
-  version = "0.21.1",
+  version = "0.23.0",
   lines = {
-    { "Disenchant and craft values: what a disenchant or craft gives is valued at no more than its usual price this week, so a buyout that pushes a material's price up no longer makes expensive items look profitable. A drop in price still counts at once.", change = true },
-    { "Disenchanting: green weapons of item level 21-30 are valued at Greater Magic Essence, which is what they give in Forever, not Astral Essence.", fix = true },
+    { "No more freezes after a scan: a full scan's prices are saved a little at a time instead of freezing the game for over a second, and the check for new deals no longer stutters.", major = true },
+    { "One tick buys a stack: the tick that starts buying a stack of materials also confirms it, within your limit. Settings can bring back the second click.", major = true },
+    { "Faster flips: the chime comes as soon as a flip is found, the list is read again after half a second, the next flip is looked up straight after a purchase, and buying carries on during full scans.", change = true },
+    { "Scroll to buy: up or down, anywhere over Vendor flips.", change = true },
+    { "\"Refused\" purchases that went through: the Buy queue moves straight on instead of pausing, and no longer gives up on a row it's buying.", fix = true },
+    { "Clearer status line: on a line of its own, and it says when the flip watch waits for your search.", change = true },
   },
 }
 

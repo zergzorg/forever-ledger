@@ -5,6 +5,57 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### Added
+- `/fl api` lists which of the game's WoW Forever frame art and window templates your client has, for the coming WoW Forever look (the last report is kept in the saved data).
+
+## [0.23.0] - 2026-11-11
+
+### Highlights
+- Δ **No more freezes after a scan**: a full scan's prices are saved a little at a time instead of freezing the game for over a second, and the check for new deals no longer stutters.
+- Δ **One tick buys a stack**: the tick that starts buying a stack of materials also confirms it, within your limit. Settings can bring back the second click.
+- ~ **Faster flips**: the chime comes as soon as a flip is found, the list is read again after half a second, the next flip is looked up straight after a purchase, and buying carries on during full scans.
+- ~ **Scroll to buy**: up or down, anywhere over Vendor flips.
+- ✓ **"Refused" purchases that went through**: the Buy queue moves straight on instead of pausing, and no longer gives up on a row it's buying.
+- ~ **Clearer status line**: on a line of its own, and it says when the flip watch waits for your search.
+
+### Added
+- One tick buys a stack of materials: the tick or click that starts buying it also confirms it, once the final price comes back within the limit and what you can spend. To confirm it yourself, tick Confirm stacks with a second click (Settings, Auction house, Buying). If the game wants a second click after all, the Buy queue goes back to asking for one.
+
+### Changed
+- Watch flips: when a part of the auction house list brings a new flip, the Buy queue looks it up before the next part is asked for, and the list carries on as soon as nothing is waiting for your click, not 4 seconds after the last purchase. Each part is asked for the moment the auction house is ready (it answers about two requests a second, so a whole reading still takes about 17 seconds).
+- After your own search on the auction house, the list waits half a minute before replacing your results, not a minute.
+- Scroll to buy: a tick of the wheel up buys too, not only down, and over Vendor flips the wheel buys anywhere over the section, its list included (drag the bar on the right to scroll the list). Over a shopping list the wheel still scrolls it.
+- A new flip chimes as soon as it's found, not a second later; the list is read again after half a second instead of 3; and after a purchase the next flip is looked up straight away.
+- The Buy queue keeps looking up and buying while a full scan comes in (over 20 seconds on a busy auction house), instead of waiting for it to finish. An item looked up or bought meanwhile keeps that newer price: the full scan may have been taken before it, so it can't bring back a listing you just bought.
+- The status line says "reading the AH list, part N", so it fits. While Watch flips waits for your own search or an item's page, it says so ("your search, list in 25s"), instead of only counting down. On the Buy queue it has a line of its own, under what you've bought, so it isn't cut off once those totals grow.
+- The end of a full scan no longer freezes the game: its prices are saved a few milliseconds each frame (all at once it froze for about 1.4 seconds on a busy auction house), and the check for new flips and deals after each scan goes a few hundred items at a time (up to a third of a second before).
+- With `/fl debug` on, the list's log also says how often and how long it waited for the auction house, which parts new flips came in, and what sent a search it waited for; the Buy queue's log says when a full scan was under way, and which version numbers the auction house gives gear; and `/fl perf`'s timings are kept at logout, to read afterward, and include reading a full scan.
+
+### Fixed
+- Buy queue: most gear purchases the auction house answers with an error go through anyway (the gold leaves a moment later). The queue now carries on to the next listing as soon as that happens, instead of waiting 2 seconds and searching again, and such a purchase no longer counts as a refusal, so two in a row don't make it give up on a row still listed.
+- Watched items: Help, the guide and the hovers no longer say gear is only checked by full scans. Reading the auction house list has covered gear since 0.21.0: any stat version at or under your price is bought.
+- The red "That's everything you can buy" message reads properly when some of what's left is waiting for a lower price.
+- Watched items list: a price over 1g under Now no longer runs into the Up to box.
+
+### Removed
+- Watch flips no longer falls back to searching about 120 likely items one by one. Between full scans it always reads the whole auction house list: if a reading fails it tries again a few seconds later (every half minute after three in a row, with full scans carrying on), and while it waits for your own search nothing else is searched. Watched items are found by that reading, about every 20 seconds. The setting Read the whole auction house between full scans is gone with it.
+
+## [0.22.0] - 2026-11-11
+
+### Highlights
+- Δ **Faster flips**: a new flip chimes and goes to the Buy queue as soon as its part of the auction house list arrives, not once the whole list is read, and the list is read about every 20 seconds instead of every half minute.
+- ~ **Gear flips**: looked up straight from the stat version the list saw, so they're ready to buy a moment after they're found.
+- ~ **Buy queue**: carries on the moment the auction house is free again, and takes a new flip at once.
+- ✓ **Rogue poisons**: no longer vendor flips. The game gives them a vendor price, but vendors won't buy them.
+
+### Changed
+- Watch flips: a new flip chimes and goes to the Buy queue as soon as the part of the auction house list it's in arrives (the list comes cheapest first), not once the whole list is read: about 8 seconds sooner on average. The list is read again after 3 seconds instead of 15, so every item is seen about every 20 seconds.
+- Buy queue: a gear flip from the list is looked up straight from the stat versions the list saw, without searching its name first; a lookup waiting for a busy auction house goes on as soon as the game says it's ready, not a second later; and a new flip joins the queue at once, not a second after the chime.
+- With `/fl debug` on, the list's log also says how many new flips were acted on as their part came, how often the list waited for the Buy queue, and how far into the list a flip can be. The Buy queue's log writes a step that repeats only once, so it reaches further back.
+
+### Fixed
+- Rogue poisons (Instant, Deadly, Crippling, Mind-numbing and Wound Poison, every rank) are no longer vendor flips or valued at a vendor: the game gives them a vendor price, but vendors won't buy them.
+
 ## [0.21.1] - 2026-11-11
 
 ### Highlights

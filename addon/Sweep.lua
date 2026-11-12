@@ -11,22 +11,29 @@ local _, ns = ...
 --     FlipLimitNow) and new: materials get a close look, an item search like the watch's
 --     quick checks (Prices.lua); gear gets the new cheapest put in front of its saved
 --     listings (AddCheapest), since an item search shows one stat version at a time.
--- So the watch sees every item about every half minute, not 120 picked ones every two
+-- So the watch sees every item about every 20 seconds, not 120 picked ones every two
 -- minutes. auxForever's Sniper and Point Blank Sniper read the same list on Forever
 -- (design note: forever-ledger-notes, planning/BROWSE_SWEEP_DESIGN.md).
--- The game sends the list in groups of 500. Only a complete list is used: part of one
--- can't say what's gone. Prices.lua's watch pass starts it (ns:StartSweep) and carries on
--- when it's over; buying always has the auction house first.
+-- The game sends the list in groups of 500, cheapest first. A new flip is acted on as soon
+-- as its group is here (early, below): other players were buying flips within a second or
+-- two of the chime (owner, November 11). Everything else waits for the complete list: part
+-- of one can't say what's gone. Prices.lua's watch pass starts it (ns:StartSweep) and
+-- carries on when it's over; buying always has the auction house first.
 ---------------------------------------------------------------------------
 local AH = C_AuctionHouse
 
+local GROUP_SIZE = 500   -- rows the game sends at a time (for the log)
 local GROUP_WAIT = 10    -- seconds to wait for one group before giving up on the list
-local AFTER_YOU = 60     -- after your own search or item page, before the list replaces your results
+local AFTER_QUEUE_WAIT = 6   -- the same, for the first group after the Buy queue's lookups: if
+                             -- they cost us the list, the next reading starts sooner
+local VERSIONS_FRESH = 60    -- seconds the list's gear versions are handed to the Buy queue
+local AFTER_YOU = 30     -- after your own search or item page, before the list replaces your results
+                         -- (a minute at first, owner November 10; 30 seconds, November 11)
 local FRESH = 300        -- a saved price this recent needs no close look (older shows as "seen N min ago")
 local REFRESH = 600      -- a flip still listed is looked at again once its saved price is this old,
                          -- so the Buy queue doesn't leave it out as old (it drops finds over 15 minutes)
 local MAX_LOOKS = 60     -- close looks per pass; the rest next time
-local FAILS_TO_STOP = 3  -- failed sweeps in one visit before the watch goes back to item checks
+local FAILS_SLOWER = 3   -- failed readings in a row before the watch tries every half minute (Prices.lua)
 local CHUNK = 400        -- items worked through per frame, so a long list doesn't stall the game
 
 local S = { state = "idle", tok = 0, fails = 0 }
@@ -36,14 +43,44 @@ ns.SweepState = S        -- (for the tests)
 local last, lastMarket = {}, nil   -- [itemID] = the cheapest the last complete sweep saw, this visit
 local forgot = {}                  -- [itemID] = true: forgotten since this reading asked for the list
 local owns = false                 -- the game's browse list is the sweep's, until anyone else searches
+-- [itemID] = { rec, l, t }: a material's new cheapest put in front of its saved listings
+-- straight from the list (early, below), which no search has seen yet. While its saved
+-- entry is that one, unchanged, it's judged as if nothing were saved, so its close look is
+-- asked for again until one is answered.
+local provisional = {}
+-- [itemID] = { run, at, market, upTo, complete, list = { { key, price } }, seen }: gear rows
+-- at or under the item's flip limit, for the Buy queue (ns:SweepVersions).
+local versions = {}
 
 function ns:SweepOwnsList() return owns end
 
 -- The Buy queue bought one, or found none left: the next reading judges it afresh, as if
 -- not seen before. Otherwise one listed again at the same price looked unchanged and was
 -- left out until a full scan or a reload (owner, November 10: Birchwood Mauls at 9s).
-function ns:SweepForget(id)
+-- gone: none left, so the versions the list had are out of date too.
+function ns:SweepForget(id, gone)
   if id then last[id], forgot[id] = nil, true end
+  if id and gone then versions[id] = nil end
+end
+
+-- Gear: the stat versions the list had at or under `limit`, cheapest first, from a reading
+-- in the last minute (nil if none), and whether there may be more: the list only got so far
+-- (its groups come cheapest first), or it judged the item against a lower limit. The Buy
+-- queue searches these straight away instead of first searching the item's name, which
+-- took a moment and replaced the list being read (owner, November 11).
+function ns:SweepVersions(id, limit)
+  local v = versions[id]
+  if not (v and v.market == ns.MarketKey() and GetTime() - v.at <= VERSIONS_FRESH) then return nil end
+  local out = {}
+  for _, x in ipairs(v.list) do
+    if not limit or x.price <= limit then out[#out + 1] = x end
+  end
+  if #out == 0 then return nil end
+  table.sort(out, function(a, b) return a.price < b.price end)
+  for i, x in ipairs(out) do out[i] = x.key end
+  local upTo = v.complete and math.huge or (v.run == S.run and S.upTo) or v.upTo or 0
+  local partial = limit ~= nil and (limit > upTo or limit > (v.limit or math.huge))
+  return out, partial
 end
 
 function ns:SweepAvailable()
@@ -51,10 +88,16 @@ function ns:SweepAvailable()
     and AH.HasFullBrowseResults ~= nil and AH.GetBrowseResults ~= nil
 end
 
--- Whether the flip watch reads the list this pass (Settings, Auction house, Buying).
+-- Whether the flip watch reads the list: always, where the client can. (Until November 11,
+-- 2026 a setting could turn it off, and three failed readings in a row turned it off for
+-- the visit; the old item checks ran instead. Frank had them removed.)
 function ns:SweepOn()
-  return ns.db.settings.watchSweep ~= false and ns:SweepAvailable() and S.fails < FAILS_TO_STOP
+  return ns:SweepAvailable()
 end
+
+-- After FAILS_SLOWER failed readings in a row, the flip watch tries again every half minute
+-- (Prices.lua), not a few seconds later.
+function ns:SweepSlower() return S.fails >= FAILS_SLOWER end
 
 -- A group is on its way: the Buy queue waits a moment for it (BuyQueue.lua search()).
 function ns:SweepWaiting()
@@ -196,7 +239,8 @@ local function holdReason(first)
     local you = math.max(searched, seen)
     local ago = GetTime() - you
     if ago < AFTER_YOU then
-      local what = searched >= seen and ("a search (%s)"):format(ns.lastUserSearchBy or "?") or "an item's page"
+      local from = ns.lastUserSearchFrom and (", " .. ns.lastUserSearchFrom) or ""
+      local what = searched >= seen and ("a search (%s%s)"):format(ns.lastUserSearchBy or "?", from) or "an item's page"
       return "you", ("%s %d s ago"):format(what, math.floor(ago)), AFTER_YOU - ago
     end
   end
@@ -212,10 +256,10 @@ end
 ask = function(first)
   local why, seen, wait = holdReason(first)
   if why == "closed" then return finish("stopped") end
-  -- You're on an item's page or just searched: the list isn't replaced under you. This
-  -- pass checks your watched items instead, and the list is read once the wait is over
-  -- (Prices.lua). Logged once until the next reading, with what was seen (owner, November
-  -- 10: the old item checks ran with nothing searched, and nothing showed why).
+  -- You're on an item's page or just searched: the list isn't replaced under you, and is
+  -- read once the wait is over (Prices.lua; the status line says why meanwhile). Logged once
+  -- until the next reading, with what was seen (owner, November 10: the list was put off
+  -- with nothing searched, and nothing showed why).
   if why == "page" or why == "you" then
     if not S.heldLogged then
       S.heldLogged = true
@@ -224,12 +268,31 @@ ask = function(first)
     return finish("held", seen, nil, nil, wait)
   end
   if why then
-    if why == "queue" then S.yielded = true end
-    S.state = "holding"
+    if why == "queue" then
+      -- (Counted once per wait, for the log.)
+      if S.state ~= "holding" or not S.afterQueue then S.yields = S.yields + 1 end
+      S.yielded, S.afterQueue = true, true
+    elseif why == "throttle" and S.holdWhy ~= "throttle" then
+      S.throttled = S.throttled + 1
+      S.throttledSince = GetTime()
+    end
+    if why ~= "throttle" and S.holdWhy == "throttle" and S.throttledSince then
+      S.throttledFor = S.throttledFor + (GetTime() - S.throttledSince)
+      S.throttledSince = nil
+    end
+    -- Busy for a moment after each group: asked again the moment the game says it's ready
+    -- (below), not half a second later, which was most of each group's 0.63 seconds
+    -- (owner, November 11). The half-second look stays as a fallback.
+    S.state, S.holdWhy, S.holdFirst = "holding", why, first
     local tok = S.tok
     C_Timer.After(0.5, function() if S.tok == tok and S.state == "holding" then safely(ask, first) end end)
     return
   end
+  if S.holdWhy == "throttle" and S.throttledSince then
+    S.throttledFor = S.throttledFor + (GetTime() - S.throttledSince)
+    S.throttledSince = nil
+  end
+  S.holdWhy = nil
   S.tok = S.tok + 1
   local tok = S.tok
   -- Not your own search (Prices.lua, History.lua), and not another search breaking ours.
@@ -248,20 +311,159 @@ ask = function(first)
   S.state, S.askedAt = "waiting", GetTime()
   -- (sentClock: prices saved from now on are newer than the list's rows, judge.)
   if first then S.sent, S.sentAt, S.sentClock, owns = true, GetTime(), time(), true end
-  status(("Watching flips: reading the auction house list, part %d"):format(S.groups + 1))
-  C_Timer.After(GROUP_WAIT, function()
+  status(("Watching flips: reading the AH list, part %d"):format(S.groups + 1))
+  local wait = S.afterQueue and AFTER_QUEUE_WAIT or GROUP_WAIT
+  C_Timer.After(wait, function()
     if S.tok == tok and S.state == "waiting" then
       -- The Buy queue had the auction house in between: not a failure of the list itself.
-      finish(S.yielded and "broken" or "failed", "no reply in " .. GROUP_WAIT .. " seconds")
+      finish(S.yielded and "broken" or "failed", "no reply in " .. wait .. " seconds")
     end
   end)
+end
+
+---------------------------------------------------------------------------
+-- New flips as each group comes (owner, November 11: flips chimed and were gone a second
+-- or two later, and a reading takes about 16 seconds, so one could wait that long for the
+-- rest of the list). The list comes cheapest first. A flip's new cheapest goes in front of
+-- its saved listings as soon as its group is here: it chimes, and the Buy queue looks it
+-- up at once while the list waits for it. A material's is only a stand-in until a search
+-- sees its listings (`provisional`). Cheaper listings gone, flips already known and what
+-- to remember for next time wait for the whole list (read, below).
+---------------------------------------------------------------------------
+-- The most an item may cost as a flip or watched item this reading (nil: neither), and
+-- what a vendor pays; kept on `it`.
+local function limitFor(id, it)
+  if it.limit ~= nil then return it.limit or nil end
+  local watched = ns.IsWatched and ns:IsWatched(id) or false
+  local raw = select(11, ns.GetItemInfo(id))
+  if raw == nil then raw = ns.db.vendorSell[id] end
+  it.watched, it.raw = watched, raw
+  if not (watched or (raw and raw > it.min)) then return nil end   -- (a cheaper row may still come)
+  it.limit = ns.FlipLimitNow and ns:FlipLimitNow(id) or false
+  return it.limit or nil
+end
+
+-- Gear row at or under its limit: one of the versions the Buy queue can search straight away.
+local function noteVersion(key, price, limit, complete)
+  local id = key.itemID
+  local v = versions[id]
+  if not v or v.run ~= S.run then
+    v = { run = S.run, market = ns.MarketKey(), list = {}, seen = {} }
+    versions[id] = v
+  end
+  v.at, v.limit, v.upTo = GetTime(), limit, S.upTo
+  if complete then v.complete = true end
+  local k = ("%s:%s:%s"):format(tostring(key.itemLevel), tostring(key.itemSuffix), tostring(key.battlePetSpeciesID))
+  if v.seen[k] then return end   -- (the same row again, from the whole list)
+  v.seen[k] = true
+  v.list[#v.list + 1] = { key = key, price = price }
+end
+
+-- Whether a saved entry is still the stand-in put there from the list (see provisional).
+local function stillProvisional(id, rec)
+  local p = provisional[id]
+  if not p then return false end
+  if rec ~= nil and rec == p.rec and rec.l == p.l and rec.t == p.t then return true end
+  provisional[id] = nil
+  return false
+end
+
+local function earlyJudge(id, it, now)
+  local limit = limitFor(id, it)
+  if not (limit and it.min <= limit) then return end
+  local market = ns.db.prices[ns.MarketKey()] or {}
+  local rec = market[id]
+  local mine = S.early[id]
+  -- Saved since the list was asked for (a search, the Buy queue): newer than this row.
+  if rec and (rec.t or 0) >= (S.sentClock or math.huge) and not (mine and mine.rec == rec) then return end
+  local gear = ns:IsGearItem(id)
+  local seen, prev = last[id], nil
+  if seen and seen.e and (not seen.at or (rec and (rec.t or 0) > seen.at)) then prev = seen.p end
+  local _, look = ns.SweepDecide(prev, it.min, rec, limit, gear, now)
+  if look == "check" then
+    -- Only a new cheapest below what's saved: a flip already known waits for the whole list.
+    if prev == it.min or (rec and rec.m and not rec.none and rec.m <= it.min) then return end
+  elseif look ~= "add" then
+    return
+  end
+  if not ns:AddCheapest(id, it.min, it.q) then return end
+  local saved = (ns.db.prices[ns.MarketKey()] or {})[id]
+  S.early[id] = { rec = saved, price = it.min, limit = limit, gear = gear, watched = it.watched }
+  if not gear and saved then provisional[id] = { rec = saved, l = saved.l, t = saved.t } end
+  S.earlyCount = S.earlyCount + 1
+  -- (Which part it came in, for the log: if flips keep to the cheap end of the list, that end
+  -- could be read more often. Owner, November 11: the auction house answers about two
+  -- requests a second, so a whole reading can't be quicker.)
+  S.flipParts[#S.flipParts + 1] = S.earlyParts
+end
+
+-- Rows that just came (the first group, or one the game added).
+local function early(rows)
+  if not (S.sent and owns) or S.state == "idle" or S.state == "reading" or #rows == 0 then return end
+  S.earlyParts = S.earlyParts + 1
+  local now, touched, list = time(), {}, {}
+  for _, r in ipairs(rows) do
+    local key = r.itemKey
+    local id = key and key.itemID
+    local price, qty = tonumber(r.minPrice), tonumber(r.totalQuantity) or 0
+    if id and (key.battlePetSpeciesID or 0) == 0 and price and price > 0 and qty > 0 then
+      if price > S.upTo then S.upTo = price end
+      local it = S.items[id]
+      if not it then
+        it = { min = price, q = 0 }
+        S.items[id] = it
+      elseif price < it.min then
+        it.min = price
+      else
+        price = nil
+      end
+      it.q = it.q + qty
+      if price and not touched[id] then touched[id] = true; list[#list + 1] = id end
+    end
+  end
+  local before = S.earlyCount
+  for _, id in ipairs(list) do
+    local ok, err = pcall(earlyJudge, id, S.items[id], now)
+    if not ok then ns:Debug("Auction house list: skipped", id, err) end
+  end
+  -- Gear versions cheap enough, for the Buy queue's lookups.
+  for _, r in ipairs(rows) do
+    local key = r.itemKey
+    local it = key and key.itemID and S.items[key.itemID]
+    local price = tonumber(r.minPrice)
+    if it and it.limit and price and price <= it.limit and (key.battlePetSpeciesID or 0) == 0
+      and ns:IsGearItem(key.itemID) then
+      noteVersion(key, price, it.limit)
+    end
+  end
+  if S.earlyCount > before then
+    S.newFlips = true   -- (the Buy queue goes first: step, below)
+    if ns.InvalidateValues then ns:InvalidateValues() end
+  end
 end
 
 local read
 
 -- An answer came: the next group, or the whole list.
 local function step()
-  if not AH.HasFullBrowseResults() then return ask(false) end
+  -- (The first group: the game's later ones come with the event, below.)
+  if S.earlyParts == 0 then
+    local ok, err = pcall(early, AH.GetBrowseResults() or {})
+    if not ok then ns:Debug("Auction house list: early look failed", err) end
+  end
+  if not AH.HasFullBrowseResults() then
+    -- A new flip in this group: the Buy queue starts its lookup first (it claims the auction
+    -- house as it starts, next frame), instead of waiting for the next group to come
+    -- (owner, November 11). Then the list carries on.
+    if S.newFlips then
+      S.newFlips = nil
+      S.state, S.holdWhy = "holding", nil
+      local tok = S.tok
+      C_Timer.After(0.1, function() if S.tok == tok and S.state == "holding" then safely(ask, false) end end)
+      return
+    end
+    return ask(false)
+  end
   local rows = AH.GetBrowseResults() or {}
   if #rows == 0 and not S.emptyOnce then
     -- The first answer can be the old list being cleared: give the real one a moment.
@@ -280,11 +482,23 @@ local function onAnswer()
   -- Both UPDATED and ADDED can come for one group: one carries on, next frame.
   S.state = "got"
   S.groups = S.groups + 1
+  S.afterQueue = nil
   local tok = S.tok
   C_Timer.After(0, function() if S.tok == tok and S.state == "got" then safely(step) end end)
 end
 ns:On("AUCTION_HOUSE_BROWSE_RESULTS_UPDATED", onAnswer)
+-- A later group's rows come with the event: new flips in it are acted on straight away.
+ns:On("AUCTION_HOUSE_BROWSE_RESULTS_ADDED", function(added)
+  if type(added) == "table" and (S.state == "waiting" or S.state == "got") then
+    local ok, err = pcall(early, added)
+    if not ok then ns:Debug("Auction house list: early look failed", err) end
+  end
+end)
 ns:On("AUCTION_HOUSE_BROWSE_RESULTS_ADDED", onAnswer)
+-- The auction house is ready for the next request: a group held for it goes now.
+ns:On("AUCTION_HOUSE_THROTTLED_SYSTEM_READY", function()
+  if S.state == "holding" and S.holdWhy == "throttle" then safely(ask, S.holdFirst) end
+end)
 ns:On("AUCTION_HOUSE_BROWSE_FAILURE", function()
   if S.state == "waiting" or S.state == "got" then finish("failed", "the auction house said the search failed") end
 end)
@@ -326,6 +540,7 @@ local function judge(id, it, now, looks, stats)
   end
   local limit
   if (watched or (raw and raw > it.min)) and ns.FlipLimitNow then limit = ns:FlipLimitNow(id) end
+  it.raw, it.watched, it.limit = raw, watched, limit   -- (for the gear versions and the log)
   local eligible = limit ~= nil and it.min <= limit
   -- The same as last time only if it was settled then: not when it has just become a flip
   -- (a new watch, its vendor price known at last), nor when its close look got no answer,
@@ -333,7 +548,15 @@ local function judge(id, it, now, looks, stats)
   -- but left this row out (a bid at the buyout) stays settled.
   local seen, prev = last[id], nil
   if seen and seen.e == eligible and (not seen.at or (rec and (rec.t or 0) > seen.at)) then prev = seen.p end
-  local drop, look = ns.SweepDecide(prev, it.min, rec, limit, ns:IsGearItem(id), now)
+  local gear = ns:IsGearItem(id)
+  local drop, look = ns.SweepDecide(prev, it.min, rec, limit, gear, now)
+  -- A material's cheapest put in from the list that no search has seen (provisional): its
+  -- close look is still to come, so it's judged as if nothing were saved. (Cheaper saved
+  -- listings gone still go, the stand-in among them.)
+  if not gear and stillProvisional(id, rec) then
+    local _
+    _, look = ns.SweepDecide(prev, it.min, nil, limit, gear, now)
+  end
   if drop then
     local gone = ns:DropBelow(id, it.min, true)
     if gone > 0 then stats.dropped, stats.gone = stats.dropped + 1, stats.gone + gone end
@@ -380,29 +603,71 @@ read = function(rows)
     end
     i = stop
     if i < #ids then C_Timer.After(0, chunk); return end
+    -- Flips put in as their group came (early): gear is remembered like any other; a
+    -- material that no search has seen since gets its close look now.
+    local market = ns.db.prices[ns.MarketKey()] or {}
+    for id, e in pairs(S.early) do
+      local it = items[id]
+      if e.gear then
+        if fresh[id] == nil then fresh[id] = { p = e.price, e = true } end
+      elseif it and stillProvisional(id, market[id]) then
+        looks[#looks + 1] = { id = id, price = it.min, watched = e.watched, new = true,
+          gain = (e.limit - it.min) / math.max(e.limit, 1) }
+      end
+    end
     -- Done: the close looks to make, and what to remember for next time.
     local check = ns.SweepLookOrder(looks)
     for _, id in ipairs(check) do fresh[id] = { p = items[id].min, e = true, at = now } end
     -- (Bought or gone while the list came: judged afresh next time too.)
     for id in pairs(forgot) do fresh[id] = nil end
     last = fresh
-    local changed = stats.dropped + stats.added + stats.touched > 0
+    -- The whole list: every gear version cheap enough, for the Buy queue; and, for the log,
+    -- how far into the list a flip could be (rows over the highest vendor price or watched
+    -- limit can't be one) and whether it really came cheapest first.
+    S.upTo = math.huge
+    local ceiling = 0
+    for id, it in pairs(items) do
+      local e = S.items[id] or {}
+      local watched = it.watched or e.watched
+      ceiling = math.max(ceiling, it.raw or e.raw or 0, watched and (it.limit or e.limit) or 0)
+    end
+    local before, unsorted, within = 0, 0, nil
+    for k, r in ipairs(rows) do
+      local key, price = r.itemKey, tonumber(r.minPrice) or 0
+      if price > 0 then
+        if price < before then unsorted = unsorted + 1 end
+        before = price
+        if not within and price > ceiling then within = k - 1 end
+      end
+      local id = key and key.itemID
+      local it = id and items[id]
+      local lim = it and (it.limit or (S.items[id] and S.items[id].limit))
+      if lim and price > 0 and price <= lim and (key.battlePetSpeciesID or 0) == 0 and ns:IsGearItem(id) then
+        noteVersion(key, price, lim, true)
+      end
+    end
+    within = within or #rows
+    local changed = stats.dropped + stats.added + stats.touched + S.earlyCount > 0
     if changed then
       if ns.InvalidateValues then ns:InvalidateValues(true) end
       if ns.RefreshFlipsIfShown then C_Timer.After(0.5, function() ns:RefreshFlipsIfShown() end) end
     end
-    logLine(("Auction house list: %s. Cheaper listings gone on %d items (%d units); %d to look at closely%s; gear added %d, still listed %d."):format(
-      summary, stats.dropped, stats.gone, #check, #looks > #check and (" (%d more next time)"):format(#looks - #check) or "",
-      stats.added, stats.touched))
+    local money = ns.MoneyPlain or tostring
+    logLine(("Auction house list: %s. New flips as their part came: %d%s (parts read as they came: %d). Cheaper listings gone on %d items (%d units); %d to look at closely%s; gear added %d, still listed %d. Waited for the Buy queue %d times, for the auction house %d times (%.1f s). Flips can only be in the first %d parts (up to %s)%s."):format(
+      summary, S.earlyCount, #S.flipParts > 0 and (", in parts " .. table.concat(S.flipParts, ", ")) or "",
+      S.earlyParts, stats.dropped, stats.gone, #check,
+      #looks > #check and (" (%d more next time)"):format(#looks - #check) or "",
+      stats.added, stats.touched, S.yields, S.throttled, S.throttledFor, math.ceil(within / GROUP_SIZE), money(ceiling),
+      unsorted > 0 and ("; %d rows out of price order"):format(unsorted) or ""))
     finish("done", nil, check, changed)
   end
   chunk()
 end
 
--- outcome: "done", "failed" (couldn't read the list: the watch does item checks this time),
--- "held" (you're searching or on an item's page: your watched items are checked, and the list read
--- once the wait is over; not counted as a failure), "broken" (another search replaced it: tried
--- again next pass) or "stopped".
+-- outcome: "done", "failed" (couldn't read the list: tried again soon, more slowly after a few
+-- in a row), "held" (you're searching or on an item's page: the list is read once the wait is
+-- over; not counted as a failure), "broken" (another search replaced it: tried again next
+-- pass) or "stopped".
 -- wait ("held"): seconds until it may go ahead, nil while an item's page is open.
 finish = function(outcome, why, ids, changed, wait)
   local done = S.onDone
@@ -413,8 +678,8 @@ finish = function(outcome, why, ids, changed, wait)
   elseif outcome == "failed" then
     S.fails = S.fails + 1
     logLine(("Auction house list couldn't be read: %s (%d in a row)."):format(why or "?", S.fails))
-    if S.fails == FAILS_TO_STOP then
-      ns:Print("Couldn't read the whole auction house list " .. FAILS_TO_STOP .. " times in a row, so the flip watch checks likely items instead until you next open the auction house.")
+    if S.fails == FAILS_SLOWER then
+      ns:Print("Couldn't read the whole auction house list " .. FAILS_SLOWER .. " times in a row, so the flip watch tries again every half minute; full scans carry on as usual.")
     end
   elseif outcome == "broken" then
     logLine("Auction house list: " .. (why or "stopped") .. "; trying again next time.")
@@ -430,6 +695,9 @@ local MAX_SECONDS = 300   -- a sweep still going after this is given up (nothing
 function ns:StartSweep(done)
   if S.state ~= "idle" then return false end
   S.onDone, S.groups, S.yielded, S.emptyOnce, S.sent, S.sentAt = done, 0, false, nil, nil, nil
+  S.items, S.early, S.earlyParts, S.earlyCount, S.upTo, S.yields, S.afterQueue = {}, {}, 0, 0, 0, 0, nil
+  S.throttled, S.throttledFor, S.throttledSince, S.holdWhy, S.holdFirst, S.newFlips = 0, 0, nil, nil, nil, nil
+  S.flipParts = {}
   S.run = (S.run or 0) + 1
   local run = S.run
   S.state = "holding"
@@ -451,6 +719,7 @@ end
 -- Each visit starts afresh: another auction house, or prices changed while you were away.
 ns:On("AUCTION_HOUSE_SHOW", function()
   last, lastMarket, S.fails, pageSeen, S.heldLogged, forgot = {}, nil, 0, nil, nil, {}
+  provisional, versions = {}, {}
 end)
 ns:On("AUCTION_HOUSE_CLOSED", function()
   owns = false
