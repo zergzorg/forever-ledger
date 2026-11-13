@@ -1649,6 +1649,12 @@ function ns:ToggleFlipWatch(quiet)
   if not ahOpen then ns:Print("Сначала откройте аукцион, затем запустите слежение."); return end
   -- (Starting it means carry on: a pause ends too.)
   watching, paused = true, false
+  -- Your click means start now: no waiting out the half minute after your own search
+  -- (Sweep.lua ns:SweepResetWait). Not when it comes back on by itself.
+  if not quiet then
+    sweepAfter, heldFor = nil, nil
+    if ns.SweepResetWait then ns:SweepResetWait() end
+  end
   if not quiet then
     ns:Print("Слежение включено: полная проверка каждые 15 минут, а между ними — " ..
       (ns.SweepOn and ns:SweepOn() and "весь список аукциона читается примерно раз в 20 секунд. "

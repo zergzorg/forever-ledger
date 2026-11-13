@@ -517,6 +517,13 @@ local SORT_VALUE = {
 }
 local sortBy = { shuffles = { key = "hour", desc = true }, flips = { key = "total", desc = true } }
 local subtab = "ah"
+-- Sells to a vendor, All professions (owner, November 12): every profession's crafts,
+-- whoever knows them (Shuffles.lua ns:FindAllVendorCrafts). For this session only.
+local allProfs = false
+local function computeAllProfs()
+  local list, noPrice = ns:FindAllVendorCrafts()
+  main.shufflesAll = { list = list, noPrice = noPrice }
+end
 local openKeys = {}
 local rows, details, boxes, headerCells = {}, {}, {}, {}
 
@@ -589,6 +596,24 @@ buildTable = function()
   ns:On("GLOBAL_MOUSE_DOWN", function()
     if f.charMenu:IsShown() and not (f.charMenu:IsMouseOver() or f.charBtn:IsMouseOver()) then f.charMenu:Hide() end
   end)
+
+  -- Sells to a vendor only: every profession's crafts, not just your characters' recipes
+  -- (owner, November 12: to see whether the tab is still worth having). Recipes from is
+  -- set aside while it's ticked.
+  f.allProfs = T:Check(f, function(self)
+    allProfs = self:GetChecked() and true or false
+    if allProfs then computeAllProfs() end
+    layoutShuffles()
+  end)
+  f.allProfs.label:SetText("Все профессии")
+  f.allProfs:SetHitRectInsets(0, -(f.allProfs.label:GetStringWidth() + 8), -3, -3)
+  f.allProfs:HookScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+    GameTooltip:AddLine("Все профессии", 1, 1, 1)
+    GameTooltip:AddLine("Изготовление любой профессии, которое продаётся торговцу дороже материалов по сегодняшним ценам, знает её кто-то из ваших или нет. Рецепты берутся из окон профессий; для профессий, которые не открывал ни один ваш персонаж, — из оригинального Classic (в Forever они ещё не встречались). В шагах указана профессия и кто из ваших её знает. «Рецепты» на это время откладываются.", nil, nil, nil, true)
+    GameTooltip:Show()
+  end)
+  f.allProfs:HookScript("OnLeave", function() GameTooltip:Hide() end)
 
   f.header = CreateFrame("Frame", nil, f)
   f.header:SetHeight(22)
@@ -871,9 +896,11 @@ layoutShuffles = function()
   local top = 0
 
   -- Sub-tabs with counts, and "use recipes from" (Shuffles only)
+  local everyProf = not flips and subtab == "vendor" and allProfs and main.shufflesAll
   for key, b in pairs(f.subtabs) do
     b:SetShown(not flips)
-    b:SetText(("%s  %s"):format(b.base, dim(#data[key])))
+    local n = (key == "vendor" and allProfs and main.shufflesAll) and #main.shufflesAll.list or #data[key]
+    b:SetText(("%s  %s"):format(b.base, dim(n)))
     b:SetWidth(b:GetFontString():GetStringWidth() + 24)
     b:SetSelected(key == subtab)
   end
@@ -905,8 +932,18 @@ layoutShuffles = function()
     f.charMenu:SetSize(220, 12 + #keys * 22)
     f.charBtn:SetText(on == #keys and ("Все персонажи (%d)"):format(#keys)
       or (on == 0 and "|cffee8597Нет персонажей|r" or ("%d из %d персонажей"):format(on, #keys)))
+    -- All professions (Sells to a vendor): Recipes from grays out meanwhile.
+    f.allProfs:ClearAllPoints()
+    f.allProfs:SetPoint("LEFT", f.charBtn, "RIGHT", 16, 0)
+    f.allProfs:SetChecked(allProfs)
+    local off = subtab == "vendor" and allProfs
+    f.charBtn:SetEnabled(not off)
+    f.charBtn:SetAlpha(off and 0.4 or 1)
+    f.charLabel:SetAlpha(off and 0.4 or 1)
+    if off then f.charMenu:Hide() end
     top = top + 32
   end
+  f.allProfs:SetShown(not flips and subtab == "vendor")
 
   -- Header
   local cols = COLUMNS[view]
@@ -935,11 +972,14 @@ layoutShuffles = function()
   f.sf:ClearAllPoints()
   local vendorNote = not flips and subtab == "vendor"
   f.vendorNote:SetShown(vendorNote)
+  f.vendorNote:SetText(everyProf
+    and ("Все профессии: для профессий, которые не открывал ни один ваш персонаж, — рецепты Classic; %d пропущено — у материала ещё нет цены."):format(main.shufflesAll.noPrice or 0)
+    or "Blizzard ослабил большинство цепочек у торговцев, поэтому вкладка часто будет пустой.")
   f.sf:SetPoint("TOPLEFT", 0, -top)
   f.sf:SetPoint("BOTTOMRIGHT", 0, vendorNote and 22 or 0)
   local content = f.content
   content:SetWidth(width - 12)
-  local list = flips and data.flips or data[subtab]
+  local list = (everyProf and main.shufflesAll.list) or (flips and data.flips) or data[subtab]
   local items = {}
   for i, s in ipairs(list) do items[i] = s end
   local get = SORT_VALUE[sort.key]
@@ -983,7 +1023,8 @@ layoutShuffles = function()
         for _, p in pairs(c.profs or {}) do if next(p.recipes or {}) then recipes = recipes + 1 end end
       end
     end
-    f.empty:SetText((chars > 0 and ticked == 0 and "Не отмечен ни один персонаж: выберите кнопкой персонажей выше.")
+    f.empty:SetText((everyProf and "Ни один рецепт ни одной профессии не продаётся торговцу дороже материалов по сегодняшним ценам.")
+      or (chars > 0 and ticked == 0 and "Не отмечен ни один персонаж: выберите кнопкой персонажей выше.")
       or (recipes == 0 and "Рецепты ещё не сохранены. Откройте окно каждой профессии один раз и нажмите «Обновить».")
       or "При текущих ценах ничего нет. Проверьте аукцион и нажмите «Обновить».")
   end
@@ -1024,6 +1065,7 @@ function ns:RefreshShuffles()
   end
 
   main.shuffles = { vendor = vendor, ah = ah, oneOff = oneOff, flips = flips }
+  if allProfs then computeAllProfs() end
   -- Short, so it fits the smallest window (the tabs' own tips say the rest).
   main.shuffleInfo:SetText(("Цепочек: %d, перепродаж торговцу: %d (%s). %s"):format(
     #vendor + #ah + #oneOff, #flips, date("%H:%M"),

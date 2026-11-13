@@ -239,6 +239,129 @@ function ns:FindShuffles()
   return vendor, ah, oneOff, ns:FindVendorFlips()
 end
 
+-- Every profession's crafts that sell to a vendor for more than their materials cost,
+-- whoever knows them (owner, November 12: "show all possible crafts that could provide a
+-- profit crafting and selling to a vendor", to see whether the Sells to a vendor tab is
+-- still worth having). Recipes from the recipe book (every recipe of a profession whose
+-- window one of your characters has opened, learned or not); for the other professions,
+-- Classic's crafts (ClassicCrafts.lua), marked as such. Materials at today's prices (the
+-- cheaper of the auction house and a vendor you've seen sell them); a recipe with a
+-- material that has no price is left out and counted. Returns the shuffles (shaped like
+-- FindShuffles' vendor list) and how many recipes were left out for a missing price.
+local PROF_RU = {
+  Alchemy = "Алхимия", Blacksmithing = "Кузнечное дело", Enchanting = "Наложение чар",
+  Engineering = "Инженерное дело", Leatherworking = "Кожевничество", Tailoring = "Портняжное дело",
+  Cooking = "Кулинария", ["First Aid"] = "Первая помощь", Fishing = "Рыбная ловля",
+  Herbalism = "Травничество", Mining = "Горное дело", Skinning = "Снятие шкур",
+}
+
+local PROF_EN = {}
+for en, ru in pairs(PROF_RU) do PROF_EN[ru] = en end
+
+local function profName(prof)
+  return PROF_RU[prof] or prof
+end
+
+-- The recipe book is filed under the client's profession names (Russian on ruRU), while
+-- Classic's data uses English ones: one key for both.
+local function profKey(prof)
+  return PROF_EN[prof] or prof
+end
+
+function ns:FindAllVendorCrafts()
+  local margin = (ns.db.settings.margin or 10) / 100
+  local secs = ns.db.settings.actionSeconds or 3
+  local market = ns.db.prices[ns.MarketKey()] or {}
+  -- Who of your characters knows each recipe (for the steps: "Alchemy: Iveilos"): by
+  -- profession and recipe, since two recipes can make the same item (Codex review,
+  -- November 12: Gold Bar is smelted and transmuted). Classic's rows go by profession
+  -- and item.
+  local knownBy = {}
+  for key, c in pairs(ns.db.chars or {}) do
+    if ns:SameMarketChar(key) then
+      for prof, p in pairs(c.profs or {}) do
+        local k = knownBy[profKey(prof)] or { ids = {}, outs = {} }
+        knownBy[profKey(prof)] = k
+        for rid, r in pairs(p.recipes or {}) do
+          k.ids[rid] = k.ids[rid] or c.name
+          if r.out then k.outs[r.out] = k.outs[r.out] or c.name end
+        end
+      end
+    end
+  end
+  local recipes, seenProf = {}, {}
+  for prof, book in pairs(ns.db.recipeBook or {}) do
+    seenProf[profKey(prof)] = true
+    for rid, r in pairs(book) do
+      recipes[#recipes + 1] = { prof = profKey(prof), rid = rid, n = r.n, out = r.out, oq = r.oq or 1, r = r.r }
+    end
+  end
+  for _, c in ipairs(ns.CLASSIC_CRAFTS or {}) do
+    if not seenProf[c[1]] then
+      local mats = {}
+      for id, q in c[7]:gmatch("(%d+):(%d+)") do mats[#mats + 1] = { tonumber(id), tonumber(q) } end
+      recipes[#recipes + 1] = { prof = c[1], out = c[3], oq = (c[4] + c[5]) / 2, sell = c[6], r = mats, classic = true, mats = c[7] }
+    end
+  end
+
+  -- What a vendor pays for the item made: the game's price. Classic's only while the game
+  -- hasn't said yet (item not loaded); a known no (no price, or a poison vendors refuse)
+  -- stays no (Codex review, November 12: Classic's price brought those back).
+  local function outputSell(rec)
+    local live = ns:GetSellPrice(rec.out)
+    if live then return live end
+    if not (rec.sell and rec.sell > 0) then return nil end
+    if ns.VENDOR_WONT_BUY[rec.out] or ns.db.vendorSell[rec.out] ~= nil or ns.GetItemInfo(rec.out) then return nil end
+    return rec.sell
+  end
+
+  local list, seen, noPrice = {}, {}, 0
+  for _, rec in ipairs(recipes) do
+    local first = rec.out and rec.r and rec.r[1]
+    local sell = first and outputSell(rec) or nil
+    if sell and sell > 0 then
+      -- The first material is the one bought "for" the shuffle (as FindShuffles does);
+      -- the others are the craft's extra materials.
+      local cost, listed = buyInfo(first[1], market)
+      local left, buys = sell * rec.oq, {}
+      for i = 2, #rec.r do
+        local m = rec.r[i]
+        local p = buyInfo(m[1], market)
+        if not (p and p > 0) then left = nil; break end
+        left = left - p * m[2]
+        buys[#buys + 1] = { id = m[1], qty = m[2], cost = p }
+      end
+      if not (cost and cost > 0) or not left then
+        noPrice = noPrice + 1
+      else
+        local name = rec.n or itemName(rec.out)
+        local k = knownBy[rec.prof]
+        local who = k and (rec.rid and k.ids[rec.rid] or (not rec.rid and k.outs[rec.out])) or nil
+        local o = {
+          kind = "craft", value = left / first[2], step = "Изготовить " .. name,
+          next = { kind = "vendor", value = sell, id = rec.out },
+          rec = { n = name, out = rec.out, oq = rec.oq, r = rec.r }, units = first[2], buys = buys,
+          prof = rec.prof,
+          who = profName(rec.prof) .. (who and (": " .. who) or ", никто из ваших") .. (rec.classic and ", рецепт Classic" or ""),
+        }
+        local s = build(first[1], o, cost, listed, market, margin, secs)
+        -- One row per recipe, not per item made: build's key is the item, which would
+        -- keep only the first of Gold Bar's two (Codex review, November 12). The same
+        -- Classic recipe listed twice is still one row.
+        if s then s.key = s.key .. ":" .. rec.prof .. ":" .. (rec.rid or rec.mats or "") end
+        if s and not seen[s.key] then
+          seen[s.key] = true
+          s.prof, s.classic, s.known = rec.prof, rec.classic, who ~= nil
+          list[#list + 1] = s
+        end
+      end
+    end
+  end
+  table.sort(list, function(a, b) return a.perHour > b.perHour end)
+  return list, noPrice
+end
+ns.FindAllVendorCrafts = ns.Timed("Finding every profession's vendor crafts", ns.FindAllVendorCrafts)
+
 -- Just the vendor flips: far quicker than every shuffle, so the Vendor flips tab can
 -- follow the flip watch without a hitch (owner's /fl perf, October 2: the whole
 -- shuffle search ran 29 times in 106 seconds at about 195 ms each).
