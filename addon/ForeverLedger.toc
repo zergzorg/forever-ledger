@@ -20,6 +20,7 @@ Deposits.lua
 Values.lua
 Shuffles.lua
 Disenchant.lua
+SellAdvice.lua
 Tooltip.lua
 Theme.lua
 Dashboard.lua
@@ -27,6 +28,7 @@ Ledger.lua
 Deals.lua
 Crates.lua
 ClassicRecipes.lua
+ClassicCrafts.lua
 ClassicItems.lua
 QuestItems.lua
 RecipesTab.lua

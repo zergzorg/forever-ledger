@@ -56,7 +56,7 @@ local DEFAULTS = {
     -- find off; it was off from October 2 so nobody bought by accident). Buying still
     -- needs the mouse over the top strip, and Up to and Spend at most still apply.
     buyQueue = { flips = true, disenchant = true, deals = false, lists = true, wheel = true, tab = "queue" },
-    tipMode = "full", tipOptions = 3, tipPrice = true, tipSpeed = true, tipQuest = true, tipQuestMine = true, tipDrops = true, tipHistory = true, priceWindow = true, priceClick = "alt", tipWorth = true, tipBuy = true, tipDisenchant = true, tipUsedBy = true, tipCrate = true, tipBagSlot = true, tipNeutral = false, worthAH = true, worthVendor = true, worthDisenchant = true, worthCraft = true, ridingFund = true, trainerAdvice = true, moduleLevelling = true, levellingMine = false,
+    tipMode = "full", tipOptions = 3, tipPrice = true, tipSpeed = true, tipSell = true, tipQuest = true, tipQuestMine = true, tipDrops = true, tipHistory = true, priceWindow = true, priceClick = "alt", tipWorth = true, tipBuy = true, tipDisenchant = true, tipUsedBy = true, tipCrate = true, tipBagSlot = true, tipNeutral = false, worthAH = true, worthVendor = true, worthDisenchant = true, worthCraft = true, ridingFund = true, trainerAdvice = true, moduleLevelling = true, levellingMine = false,
     -- theme: FL Gilded for new installs (owner, October 22); "default" is FL Bronze now.
     theme = "gilded", accent = "", uiScale = 100, syncMoney = false, quietWatch = false },
 }
@@ -888,8 +888,10 @@ function ns:MergeData(data, via)
   -- A partner's prices from today also go into today's price history (owner's
   -- screenshot, November 8: the main account's graph only had the days it scanned
   -- itself, while the auction house character scanned every day). Earlier days aren't
-  -- sent, so they can't be filled in.
+  -- sent, so they can't be filled in. Recorded over the next frames (History.lua): a
+  -- full scan's thousands in one go ran too long (Frank's BugSack, November 12).
   local nowDay = ns.LocalDay and ns.LocalDay(time())
+  local later = {}
   for market, items in pairs(data.prices or {}) do
     db.prices[market] = db.prices[market] or {}
     for id, rec in pairs(items) do
@@ -897,12 +899,13 @@ function ns:MergeData(data, via)
       if not mine or (rec.t or 0) > (mine.t or 0) then
         db.prices[market][id] = rec
         nPrices = nPrices + 1
-        if via and nowDay and rec.t and rec.m and not rec.none and ns.LocalDay(rec.t) == nowDay and ns.RecordPriceHistory then
-          pcall(ns.RecordPriceHistory, ns, id, rec.m, rec.a, rec.q, market)
+        if via and nowDay and rec.t and rec.m and not rec.none and ns.LocalDay(rec.t) == nowDay then
+          later[#later + 1] = { id, rec.m, rec.a, rec.q, market }
         end
       end
     end
   end
+  if ns.RecordPriceHistoryLater then ns:RecordPriceHistoryLater(later) end
   for id, rec in pairs(data.vendorBuy or {}) do
     local mine = db.vendorBuy[id]
     if not mine or (rec.t or 0) > (mine.t or 0) then db.vendorBuy[id] = rec; nVendor = nVendor + 1 end
@@ -1071,9 +1074,14 @@ function ns:ApiReport()
   -- planning/UI_OVERHAUL_PREP.md): which of the game's frame art this client has, and at
   -- what size, and which of Blizzard's window and control templates. The names are the
   -- ones EllesmereUI's WoW Forever look draws with.
+  -- Kept (this /fl api's only) so it can be read from the saved data after a reload: a
+  -- fresh report each time, each part "not available" until it's read (Codex review of
+  -- b0296a7: a failed part kept the last report's result).
+  local look = { t = time(), art = "not available", templates = "not available" }
+  ns.db.apiLook = look
   try("Forever art", function()
     local found = {}
-    if not (C_Texture and C_Texture.GetAtlasInfo) then return "no atlas lookup" end
+    if not (C_Texture and C_Texture.GetAtlasInfo) then look.art = "no atlas lookup"; return look.art end
     for _, a in ipairs({ "UI-Frame-Metal-CornerTopLeft", "_UI-Frame-Metal-EdgeTop", "!UI-Frame-Metal-EdgeLeft",
                          "UI-Frame-Metal-CornerBottomRight", "UI-HUD-ActionBar-Frame", "ui-frame-portraitmetal",
                          "uiframe-tab-left", "common-dropdown-bg", "common-search-border-left",
@@ -1082,10 +1090,8 @@ function ns:ApiReport()
       local info = C_Texture.GetAtlasInfo(a)
       found[#found + 1] = info and ("+%s %dx%d"):format(a, info.width or 0, info.height or 0) or ("-" .. a)
     end
-    -- Kept (the last /fl api only) so it can be read from the saved data after a reload.
-    local text = table.concat(found, " ")
-    ns.db.apiLook = { t = time(), art = text, templates = ns.db.apiLook and ns.db.apiLook.templates }
-    return text
+    look.art = table.concat(found, " ")
+    return look.art
   end)
   try("Window templates", function()
     local found = {}
@@ -1101,10 +1107,8 @@ function ns:ApiReport()
     for _, l in ipairs({ "ButtonFrameTemplateNoPortrait", "PortraitFrameTemplate" }) do
       found[#found + 1] = ((layouts and layouts[l]) and "+" or "-") .. "layout " .. l
     end
-    local text = table.concat(found, " ")
-    ns.db.apiLook = ns.db.apiLook or { t = time() }
-    ns.db.apiLook.templates = text
-    return text
+    look.templates = table.concat(found, " ")
+    return look.templates
   end)
   try("Spells cast saved", function()
     local n = 0
