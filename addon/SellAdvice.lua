@@ -47,13 +47,13 @@ function ns.SellVerdict(f)
     -- vendor trash on a guess).
     if (f.quality or 1) == 0 then v = { kind = "vendor", value = vendor } end
   elseif f.ah <= vendor then
-    v = { kind = "vendor", value = vendor, reason = "торговец даёт столько же или больше" }
+    v = { kind = "vendor", value = vendor, reason = "торговец даёт не меньше" }
   else
     local ratio = f.ah / vendor
     local more = ("аукцион даёт на %d%% больше"):format(math.floor((ratio - 1) * 100 + 0.5))
     if SLOW[f.speed or ""] then
       if ratio >= SLOW_CLEAR then
-        v = { kind = "ah", value = f.ah, reason = "продаётся медленно, но ожидание того стоит" }
+        v = { kind = "ah", value = f.ah, reason = "медленно, но ожидание того стоит" }
       elseif ratio >= CLEAR then
         v = { kind = "middle", value = f.ah, reason = more .. ", но продаётся медленно" }
       else
