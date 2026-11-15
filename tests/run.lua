@@ -9,7 +9,7 @@ local S = require("stubs")
 local ADDON, ns = "ForeverLedger", {}
 
 -- The files to load, in the .toc's order, up to the last one the tests need.
-local LOAD = { "Core.lua", "Prices.lua", "Sweep.lua", "Quiet.lua", "History.lua", "Inventory.lua", "RecipeBook.lua", "Professions.lua", "Deposits.lua", "Values.lua", "Shuffles.lua", "Ledger.lua", "Crates.lua", "Settings.lua",
+local LOAD = { "Core.lua", "Locale.lua", "Prices.lua", "Sweep.lua", "Quiet.lua", "History.lua", "Inventory.lua", "RecipeBook.lua", "Professions.lua", "Deposits.lua", "Values.lua", "Shuffles.lua", "Ledger.lua", "Crates.lua", "Settings.lua",
   "Disenchant.lua", "SellAdvice.lua", "QuestItems.lua", "Sessions.lua", "Training.lua", "Sync.lua", "ShoppingLists.lua", "BuyQueue.lua", "Watched.lua", "AuctionHouse.lua", "Auctions.lua", "PriceWindow.lua" }
 local wanted = {}
 for _, f in ipairs(LOAD) do wanted[f] = true end

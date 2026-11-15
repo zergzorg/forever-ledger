@@ -532,20 +532,20 @@ local function rowTooltip(r)
   if session then
     -- A session: where its gold came from and what it looted best.
     local function line(a, b, r, g, bl) GameTooltip:AddDoubleLine(a, b, 0.7, 0.7, 0.7, r or 1, g or 1, bl or 1) end
-    GameTooltip:AddLine(("%s, %s"):format(rec.item, date("%b %d %H:%M", rec.t or 0)), 1, 1, 1)
-    line("Length", show(rec, "length"))
+    GameTooltip:AddLine(("%s, %s"):format(rec.item, date("%d.%m %H:%M", rec.t or 0)), 1, 1, 1)
+    line("Длительность", show(rec, "length"))
     local function gold(v, r, g, bl) if (v or 0) > 0 then return ns.Money(v), r, g, bl end return ns.Money(0), 0.6, 0.6, 0.6 end
-    if session.earned then line("Gold in", gold(session.earned, 0.5, 0.83, 0.61)) end
-    if session.spent then line("Gold out", gold(session.spent, 0.93, 0.52, 0.59)) end
-    if rec.rate then line("Gold an hour", show(rec, "rate")) end
-    if rec.loot then line("Looted, worth about", ns.Money(rec.loot)) end
-    if session.runs and session.runs > 0 then line(session.kind == "general" and "Dungeon runs" or "Runs", tostring(session.runs)) end
+    if session.earned then line("Приход", gold(session.earned, 0.5, 0.83, 0.61)) end
+    if session.spent then line("Расход", gold(session.spent, 0.93, 0.52, 0.59)) end
+    if rec.rate then line("Золото в час", show(rec, "rate")) end
+    if rec.loot then line("Добыто, примерно на", ns.Money(rec.loot)) end
+    if session.runs and session.runs > 0 then line(session.kind == "general" and "Забеги по подземельям" or "Забеги", tostring(session.runs)) end
     local by = {}
     for src, v in pairs(session.money or {}) do if v ~= 0 then by[#by + 1] = { src, v } end end
     table.sort(by, function(a, b) return math.abs(a[2]) > math.abs(b[2]) end)
     if #by > 0 then
       GameTooltip:AddLine(" ")
-      GameTooltip:AddLine("Gold by where it came from", 1, 0.82, 0)
+      GameTooltip:AddLine("Золото по источникам", 1, 0.82, 0)
       for k = 1, math.min(6, #by) do
         local v = by[k][2]
         line("  " .. ((ns.MONEY_LABELS and ns.MONEY_LABELS[by[k][1]]) or by[k][1]), (v > 0 and "+" or "-") .. ns.Money(math.abs(v)),
@@ -554,18 +554,18 @@ local function rowTooltip(r)
     end
     if session.top and #session.top > 0 then
       GameTooltip:AddLine(" ")
-      GameTooltip:AddLine("Best loot", 1, 0.82, 0)
+      GameTooltip:AddLine("Лучшая добыча", 1, 0.82, 0)
       for _, it in ipairs(session.top) do
         line(("  %d x %s"):format(it[2] or 1, nameOf(it[1])), it[3] and ns.Money(it[3]) or "")
       end
     end
     if #by == 0 and not (session.top and #session.top > 0) then
       GameTooltip:AddLine(" ")
-      GameTooltip:AddLine((session.money or session.top) and "Nothing earned, spent or looted in it."
-        or "No breakdown saved for this session (older ones kept only totals).", 0.6, 0.6, 0.6, true)
+      GameTooltip:AddLine((session.money or session.top) and "В ней ничего не заработано, не потрачено и не добыто."
+        or "Для этой сессии разбивка не сохранена (у старых остались только итоги).", 0.6, 0.6, 0.6, true)
     end
-    if rec.char then line("Character", charName(rec.char)) end
-    GameTooltip:AddLine("Click to select; Shift-click or drag for several to total them.", 0.5, 0.5, 0.5, true)
+    if rec.char then line("Персонаж", charName(rec.char)) end
+    GameTooltip:AddLine("Клик — выбрать; Shift+клик или протяните мышью, чтобы сложить несколько.", 0.5, 0.5, 0.5, true)
     GameTooltip:Show()
     return
   end

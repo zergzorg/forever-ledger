@@ -66,8 +66,8 @@ end
 
 local function duration(secs)
   local h, m = math.floor(secs / 3600), math.floor(secs % 3600 / 60)
-  if h > 0 then return ("%dh %02dm"):format(h, m) end
-  return ("%dm %02ds"):format(m, secs % 60)
+  if h > 0 then return ("%d ч %02d мин"):format(h, m) end
+  return ("%d мин %02d с"):format(m, secs % 60)
 end
 local function signed(c) return (c < 0 and "-" or "+") .. ns.Money(math.abs(c)) end
 
@@ -178,7 +178,7 @@ local function buildTracker()
   if pos then f:SetPoint(pos[1], UIParent, pos[2], pos[3], pos[4]) else f:SetPoint("TOP", UIParent, "TOP", 0, -140) end
 
   f.title = T:Text(f, 11)
-  T:StyleHeading(f.title, "Session")
+  T:StyleHeading(f.title, "Сессия")
   f.time = T:Text(f, 11, T.dim)
   f.rate = T:Text(f, 15, { 1, 0.82, 0, 1 })
   f.rate:SetPoint("TOPLEFT", 8, -24)
@@ -190,7 +190,7 @@ local function buildTracker()
   f.smallRate = T:Text(f, 11, { 1, 0.82, 0, 1 })
   f.smallRate:SetPoint("RIGHT", -8, 0)
   f.smallRate:SetJustifyH("RIGHT")
-  f.stop = T:Button(f, "Stop", 40, function() ns:StopGeneralSession() end, 16)
+  f.stop = T:Button(f, "Стоп", 40, function() ns:StopGeneralSession() end, 16)
   f.stop:SetPoint("TOPRIGHT", -5, -6)
   f.stop:GetFontString():SetFont(T.font, 10, "")
   layoutTracker(f)
@@ -198,9 +198,9 @@ local function buildTracker()
     local st = ns:SessionTotals()
     if not st then return end
     GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
-    GameTooltip:AddLine("Session", 1, 1, 1)
-    GameTooltip:AddDoubleLine("Gold in", ns.Money(st.earned), 0.8, 0.8, 0.8, 1, 1, 1)
-    GameTooltip:AddDoubleLine("Gold out", ns.Money(st.spent), 0.8, 0.8, 0.8, 1, 1, 1)
+    GameTooltip:AddLine("Сессия", 1, 1, 1)
+    GameTooltip:AddDoubleLine("Приход", ns.Money(st.earned), 0.8, 0.8, 0.8, 1, 1, 1)
+    GameTooltip:AddDoubleLine("Расход", ns.Money(st.spent), 0.8, 0.8, 0.8, 1, 1, 1)
     -- Where it came from and went (owner's test, October 3: "+1g 84s, I don't think
     -- that's right"): auction sales, vendor, mail, loot..., biggest first.
     local by = {}
@@ -211,14 +211,14 @@ local function buildTracker()
       GameTooltip:AddDoubleLine("  " .. label, (x[2] < 0 and "|cffee8597-|r" or "|cff7fd39c+|r") .. ns.Money(math.abs(x[2])),
         0.7, 0.7, 0.7, 1, 1, 1)
     end
-    GameTooltip:AddDoubleLine("Looted, worth about", ns.Money(st.loot), 0.8, 0.8, 0.8, 1, 1, 1)
+    GameTooltip:AddDoubleLine("Добыто, примерно на", ns.Money(st.loot), 0.8, 0.8, 0.8, 1, 1, 1)
     for k = 1, math.min(5, #st.items) do
       local it = st.items[k]
       GameTooltip:AddDoubleLine(("  %d x %s"):format(it.n, ns.ItemName(it.id) or "?"), ns.Money(it.value), 0.7, 0.7, 0.7, 1, 1, 1)
     end
-    GameTooltip:AddLine("Loot counts at the better of the auction house (after the cut) and a vendor; Settings can make it vendor only.", 0.6, 0.6, 0.6, true)
-    GameTooltip:AddLine(ns.db.settings.sessionSmall and "Drag to move. Right-click for the full view; Stop is there."
-      or "Drag to move. Right-click to fold it to one line.", 0.6, 0.6, 0.6, true)
+    GameTooltip:AddLine("Добыча считается по лучшей из цен аукциона (за вычетом комиссии) и торговца; в настройках можно считать только по торговцу.", 0.6, 0.6, 0.6, true)
+    GameTooltip:AddLine(ns.db.settings.sessionSmall and "Перетащите, чтобы переместить. Правый клик — полный вид, там же «Стоп»."
+      or "Перетащите, чтобы переместить. Правый клик — свернуть в одну строку.", 0.6, 0.6, 0.6, true)
     GameTooltip:Show()
   end)
   f:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -232,10 +232,10 @@ drawTracker = function()
   -- test, October 3: "-21g 60s an hour" 20 seconds in).
   local rate = st.secs >= 120 and rateText(st.perHour) or "|cff888888...|r"
   tracker.time:SetText(duration(st.secs))
-  tracker.rate:SetText(st.secs >= 120 and (rate .. " |cffbbbbbban hour|r") or "|cff888888an hour: after 2 min|r")   -- (shorter: the longer text ran past the tracker, October 4)
-  tracker.smallRate:SetText(rate .. " |cffbbbbbb/h|r")
-  tracker.gold:SetText(("|cff999999Gold|r |cff%s%s|r"):format(st.gained >= 0 and "7fd39c" or "ee8597", signed(st.gained)))
-  tracker.loot:SetText(("|cff999999Loot|r %s"):format(ns.Money(st.loot)))
+  tracker.rate:SetText(st.secs >= 120 and (rate .. " |cffbbbbbbв час|r") or "|cff888888в час: через 2 мин|r")   -- (shorter: the longer text ran past the tracker, October 4)
+  tracker.smallRate:SetText(rate .. " |cffbbbbbb/ч|r")
+  tracker.gold:SetText(("|cff999999Золото|r |cff%s%s|r"):format(st.gained >= 0 and "7fd39c" or "ee8597", signed(st.gained)))
+  tracker.loot:SetText(("|cff999999Добыча|r %s"):format(ns.Money(st.loot)))
 end
 
 local function showTracker()
@@ -257,7 +257,7 @@ end
 function ns:StartGeneralSession()
   local s = live()
   if s and s.char == ns.CharKey() then
-    ns:Print("A session is already running: /fl session stop ends it.")
+    ns:Print("Сессия уже идёт: /fl session stop завершит её.")
     return
   elseif s then
     -- One left running on another character: end it (kept with your sessions) and
@@ -266,11 +266,11 @@ function ns:StartGeneralSession()
     -- owner's test, October 4).
     local c = ns.db.chars[s.char]
     local kept = ns:StopGeneralSession(true)
-    ns:Print(("Ended the session left running on %s (%s)."):format((c and c.name) or s.char,
-      kept and "it's in your sessions" or "nothing happened in it, so it isn't kept"))
+    ns:Print(("Завершена сессия, оставшаяся на %s (%s)."):format((c and c.name) or s.char,
+      kept and "она в ваших сессиях" or "в ней ничего не произошло, поэтому она не сохранена"))
   end
   ns.db.liveSession = { t = time(), resume = time(), active = 0, char = ns.CharKey(), money = {}, loot = {} }
-  ns:Print("Session started: gold in and out and what you loot are counted. /fl session stop (or Stop on the tracker) ends it.")
+  ns:Print("Сессия начата: считаются приход и расход золота и ваша добыча. Завершить: /fl session stop (или «Стоп» на счётчике).")
   showTracker()
   if ns.RefreshUI then ns:RefreshUI() end
 end
@@ -279,20 +279,20 @@ end
 -- Returns true when the session was kept.
 function ns:StopGeneralSession(quiet)
   local s = live()
-  if not s then ns:Print("No session is running. /fl session start begins one."); return end
+  if not s then ns:Print("Сессия не идёт. /fl session start начнёт её."); return end
   local st = ns:SessionTotals(s)
   ns.db.liveSession = nil
   hideTracker()
   -- Started and stopped with nothing happening (a misclick, a test): not kept (owner's
   -- test, October 3: the Dashboard listed several "0 min, gold 0c" sessions).
   if st.secs < 60 and st.earned == 0 and st.spent == 0 and st.loot == 0 then
-    if not quiet then ns:Print("Session stopped. Nothing happened in it, so it isn't kept.") end
+    if not quiet then ns:Print("Сессия остановлена. В ней ничего не произошло, поэтому она не сохранена.") end
     if ns.RefreshUI then ns:RefreshUI() end
     return false
   end
   local top = {}
   for k = 1, math.min(5, #st.items) do top[k] = { st.items[k].id, st.items[k].n, st.items[k].value } end
-  table.insert(ns.db.sessions, { kind = "general", name = "Session", c = s.char, t = s.t, stop = time(), secs = st.secs, earned = st.earned,
+  table.insert(ns.db.sessions, { kind = "general", name = "Сессия", c = s.char, t = s.t, stop = time(), secs = st.secs, earned = st.earned,
     spent = st.spent, loot = st.loot, top = top, runs = 0, money = s.money })
   while #ns.db.sessions > 100 do table.remove(ns.db.sessions, 1) end
   if ns.BooksChanged then ns:BooksChanged() end
@@ -300,7 +300,7 @@ function ns:StopGeneralSession(quiet)
     if ns.RefreshUI then ns:RefreshUI() end
     return true
   end
-  ns:Print(("Session over after %s: gold %s, looted about %s, so about %s an hour."):format(duration(st.secs),
+  ns:Print(("Сессия длилась %s: золото %s, добыто примерно на %s — примерно %s в час."):format(duration(st.secs),
     signed(st.gained), ns.Money(st.loot), rateText(st.perHour)))
   -- Gold by where it came from, biggest first.
   local by = {}

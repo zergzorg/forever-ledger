@@ -9,7 +9,7 @@ import re
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent / "addon"
+ROOT = Path(__file__).resolve().parent
 DISPLAY = re.compile(r":(SetText|AddLine|AddDoubleLine|SetTitleText|ShowTextWindow)\(|ns:Print\(|(?<![\w.])print\(")
 LABEL = re.compile(r"\b(label|title|desc|sub|help|suffix)\s*=\s*")
 STRING = re.compile(r'"((?:[^"\\]|\\.)*)"')
