@@ -1,18 +1,16 @@
 local _, ns = ...
 
 ---------------------------------------------------------------------------
--- Training (owner, October 5): groundwork for "skip spell ranks you don't use" at the
--- class trainer, and the riding fund. Three things, all to be confirmed in the beta:
+-- Trainers and the riding fund (owner, October 5). The training advice built on this (spell
+-- casts, spellbook ranks, talent trees) was archived November 14 (Frank: other addons do it
+-- better), with the Leveling tab and dungeon runs.
 --  - What class and riding trainers teach, with cost and level, saved when a trainer
 --    window is read (RecipeBook.lua reads it with every filter on and hands the list
---    here). /fl trainer shows the last one, to check names against the skip lists.
---  - Which spells each character casts (UNIT_SPELLCAST_SUCCEEDED, own unit only), by
---    name, with the last time: a rank of something never cast can be skipped.
+--    here). /fl trainer shows the last one.
 --  - Riding: whether the character knows it (ns:RidingTier), and what training costs.
 --
 -- ns.db.trainers[class] = { t, npc, spells = { [name] = { [sub] = { cost, level } } } }
 -- ns.db.riding = { [service name] = { cost, level, t } }
--- ns.db.casts[charKey] = { [spell name] = last time cast }
 ---------------------------------------------------------------------------
 local lastRead   -- the last trainer read: { name, npc, prof, list }
 
@@ -52,44 +50,10 @@ function ns:TrainerRead(list, npc, npcID, prof)
     end
     cat.t, cat.npc = time(), npc
     ns:Debug(("Training: %s teaches %d %s spells (%d services)."):format(npc or "?", n, class or "?", #list))
-    -- The advice panel only where the trainer teaches spells on your class's list (owner,
-    -- October 6: not at the riding trainer; the portal trainer is fine).
-    local advice = ns.TRAINER_ADVICE and ns.TRAINER_ADVICE[class or ""]
-    local known = false
-    for name in pairs(spells) do if advice and advice[name] then known = true end end
-    if known and ns.ShowTrainingAdvice then ns:ShowTrainingAdvice(list) end
   end
   if riding > 0 then ns:Debug(("Training: %d riding services seen at %s."):format(riding, npc or "?")) end
 end
 
--- Spells you cast, by name (ranks share a name): the last time each was cast.
--- At 60 there's nothing left to level for (owner, October 6: the training advice shouldn't
--- load on a level 60): the advice list is dropped at login, and casts aren't counted.
-local function maxLevel() return (UnitLevel("player") or 0) >= 60 end
-ns:OnReady(function() if maxLevel() then ns.TRAINER_ADVICE = nil end end)
-
--- The Levelling help module (Settings, Global settings, Modules): on, and not at 60.
-function ns:LevellingOn()
-  return ns.db.settings.moduleLevelling ~= false and not maxLevel()
-end
-
-ns:On("UNIT_SPELLCAST_SUCCEEDED", function(unit, _, spellID)
-  if unit ~= "player" or not spellID or not ns:LevellingOn() then return end
-  local name = ns.SpellName(spellID)
-  if not name then return end
-  ns.db.casts = ns.db.casts or {}
-  local key = ns.CharKey()
-  ns.db.casts[key] = ns.db.casts[key] or {}
-  ns.db.casts[key][name] = time()
-  -- When counting began for this character: "not cast lately" needs a week of counting.
-  ns.db.castsSince = ns.db.castsSince or {}
-  ns.db.castsSince[key] = ns.db.castsSince[key] or time()
-end)
-
-function ns:LastCast(name, key)
-  local c = ns.db.casts and ns.db.casts[key or ns.CharKey()]
-  return c and c[name]
-end
 
 -- Riding the character knows: 0 none, 1 riding, 2 epic riding. Tried several ways, as
 -- Forever's client may keep riding as spells (modern) or as a skill (Classic); the
@@ -152,37 +116,6 @@ function ns:SpellbookRiding()
   return ok and found or {}
 end
 
--- The spells you know, by name, with the highest rank number the spellbook shows ("Rank 3"
--- under the name; 0 when it shows none). The trainer list in Forever only goes back to
--- about level 20, so the ranks you know come from here (owner's screenshot, October 5:
--- the panel said "rank 1" for Frostbolt, really rank 4).
-function ns:KnownSpellRanks()
-  local known = {}
-  local function add(name, sub)
-    if not name then return end
-    local r = tonumber(type(sub) == "string" and sub:match("(%d+)") or "") or 0
-    known[name] = math.max(known[name] or 0, r)
-  end
-  local SB = C_SpellBook
-  pcall(function()
-    if SB and SB.GetNumSpellBookSkillLines and SB.GetSpellBookSkillLineInfo and SB.GetSpellBookItemName then
-      local bank = Enum and Enum.SpellBookSpellBank and Enum.SpellBookSpellBank.Player or 0
-      for i = 1, SB.GetNumSpellBookSkillLines() or 0 do
-        local info = SB.GetSpellBookSkillLineInfo(i)
-        for j = (info and info.itemIndexOffset or 0) + 1, (info and (info.itemIndexOffset + info.numSpellBookItems) or 0) do
-          add(SB.GetSpellBookItemName(j, bank))
-        end
-      end
-    elseif GetNumSpellTabs and GetSpellTabInfo and GetSpellBookItemName then
-      for i = 1, GetNumSpellTabs() do
-        local _, _, offset, count = GetSpellTabInfo(i)
-        for j = (offset or 0) + 1, (offset or 0) + (count or 0) do add(GetSpellBookItemName(j, BOOKTYPE_SPELL or "spell")) end
-      end
-    end
-  end)
-  return known
-end
-
 -- For /fl api: what each way of telling says.
 function ns:RidingReport()
   local parts = {}
@@ -195,43 +128,6 @@ function ns:RidingReport()
   local book = ns:SpellbookRiding()
   return ("tier %d; spells (player/known): %s; spellbook: %s"):format(ns:RidingTier(), table.concat(parts, ", "),
     #book > 0 and table.concat(book, ", ") or "no Riding spell")
-end
-
--- Talents (to tell which tree a character levels in): name and points per tab. Forever
--- has no Classic talent functions (owner's /fl api, October 5), so the newer ones are
--- tried and reported too.
-function ns:TalentReport()
-  if not GetNumTalentTabs then
-    local parts = {}
-    local function try(label, fn)
-      local ok, a, b = pcall(fn)
-      parts[#parts + 1] = ("%s=%s"):format(label, ok and (tostring(a) .. (b ~= nil and ("/" .. tostring(b)) or "")) or "err")
-    end
-    try("GetSpecialization", function() return GetSpecialization and GetSpecialization() end)
-    try("C_SpecializationInfo", function() return C_SpecializationInfo ~= nil, C_SpecializationInfo and C_SpecializationInfo.GetSpecialization and C_SpecializationInfo.GetSpecialization() end)
-    try("C_ClassTalents.GetActiveConfigID", function() return C_ClassTalents and C_ClassTalents.GetActiveConfigID and C_ClassTalents.GetActiveConfigID() end)
-    try("C_Traits", function() return C_Traits ~= nil end)
-    try("C_Talent", function() return C_Talent ~= nil end)
-    try("GetNumTalents", function() return GetNumTalents and GetNumTalents() end)
-    try("GetActiveTalentGroup", function() return GetActiveTalentGroup and GetActiveTalentGroup() end)
-    try("UnitCharacterPoints", function() return UnitCharacterPoints and UnitCharacterPoints("player") end)
-    return "no GetNumTalentTabs; " .. table.concat(parts, ", ")
-  end
-  local ok, n = pcall(GetNumTalentTabs)
-  if not ok then return "GetNumTalentTabs error" end
-  local parts = {}
-  for i = 1, (n or 0) do
-    local okT, a, b, c, d, e = pcall(GetTalentTabInfo, i)
-    -- Classic: name, icon, pointsSpent, fileName; later clients: id, name, desc, icon, points.
-    if okT then
-      local name = type(a) == "string" and a or b
-      local points = type(c) == "number" and c or e
-      parts[#parts + 1] = ("%s %s"):format(tostring(name), tostring(points))
-    else
-      parts[#parts + 1] = "tab " .. i .. " error"
-    end
-  end
-  return ("%d tabs: %s"):format(n or 0, table.concat(parts, ", "))
 end
 
 -- /fl trainer: the last trainer read this session, every service with its state, rank,
@@ -270,13 +166,6 @@ function ns:PrintTrainer()
     local ok, desc = pcall(function() return GetTrainerServiceDescription and GetTrainerServiceDescription(1) end)
     if ok and desc then print("  Its description: " .. tostring(desc):sub(1, 120)) end
   end
-  local book = ns:KnownSpellRanks()
-  local n, sample = 0, {}
-  for name, r in pairs(book) do
-    n = n + 1
-    if #sample < 6 then sample[#sample + 1] = name .. " " .. r end
-  end
-  print(("  Spellbook: %d spells; ranks read: %s"):format(n, table.concat(sample, ", ")))
 end
 
 -- A spell's ranks at the trainer, lowest level first: { { level, cost }, ... }.
@@ -304,7 +193,7 @@ local RIDING_GUESS = {
   { name = "Journeyman Riding", short = "Epic riding at 60", level = 60, training = 9000000, mount = 1000000, match = "Journeyman" },
 }
 function ns:RidingFund(goldNow, totals, goldFirst)
-  if ns.db.settings.ridingFund == false or ns.db.settings.moduleLevelling == false then return end
+  if ns.db.settings.ridingFund == false then return end
   local c = ns.db.chars[ns.CharKey()]
   if c and c.noRidingFund then return end
   local tier = ns:RidingTier()
@@ -330,9 +219,7 @@ end
 function ns:FundCommand()
   local c = ns.db.chars[ns.CharKey()]
   if c then c.noRidingFund = nil end
-  if ns.db.settings.moduleLevelling == false then
-    ns:Print("Leveling help is switched off: Settings, Global settings, Modules.")
-  elseif ns.db.settings.ridingFund == false then
+  if ns.db.settings.ridingFund == false then
     ns:Print("The riding fund is switched off everywhere: Settings, Global settings, Modules.")
   else
     ns:Print("Riding fund shown on this character's Dashboard again.")
@@ -340,154 +227,3 @@ function ns:FundCommand()
   ns:RefreshUI()
 end
 
----------------------------------------------------------------------------
--- /fl talents: how Forever's talents read (owner's /fl api, October 5: no Classic talent
--- functions; C_ClassTalents and C_Traits exist, config 1041811, C_SpecializationInfo
--- says 1). Prints the config, its trees, and the talents with points in them (by spell
--- name), so the tree a character levels in can be worked out. Everything in pcall.
----------------------------------------------------------------------------
-function ns:TalentProbe()
-  local function try(fn) local ok, a, b, c = pcall(fn); if ok then return a, b, c end end
-  ns:Print("Talents:")
-  local saved = ns:SaveTalentLayout()
-  print("  Layout saved: " .. (saved and "yes" or "no (talents not readable yet)"))
-  local configID = try(function() return C_ClassTalents.GetActiveConfigID() end)
-  print("  Active config: " .. tostring(configID))
-  local spec = try(function() return C_SpecializationInfo.GetSpecialization() end)
-  print("  Specialization: " .. tostring(spec))
-  for i = 1, 3 do
-    local a, b, c = try(function() return C_SpecializationInfo.GetSpecializationInfo(i) end)
-    if a or b then print(("  Spec %d: %s, %s, %s"):format(i, tostring(a), tostring(b), tostring(c))) end
-  end
-  local thirds = ns.TalentThirds and ns:TalentThirds()
-  if thirds then
-    print(("  Points by tree: %s %d, %s %d, %s %d; leveling as: %s"):format(thirds.names[1], thirds.points[1],
-      thirds.names[2], thirds.points[2], thirds.names[3], thirds.points[3], tostring(ns:LevellingTree())))
-  end
-  if not (configID and C_Traits) then return end
-  local info = try(function() return C_Traits.GetConfigInfo(configID) end)
-  local trees = info and info.treeIDs or {}
-  print(("  Config: type %s, name %s, %d trees"):format(tostring(info and info.type), tostring(info and info.name), #trees))
-  for _, treeID in ipairs(trees) do
-    local nodes = try(function() return C_Traits.GetTreeNodes(treeID) end) or {}
-    local picked, xs = {}, {}
-    for _, nodeID in ipairs(nodes) do
-      local node = try(function() return C_Traits.GetNodeInfo(configID, nodeID) end)
-      if node then
-        xs[#xs + 1] = node.posX
-        if (node.ranksPurchased or node.activeRank or 0) > 0 then
-          local entryID = node.activeEntry and node.activeEntry.entryID or (node.entryIDs and node.entryIDs[1])
-          local entry = entryID and try(function() return C_Traits.GetEntryInfo(configID, entryID) end)
-          local def = entry and entry.definitionID and try(function() return C_Traits.GetDefinitionInfo(entry.definitionID) end)
-          local name = def and (def.overrideName or (def.spellID and ns.SpellName(def.spellID)))
-          picked[#picked + 1] = ("%s %d (x %s, y %s)"):format(tostring(name or nodeID), node.ranksPurchased or node.activeRank or 0,
-            tostring(node.posX), tostring(node.posY))
-        end
-      end
-    end
-    table.sort(xs)
-    print(("  Tree %s: %d nodes, x from %s to %s; with points: %s"):format(tostring(treeID), #nodes, tostring(xs[1]),
-      tostring(xs[#xs]), #picked > 0 and table.concat(picked, "; ") or "none"))
-  end
-end
-
--- Each class's talent layout, saved for checking the tree order (owner, October 6: a
--- level 1 of each class, so nothing needs copying from chat): every talent's name and
--- position, as "name:x:y;..." in ns.db.talentLayout[class] = { t, tree, nodes }. Read
--- at login (a few seconds after, when talents are loaded) and by /fl talents.
-function ns:SaveTalentLayout()
-  local ok, layout = pcall(function()
-    local configID = C_ClassTalents and C_ClassTalents.GetActiveConfigID and C_ClassTalents.GetActiveConfigID()
-    local info = configID and C_Traits and C_Traits.GetConfigInfo(configID)
-    local treeID = info and info.treeIDs and info.treeIDs[1]
-    if not treeID then return end
-    local parts = {}
-    for _, nodeID in ipairs(C_Traits.GetTreeNodes(treeID) or {}) do
-      local node = C_Traits.GetNodeInfo(configID, nodeID)
-      if node and node.posX then
-        local entryID = (node.activeEntry and node.activeEntry.entryID) or (node.entryIDs and node.entryIDs[1])
-        local entry = entryID and C_Traits.GetEntryInfo(configID, entryID)
-        local def = entry and entry.definitionID and C_Traits.GetDefinitionInfo(entry.definitionID)
-        local name = def and (def.overrideName or (def.spellID and ns.SpellName(def.spellID))) or tostring(nodeID)
-        parts[#parts + 1] = ("%s:%d:%d"):format(name:gsub("[:;]", " "), node.posX, node.posY or 0)
-      end
-    end
-    if #parts == 0 then return end
-    return { t = time(), tree = treeID, nodes = table.concat(parts, ";") }
-  end)
-  if not ok or not layout then return end
-  local _, class = UnitClass("player")
-  ns.db.talentLayout = ns.db.talentLayout or {}
-  ns.db.talentLayout[class or "?"] = layout
-  return layout
-end
-ns:On("PLAYER_ENTERING_WORLD", function()
-  if C_Timer then C_Timer.After(5, function() ns:SaveTalentLayout() end) end
-end)
-
----------------------------------------------------------------------------
--- Which tree a character levels in. Forever has one talent tree per class (owner's
--- /fl talents, October 5: Mage, tree 1112, 54 talents, x 1020 to 10880), with Classic's
--- three trees side by side, in Classic's order left to right: a Mage's Frost talents
--- were on the right (x 9080 to 10280). So: thirds of the x range, the most points wins.
--- Classic's order per class, confirmed for all nine from their saved layouts (October 6:
--- Bestial Wrath left, Trueshot Aura middle, Counterattack right, and so on).
----------------------------------------------------------------------------
-local TREES = {
-  MAGE = { "Arcane", "Fire", "Frost" }, WARRIOR = { "Arms", "Fury", "Protection" },
-  PALADIN = { "Holy", "Protection", "Retribution" }, PRIEST = { "Discipline", "Holy", "Shadow" },
-  ROGUE = { "Assassination", "Combat", "Subtlety" }, HUNTER = { "Beast Mastery", "Marksmanship", "Survival" },
-  WARLOCK = { "Affliction", "Demonology", "Destruction" }, SHAMAN = { "Elemental", "Enhancement", "Restoration" },
-  DRUID = { "Balance", "Feral Combat", "Restoration" },
-}
-
--- Which of the three trees a talent's x position is in. Every class uses the same grid
--- (saved layouts of all nine classes, October 6): left 1020-2820, middle 5020-6820,
--- right 9080-10880. Fixed boundaries, not the lowest and highest x: a few talents have
--- stray positions (Hunter's Lightning Reflexes at x 102800), which put nearly every
--- Hunter talent in the first tree.
-function ns.TalentThird(x)
-  if x < 3900 then return 1 elseif x < 7950 then return 2 end
-  return 3
-end
-
--- { names, points = { a, b, c } } or nil when talents can't be read.
-function ns:TalentThirds()
-  local ok, result = pcall(function()
-    local configID = C_ClassTalents and C_ClassTalents.GetActiveConfigID and C_ClassTalents.GetActiveConfigID()
-    local info = configID and C_Traits and C_Traits.GetConfigInfo(configID)
-    local treeID = info and info.treeIDs and info.treeIDs[1]
-    if not treeID then return end
-    local nodes = {}
-    for _, nodeID in ipairs(C_Traits.GetTreeNodes(treeID) or {}) do
-      local node = C_Traits.GetNodeInfo(configID, nodeID)
-      if node and node.posX then nodes[#nodes + 1] = node end
-    end
-    if #nodes == 0 then return end
-    local points = { 0, 0, 0 }
-    for _, node in ipairs(nodes) do
-      local spent = node.ranksPurchased or node.activeRank or 0
-      if spent > 0 then
-        local third = ns.TalentThird(node.posX)
-        points[third] = points[third] + spent
-      end
-    end
-    local _, class = UnitClass("player")
-    return { names = TREES[class or ""] or { "Left", "Middle", "Right" }, points = points }
-  end)
-  return ok and result or nil
-end
-
--- The tree with the most points ("Frost"), or nil with no points spent. A choice made
--- for the character (c.levelTree, Settings later) wins.
-function ns:LevellingTree(key)
-  local c = ns.db.chars[key or ns.CharKey()]
-  if c and c.levelTree then return c.levelTree end
-  if key and key ~= ns.CharKey() then return c and c.tree end
-  local t = ns:TalentThirds()
-  if not t then return c and c.tree end
-  local best, most = nil, 0
-  for i, p in ipairs(t.points) do if p > most then best, most = t.names[i], p end end
-  if c then c.tree = best end
-  return best
-end

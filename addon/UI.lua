@@ -112,8 +112,6 @@ local TABS = {
   { key = "crates", label = "Crates", setting = "crates" },
   { key = "recipes", label = "Recipes" },
   { key = "characters", label = "Characters" },
-  -- Levelling help module, under level 20 (Levelling.lua; owner, October 7).
-  { key = "levelling", label = "Leveling", show = function() return ns.LevellingTabShown and ns:LevellingTabShown() end },
   { key = "settings", label = "Settings" },
   { key = "help", label = "Help" },
 }
@@ -188,7 +186,6 @@ local function buildMain()
     crates = ns:BuildCrates(main.body),
     recipes = ns:BuildRecipes(main.body),
     characters = ns:BuildCharacters(main.body),   -- Characters.lua
-    levelling = ns:BuildLevelling(main.body),   -- Levelling.lua
     help = ns:BuildHelp(main.body),   -- Help.lua
   }
   main.views.settings = ns:BuildSettings(main.body)   -- Settings.lua
@@ -316,7 +313,7 @@ function ns:RefreshFlipsIfShown()
     if not main.shuffles then ns:RefreshShuffles(); return end
     main.shuffles.flips = ns:FindVendorFlips()
     main.shuffleInfo:SetText(("%d shuffles, %d vendor flips (%s). Click to search the AH, right-click for details."):format(
-      #main.shuffles.vendor + #main.shuffles.ah + #main.shuffles.oneOff, #main.shuffles.flips, date("%H:%M")))
+      #main.shuffles.vendor + #main.shuffles.ah, #main.shuffles.flips, date("%H:%M")))
     layoutShuffles()
   end)
 end
@@ -385,8 +382,6 @@ function ns:RefreshUI()
     ns:RefreshRecipes()
   elseif main.view == "characters" then
     ns:RefreshCharacters()
-  elseif main.view == "levelling" then
-    ns:RefreshLevelling()
   elseif build then
     local L = {}
     build(function(s) L[#L + 1] = s or "" end)
@@ -436,8 +431,6 @@ local function buildMinimapButton()
 
   mm:SetScript("OnClick", function(_, which)
     if IsShiftKeyDown() then ns:ShowSidePanel("lists")
-    elseif IsControlKeyDown() then
-      if ns:GeneralSessionRunning() then ns:StopGeneralSession() else ns:StartGeneralSession() end
     elseif which == "RightButton" then ns:ToggleUI("shuffles") else ns:ToggleUI() end
   end)
   mm:SetScript("OnDragStart", function(self)
@@ -456,7 +449,6 @@ local function buildMinimapButton()
     GameTooltip:AddLine("Click to open or close.", 1, 1, 1)
     GameTooltip:AddLine("Right-click for shuffles.", 1, 1, 1)
     GameTooltip:AddLine("Shift-click for shopping lists.", 1, 1, 1)
-    GameTooltip:AddLine(ns:GeneralSessionRunning() and "Ctrl-click to stop the session." or "Ctrl-click to start a session.", 1, 1, 1)
     GameTooltip:AddLine("Drag to move. /fl minimap hides it.", 0.7, 0.7, 0.7)
     GameTooltip:Show()
   end)
@@ -485,7 +477,8 @@ local SUBTABS = {
   -- (owner, November 5). If none turn up for a few weeks, the vendor tab may go.
   { key = "ah", label = "Sells on the auction house" },
   { key = "vendor", label = "Sells to a vendor" },
-  { key = "oneOff", label = "Limited supply" },
+  -- (Limited supply, shuffles with a material under 5 listed, was removed November 13:
+  -- Frank never saw one there. They're in the tabs above, with Runs saying how few.)
 }
 local COLUMNS = {
   shuffles = {
@@ -610,7 +603,7 @@ buildTable = function()
   f.allProfs:HookScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
     GameTooltip:AddLine("All professions", 1, 1, 1)
-    GameTooltip:AddLine("Every profession's crafts that sell to a vendor for more than their materials cost at today's prices, whether or not one of your characters knows them. Recipes come from your profession windows; for professions none of your characters has opened, from Classic (not yet seen in Forever). Each one's steps say the profession and who of yours knows it. Recipes from is set aside while this is ticked.", nil, nil, nil, true)
+    GameTooltip:AddLine("Every profession's crafts that sell to a vendor for more than their materials cost at today's prices, whether or not one of your characters knows them. Recipes from your profession windows come first. Ones your windows haven't shown come from the game's own data (marked (Forever)), and for an item that has none, Classic's (marked (Classic)). Some may not be learnable in game yet. Each one's steps say the profession and who of yours knows it. Recipes from is set aside while this is ticked.", nil, nil, nil, true)
     GameTooltip:Show()
   end)
   f.allProfs:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -771,7 +764,9 @@ local function fillRow(r, s, lay, index, width)
   r.name:ClearAllPoints()
   r.name:SetPoint("LEFT", r.icon, "RIGHT", 6, 0)
   r.name:SetWidth(lay.name.w - 26)
-  r.name:SetText(ns:ShuffleName(s))
+  -- A Classic recipe (All professions) says so on its row, not only in its steps (Frank,
+  -- AN6, November 13: he didn't see it).
+  r.name:SetText(ns:ShuffleName(s) .. (s.classic and dim(" (Classic)") or (s.forever and dim(" (Forever)") or "")))
 
   local runs = ns:ShuffleRuns(s)
   local values = {
@@ -972,8 +967,14 @@ layoutShuffles = function()
   f.sf:ClearAllPoints()
   local vendorNote = not flips and subtab == "vendor"
   f.vendorNote:SetShown(vendorNote)
+  local classicRows, foreverRows = 0, 0
+  for _, s in ipairs(everyProf and main.shufflesAll.list or {}) do
+    if s.classic then classicRows = classicRows + 1 end
+    if s.forever then foreverRows = foreverRows + 1 end
+  end
   f.vendorNote:SetText(everyProf
-    and ("All professions: Classic's recipes where no character of yours has opened the profession; %d left out, a material with no price yet."):format(main.shufflesAll.noPrice or 0)
+    and ("Not in your profession windows: %d (Forever, the game's data), %d (Classic). %d left out, a material with no price yet."):format(
+      foreverRows, classicRows, main.shufflesAll.noPrice or 0)
     or "Blizzard nerfed most vendor shuffles, so this tab may often be empty.")
   f.sf:SetPoint("TOPLEFT", 0, -top)
   f.sf:SetPoint("BOTTOMRIGHT", 0, vendorNote and 22 or 0)
@@ -1049,12 +1050,12 @@ end)
 
 function ns:RefreshShuffles()
   if not main then return end
-  local vendor, ah, oneOff, flips = ns:FindShuffles()
+  local vendor, ah, flips = ns:FindShuffles()
 
   -- Debug: name the shuffles that came or went since the last refresh.
   if ns.db.settings.debug then
     local now, before = {}, main.shuffleKeys
-    for _, list in ipairs({ vendor, ah, oneOff, flips }) do
+    for _, list in ipairs({ vendor, ah, flips }) do
       for _, s in ipairs(list) do now[s.key] = ns:ShuffleTitle(s) .. " (" .. ns.Money(s.profit) .. ")" end
     end
     if before then
@@ -1064,11 +1065,11 @@ function ns:RefreshShuffles()
     main.shuffleKeys = now
   end
 
-  main.shuffles = { vendor = vendor, ah = ah, oneOff = oneOff, flips = flips }
+  main.shuffles = { vendor = vendor, ah = ah, flips = flips }
   if allProfs then computeAllProfs() end
   -- Short, so it fits the smallest window (the tabs' own tips say the rest).
   main.shuffleInfo:SetText(("%d shuffles, %d vendor flips (%s). %s"):format(
-    #vendor + #ah + #oneOff, #flips, date("%H:%M"),
+    #vendor + #ah, #flips, date("%H:%M"),
     main.view == "flips" and "Click to search the AH, right-click for details." or "Click a column to sort, a row for details."))
   if main.view == "shuffles" or main.view == "flips" then layoutShuffles() end
 end

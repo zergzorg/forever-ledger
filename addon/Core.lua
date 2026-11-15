@@ -20,6 +20,9 @@ local DEFAULTS = {
   sales = {},       -- auction house sales: { t, c = charKey, n = item name, a = copper received, cut }
   purchases = {},   -- auction house purchases: { t, c, id, q, a }
   vendorLog = {},   -- vendor buys and sells: { t, c, id, q, a, s = "buy" | "sell" }
+  otherLog = {},    -- other money one by one, 30 days: { t, c, s = source, a = copper } (History.lua; day totals stay in money)
+  otherLogSince = {}, -- [charKey] = when its other money began to be logged one by one (Ledger.lua uses otherLog from then)
+  otherLogCut = {},   -- [charKey] = newest entry of it the size limit removed (Ledger.lua: that day and before as day totals)
   recipeBook = {},  -- [profession][recipeID] = { n, out, oq, r } every recipe, learned or not (RecipeBook.lua)
   recipeSources = {}, -- [recipe name lowercased][kind..npc] = { kind, conf = "seen", npc, npcID, mapID, x, y, zone, cost, currency, skill, limited, t }
   vendors = {},     -- [npcID] = { name, mapID, x, y, zone, t, trainer }
@@ -31,7 +34,7 @@ local DEFAULTS = {
   itemNames = {},   -- [itemID] = name, remembered so lists don't flicker (Prices.lua ns.ItemName)
   disenchants = {}, -- { t, id, ilvl, q, cls, mats = { [itemID] = count } } (Disenchant.lua, last 1000)
   sync = {},        -- [partner name lowercased] = { sentUpTo = time } (Sync.lua; partner in settings.syncPartner)
-  sessions = {},    -- finished sessions: { name, t, stop, spent, earned, runs, goal } (the running one is `session`)
+  sessions = {},    -- finished sessions (Sessions.lua, archived November 13: kept and synced, no longer shown)
   history = {},       -- [marketKey][itemID] = "day:cheapest:typical|..." (90 days, History.lua)
   historyWeekly = {}, -- [marketKey][itemID] = "week:cheapest:typical:days|..." (52 weeks)
   historyVersions = {},       -- [marketKey][itemID][suffix] = "day:cheapest:listed|..." gear versions from full scans (90 days)
@@ -40,7 +43,7 @@ local DEFAULTS = {
   suffixNames = {},   -- [version name, "of the Whale"] = the bonus ID full scans saw for it (Prices.lua)
   -- soldSnap = { t, market, items = { [itemID] = "price:count" } }: the last full scan's counts (Prices.lua), no default
   historyQty = {},    -- [marketKey][itemID] = "day:listed|..." most listed seen each day (last 30 days)
-  dungeons = {},      -- [dungeon name] = { runs, secs, coin, drops = { [itemID] = runs it dropped in } } (Dungeons.lua)
+  dungeons = {},      -- [dungeon name] = { runs, secs, coin, drops = { [itemID] = runs it dropped in } } (Dungeons.lua, archived November 14: kept, nothing adds to it)
   ledgerMonths = {},  -- ledger entries older than 30 days, as monthly totals per item: { { t = month start, c, k = "sale" | "buy" | "vsell" | "vbuy", id or n, q, a, cnt, mx } } (History.lua, kept a year)
   historySold2 = {},  -- [marketKey][itemID] = "day:bought:minutes:minutes|..." units that vanished though they couldn't have expired (sell speed, since October 2)
   profiles = {},     -- settings profiles: [name] = { [setting] = value } (Settings.lua; "Default" is settings itself)
@@ -48,7 +51,7 @@ local DEFAULTS = {
   quietChars = {},   -- [charKey] = true: quiet mode turned on with /fl quiet there, kept until turned off (Quiet.lua)
   shopping = { lists = {} }, -- shopping lists: { lists = { { name, on, items = { { id, max, qty } } } }, current } (ShoppingLists.lua)
   watchItems = {},   -- [itemID] = { max = copper or nil for the vendor price, t = added }: watched items (Watched.lua)
-  settings = { source = "auto", maxAgeHours = 12, tooltip = true, debug = false, watch = {}, ahCut = 5, margin = 10, actionSeconds = 3, skipChars = {}, minimap = true, minimapAngle = 200, dealSound = true, dealScreen = true, dealChat = true, sellGuard = true, watchResume = true, stackTwoClicks = false, sessionValue = "best", saleSound = true, deRolls = true, keepGold = 0, vendorItemsAH = false, undercutAlerts = true, undercutSound = true, updateNotice = true, priceHelper = true, soldSummary = true,
+  settings = { source = "auto", maxAgeHours = 12, tooltip = true, debug = false, watch = {}, ahCut = 5, margin = 10, actionSeconds = 3, skipChars = {}, minimap = true, minimapAngle = 200, dealSound = true, dealScreen = true, dealChat = true, sellGuard = true, watchResume = true, stackTwoClicks = false, saleSound = true, deRolls = true, keepGold = 0, vendorItemsAH = false, undercutAlerts = true, undercutSound = true, updateNotice = true, priceHelper = true, soldSummary = true,
     dealUsualPct = 20, dealWindow = "all", dealVendorPct = 10, dealVendorMin = 0, dealHistory = "auto", dealUsualMin = 1000, dealShowThin = false, dealsSort = {}, window = {}, ahHighlight = true, dashboard = {}, ledger = {}, deFinder = {}, crates = true, recipes = {}, openFlips = true, customers = true, customerSound = true, customerWindow = true, customerChat = false,
     svcCrafting = true, svcFood = true, svcPortal = true, svcSummon = true, svcLockpick = true,
     -- Buy queue (BuyQueue.lua): what goes in it, scroll anywhere to buy, the side panel's tab.
@@ -56,7 +59,7 @@ local DEFAULTS = {
     -- find off; it was off from October 2 so nobody bought by accident). Buying still
     -- needs the mouse over the top strip, and Up to and Spend at most still apply.
     buyQueue = { flips = true, disenchant = true, deals = false, lists = true, wheel = true, tab = "queue" },
-    tipMode = "full", tipOptions = 3, tipPrice = true, tipSpeed = true, tipSell = true, tipQuest = true, tipQuestMine = true, tipDrops = true, tipHistory = true, priceWindow = true, priceClick = "alt", tipWorth = true, tipBuy = true, tipDisenchant = true, tipUsedBy = true, tipCrate = true, tipBagSlot = true, tipNeutral = false, worthAH = true, worthVendor = true, worthDisenchant = true, worthCraft = true, ridingFund = true, trainerAdvice = true, moduleLevelling = true, levellingMine = false,
+    tipMode = "full", tipOptions = 3, tipPrice = true, tipSpeed = true, tipSell = true, tipQuest = true, tipQuestMine = true, tipDarkmoon = true, tipHistory = true, priceWindow = true, priceClick = "alt", tipWorth = true, tipBuy = true, tipDisenchant = true, tipUsedBy = true, tipCrate = true, tipBagSlot = true, tipNeutral = false, worthAH = true, worthVendor = true, worthDisenchant = true, worthCraft = true, ridingFund = true,
     -- theme: FL Gilded for new installs (owner, October 22); "default" is FL Bronze now.
     theme = "gilded", accent = "", uiScale = 100, syncMoney = false, quietWatch = false },
 }
@@ -80,6 +83,15 @@ end
 function ns:Print(...) print(ns.PREFIX, ...) end
 function ns:Debug(...)
   if ns.db and ns.db.settings.debug then print("|cff888888Ledger debug:|r", ...) end
+end
+
+-- How many of an item this character has in its bags (with includeBank, the bank too).
+-- C_Item.GetItemCount first: the old global GetItemCount is one of the item functions
+-- Blizzard moved into C_Item, like GetMerchantItemInfo, which Forever doesn't have. The
+-- sell suggestion called the old one and never showed (Frank, AN4, November 13).
+function ns.ItemCount(id, includeBank)
+  local count = (C_Item and C_Item.GetItemCount) or GetItemCount
+  return id and count and count(id, includeBank and true or false) or 0
 end
 
 function ns.Money(copper)
@@ -900,7 +912,7 @@ function ns:MergeData(data, via)
         db.prices[market][id] = rec
         nPrices = nPrices + 1
         if via and nowDay and rec.t and rec.m and not rec.none and ns.LocalDay(rec.t) == nowDay then
-          later[#later + 1] = { id, rec.m, rec.a, rec.q, market }
+          later[#later + 1] = { id, rec.m, rec.a, rec.q, market, rec = rec, day = nowDay }
         end
       end
     end
@@ -975,7 +987,7 @@ function ns:ApiReport()
     "GetProfessions", "GetNumSkillLines",
     "C_AuctionHouse.SendSearchQuery", "C_AuctionHouse.ReplicateItems", "C_AuctionHouse.GetReplicateItemTimeLeft","C_AuctionHouse.GetCommoditySearchResultInfo",
     "C_AuctionHouse.GetItemSearchResultInfo", "C_MerchantFrame.GetItemInfo", "GetMerchantItemInfo",
-    "TooltipDataProcessor.AddTooltipPostCall", "C_Item.GetItemInfo",
+    "TooltipDataProcessor.AddTooltipPostCall", "C_Item.GetItemInfo", "C_Item.GetItemCount", "GetItemCount",
     "GetInboxHeaderInfo", "GetInboxInvoiceInfo", "GetInboxItem", "GetInboxNumItems",
     -- Your auctions (Auctions.lua).
     "C_AuctionHouse.CalculateCommodityDeposit", "C_AuctionHouse.CalculateItemDeposit", "C_AuctionHouse.GetItemKeyInfo",
@@ -1043,7 +1055,6 @@ function ns:ApiReport()
   try("Hardcore", function() return C_GameRules and C_GameRules.IsHardcoreActive and C_GameRules.IsHardcoreActive() end)
   try("PvP server", function() return C_PvP and C_PvP.IsWarModeDesired and C_PvP.IsWarModeDesired(), IsPVPTimerRunning and IsPVPTimerRunning() end)
   try("Server type", function() return GetCVar and GetCVar("realmName"), GetCVar and GetCVar("portal") end)
-  try("Talents", function() return ns.TalentReport and ns:TalentReport() end)
   try("Riding", function() return ns.RidingReport and ns:RidingReport() end)
   -- Blizzard's tab art, for icon tabs on the window's right edge like the spellbook's
   -- (owner, October 7): which templates, files and atlases this client has.
@@ -1305,22 +1316,13 @@ SlashCmdList.FOREVERLEDGER = function(msg)
     ns:PrintPerf(msg == "perf reset")
   elseif msg == "de" or msg == "de reset" then
     ns:PrintDisenchants(msg == "de reset")
-  elseif msg == "runs" or msg == "dungeons" then
-    ns:PrintRuns()
   elseif msg == "trainer" then
     ns:PrintTrainer()
   elseif msg == "fund" then
     ns:FundCommand()
-  elseif msg == "talents" then
-    ns:TalentProbe()
-  elseif msg == "session start" then
-    ns:StartGeneralSession()
-  elseif msg == "session stop" or msg == "session end" then
-    ns:StopGeneralSession()
-  elseif msg == "session" then
-    -- (It opened the Work it window, removed October 4.)
-    if ns:GeneralSessionRunning() then ns:Print("A session is running: /fl session stop ends it.")
-    else ns:Print("/fl session start begins a session (or Start a session on the Dashboard).") end
+  elseif msg == "session" or msg:match("^session ") then
+    -- Sessions were removed November 13 (Frank: none used; back if asked for).
+    ns:Print("Sessions were removed in 0.24.0.")
   elseif msg == "money" then
     ns:PrintMoney()
   elseif msg == "minimap" then
@@ -1367,6 +1369,6 @@ SlashCmdList.FOREVERLEDGER = function(msg)
       ns:Print(("Auction house cut is %g%%. Change it with /fl cut 5"):format(ns.db.settings.ahCut or 5))
     end
   else
-    ns:Print("Commands: /fl (window), /fl scan, /fl scan full, /fl scan materials, /fl stop, /fl watch, /fl quiet, /fl price, /fl queue, /fl lists, /fl pull, /fl export, /fl csv, /fl import, /fl source <auto/own/auctionator>, /fl shuffles, /fl shuffles all, /fl cut <percent>, /fl margin <percent>, /fl seconds <n>, /fl deals, /fl deals settings, /fl minimap, /fl money, /fl session start, /fl session stop, /fl runs, /fl de, /fl pair <name>, /fl sync, /fl tooltip, /fl welcome, /fl new, /fl api, /fl debug")
+    ns:Print("Commands: /fl (window), /fl scan, /fl scan full, /fl scan materials, /fl stop, /fl watch, /fl quiet, /fl price, /fl queue, /fl lists, /fl pull, /fl export, /fl csv, /fl import, /fl source <auto/own/auctionator>, /fl shuffles, /fl shuffles all, /fl cut <percent>, /fl margin <percent>, /fl seconds <n>, /fl deals, /fl deals settings, /fl minimap, /fl money, /fl de, /fl pair <name>, /fl sync, /fl tooltip, /fl welcome, /fl new, /fl api, /fl debug")
   end
 end

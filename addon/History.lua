@@ -10,6 +10,38 @@ local HOURLY_DAYS = 14      -- keep hourly gold this long, then one value per da
 local DAILY_MONEY_DAYS = 365 -- gold and money in/out per day this long, then per month (kept)
 local LOG_SIZE = 10000      -- auction house sales and purchases, and vendor buys and sells, kept
 local LOG_DAYS = 30         -- one by one this long, then as monthly totals per item
+ns.LEDGER_LOG_DAYS = LOG_DAYS   -- (Ledger.lua: how far back other money has its own times)
+-- Other money (repairs, mail, trades, loot, quests, training, flights, auction fees and
+-- deposits back) one by one, with its time, for the Ledger (Frank, November 14: they were
+-- day totals and sorted oddly among timed entries). Same kind on one character within 5
+-- minutes, on the same day, is one entry (loot from a pull of mobs). ns.db.otherLog =
+-- { { t, c, s, a } }, a always positive; ns.db.otherLogSince[charKey] = when its first entry
+-- was made; ns.db.otherLogCut[charKey] = the newest entry of that character the size limit
+-- removed (Ledger.lua treats its day and earlier as day totals: Codex review of 211a277).
+local OTHER_LOGGED = { ahFee = true, ahDepositBack = true, repair = true, mailIn = true, mailOut = true,
+  tradeIn = true, tradeOut = true, loot = true, quest = true, training = true, flight = true,
+  otherIn = true, otherOut = true }
+local OTHER_MERGE_SECONDS = 300
+local function logOther(source, amount, who, now)   -- (also ns.LogOtherMoney, for the tests)
+  if not OTHER_LOGGED[source] or amount <= 0 then return end
+  local list = ns.db.otherLog
+  local last = list[#list]
+  -- Not across midnight: merged into tomorrow, a day's money would be counted on both days
+  -- (Codex review of 211a277).
+  if last and last.c == who and last.s == source and now - (last.t or 0) <= OTHER_MERGE_SECONDS
+    and ns.LocalDay(last.t) == ns.LocalDay(now) then
+    last.a, last.t = last.a + amount, now
+    return
+  end
+  list[#list + 1] = { t = now, c = who, s = source, a = amount }
+  ns.db.otherLogSince[who] = ns.db.otherLogSince[who] or now
+  if #list > LOG_SIZE then
+    local old = table.remove(list, 1)
+    ns.db.otherLogCut = ns.db.otherLogCut or {}
+    if old and old.c and (old.t or 0) > (ns.db.otherLogCut[old.c] or 0) then ns.db.otherLogCut[old.c] = old.t end
+  end
+end
+ns.LogOtherMoney = logOther
 local LEDGER_MONTHS_KEPT = 365 * 86400   -- monthly totals kept this long
 local PENDING_SECONDS = 5   -- how long a hint (repair, posting fee, mail) waits for the gold change
 local PURCHASE_SECONDS = 15 -- an auction house purchase can answer slowly (BuyQueue.lua waits as long; gold audit, November 9)
@@ -141,6 +173,14 @@ local function foldLedger()
   fold(ns.db.sales, function() return "sale" end)
   fold(ns.db.purchases, function() return "buy" end)
   fold(ns.db.vendorLog, function(e) return e.s == "sell" and "vsell" or "vbuy" end)
+  -- Other money one by one (otherLog): older entries just go, as the money table's daily
+  -- totals already have them.
+  local other, kept = ns.db.otherLog or {}, 0
+  for i = 1, #other do
+    local e = other[i]
+    other[i] = nil
+    if (e.t or 0) >= cutoff then kept = kept + 1; other[kept] = e end
+  end
   -- Monthly totals older than a year go.
   local keep = time() - LEDGER_MONTHS_KEPT
   local kept = {}
@@ -282,7 +322,7 @@ end
 -- An entry can change after it's made (vendor trades merge, today's totals grow), so
 -- it's replaced by time rather than added to.
 ---------------------------------------------------------------------------
-local BOOK_LOGS = { "sales", "purchases", "vendorLog", "sessions" }
+local BOOK_LOGS = { "sales", "purchases", "vendorLog", "sessions" }   -- (sessions: old ones, kept since sessions were archived November 13)
 
 -- When an entry last changed: a session's end, not its start (Codex review, November 5:
 -- a long session started before the stretch being sent, so it never went).
@@ -401,9 +441,8 @@ local function onMoney()
   if dep <= 0 or dep >= math.abs(delta) then dep = 0 end
   totals[source] = (totals[source] or 0) + math.abs(delta) - dep
   if dep > 0 then totals.ahDepositBack = (totals.ahDepositBack or 0) + dep end
-  -- A running session counts it too (Sessions.lua).
-  if ns.SessionMoney then ns:SessionMoney(source, delta) end
-  if ns.DungeonMoney then ns:DungeonMoney(source, delta) end   -- and a dungeon run (Dungeons.lua)
+  logOther(source, math.abs(delta) - dep, ns.CharKey(), time())
+  if dep > 0 then logOther("ahDepositBack", dep, ns.CharKey(), time()) end
 
   local now, who = time(), ns.CharKey()
   for _, h in ipairs(hints) do
@@ -687,13 +726,35 @@ local HISTORY_MS = 10
 local pendingHistory, pendingAt, run = {}, 0, 0
 local function msNow() return debugprofilestop and debugprofilestop() or GetTime() * 1000 end
 
-local function recordPending(mine)
+-- One waiting price: { id, cheapest, typical, listed, market, rec = the price record it
+-- came with, day }.
+local function recordQueued(e)
+  local id, cheapest, typical, listed, market = e[1], e[2], e[3], e[4], e[5]
+  -- Past midnight it's no longer today's: dropped rather than put on the wrong day
+  -- (Codex review, November 13).
+  if e.day and e.day ~= today() then return end
+  -- The price was replaced while it waited (your own search or scan, or a newer price from
+  -- the partner), and the newer one is already today's latest in the history: this older
+  -- one can only lower the day's cheapest, not undo the newer typical (Codex review,
+  -- November 13: a local scan's 200c was put back to the partner's 100c). Checked by which
+  -- record is saved now, not by time: both can be stamped the same second.
+  local cur = ns.db.prices[market] and ns.db.prices[market][id]
+  if e.rec and cur ~= e.rec then
+    local lastDay, _, lastTyp = (marketTable("history", market)[id] or ""):match("(%d+):(%d+):(%d+)$")
+    if tonumber(lastDay) == today() then typical = tonumber(lastTyp) end
+  end
+  ns:RecordPriceHistory(id, cheapest, typical, listed, market)
+end
+
+-- (each step's time shows in /fl perf as "Sync: price history")
+local recordPending
+recordPending = ns.Timed("Sync: price history", function(mine)
   if mine ~= run then return end
   local from = msNow()
   while pendingAt < #pendingHistory do
     pendingAt = pendingAt + 1
     local e = pendingHistory[pendingAt]
-    local ok, err = pcall(ns.RecordPriceHistory, ns, e[1], e[2], e[3], e[4], e[5])
+    local ok, err = pcall(recordQueued, e)
     if not ok then ns:Debug("Price history skipped for", e[1], err) end
     if msNow() - from >= HISTORY_MS then break end
   end
@@ -701,9 +762,9 @@ local function recordPending(mine)
   pendingHistory, pendingAt = {}, 0
   -- (usual prices and deals read today's history)
   if ns.InvalidateValues then ns:InvalidateValues() end
-end
+end)
 
--- list: { { id, cheapest, typical, listed, market }, ... }
+-- list: { { id, cheapest, typical, listed, market, rec = price record, day = local day }, ... }
 function ns:RecordPriceHistoryLater(list)
   if #list == 0 then return end
   for _, e in ipairs(list) do pendingHistory[#pendingHistory + 1] = e end
@@ -1367,7 +1428,7 @@ local LABELS = {
   loot = "Loot", quest = "Quests", training = "Training", flight = "Flights",
   otherIn = "Other income", otherOut = "Other spending",
 }
-ns.MONEY_LABELS = LABELS   -- (Sessions.lua: the tracker's hover lists money by source)
+ns.MONEY_LABELS = LABELS
 local INCOME = { ahSale = true, ahDepositBack = true, vendorSell = true, mailIn = true, tradeIn = true, loot = true, quest = true, otherIn = true }
 
 -- Today's money for this character as lines ("Sold to vendors: +5s"), plus the net.

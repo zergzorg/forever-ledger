@@ -152,6 +152,52 @@ local function bagLines(tt, id)
   end
 end
 
+-- Quests and crafts (Frank, November 14: the information helps you see what an item is
+-- for, but the lists made tooltips very long). The normal view has one short line for each,
+-- "Quests (3)" and "Used in crafts (12): Tailoring 8, Leatherworking 4"; holding Shift (at
+-- the hover or pressed later) lists them.
+local ORANGE = { 1, 0.62, 0.3 }
+local function summaryLines(tt, id, s)
+  if s.tipQuest ~= false and ns.QuestSummary then
+    local n, keep = ns:QuestSummary(id)
+    if n then
+      if keep > 0 then tt:AddLine(("Quests (%d): keep it"):format(n), 1, 0.82, 0)
+      else tt:AddLine(("Quests (%d)"):format(n), ORANGE[1], ORANGE[2], ORANGE[3]) end
+    end
+  end
+  if s.tipUsedBy ~= false and ns.CraftsUsingSummary then
+    local line = ns:CraftsUsingSummary(id)
+    if line then tt:AddLine(line, ORANGE[1], ORANGE[2], ORANGE[3], true) end
+  end
+end
+local function listLines(tt, id, s)
+  if s.tipQuest ~= false and ns.QuestLines then
+    for _, q in ipairs(ns:QuestLines(id, false) or {}) do
+      if q.keep then tt:AddLine(q.text .. ": keep it", 1, 0.82, 0, true)
+      else tt:AddLine(q.text, LR, LG, LB, true) end
+    end
+  end
+  if s.tipUsedBy == false or not ns.CraftsUsingByProfession then return end
+  -- Every craft that uses it, one a line by profession, lowest skill first, like
+  -- ProfTooltip (Frank, AN12, November 14); green when one of your characters knows it.
+  -- (Two calls: "a and f()" keeps only f's first value, which made the count 0.)
+  local order, total = ns:CraftsUsingByProfession(id)
+  if not order then return end
+  tt:AddLine(("Used to craft (%d):"):format(total), 1, 0.82, 0)
+  for i, p in ipairs(order) do
+    if i > 5 then tt:AddLine(("  and %d more professions"):format(#order - 5), 0.6, 0.6, 0.6); break end
+    tt:AddLine("  " .. p.prof, ORANGE[1], ORANGE[2], ORANGE[3])
+    for j, c in ipairs(p.crafts) do
+      if j > 10 then tt:AddLine(("   - and %d more"):format(#p.crafts - 10), 0.6, 0.6, 0.6); break end
+      local mine = ns.KnowsRecipe and ns:KnowsRecipe(p.prof, c.rid)
+      local skill = c.skill and (" |cff999999(%d)|r"):format(c.skill) or ""
+      if mine then tt:AddLine("   - " .. (c.n or "?") .. skill, 0.5, 0.83, 0.61)
+      else tt:AddLine("   - " .. (c.n or "?") .. skill, 1, 1, 1) end
+    end
+  end
+end
+local shownLists   -- GameTooltip already has the lists (Shift)
+
 -- copyPrice: what a vendor pays for this copy (ns.TooltipSellPrice), if the game said.
 local function addLines(tt, id, forceFull, copyPrice)
   local s = ns.db and ns.db.settings
@@ -166,12 +212,19 @@ local function addLines(tt, id, forceFull, copyPrice)
   -- Sell suggestion (SellAdvice.lua): bound and usable read from the game's own lines,
   -- before ours are added. (Not again when Shift adds the details to a compact tooltip.)
   local sellBound, sellUsable
-  local sellOn = not forceFull and on("tipSell") and ns.AddSellLines and GetItemCount and (GetItemCount(id) or 0) > 0
+  local sellOn = not forceFull and on("tipSell") and ns.AddSellLines and ns.ItemCount(id) > 0
   if sellOn and ns.SellTooltipFlags then sellBound, sellUsable = ns.SellTooltipFlags(tt) end
   local function sellLines()
     if sellOn then
       local ok, err = pcall(ns.AddSellLines, ns, tt, id, sellBound, sellUsable, copyPrice)
-      if not ok then ns:Debug("Sell suggestion skipped for", id, err) end
+      if not ok then
+        ns:Debug("Sell suggestion skipped for", id, err)
+        -- Once a session to BugSack too, so a line that never shows can be found.
+        if not ns.sellErrorShown and geterrorhandler then
+          ns.sellErrorShown = true
+          geterrorhandler()("Sell suggestion: " .. tostring(err))
+        end
+      end
     end
   end
   -- (Shift pressed on a compact tooltip calls this again: don't repeat the history.)
@@ -180,13 +233,20 @@ local function addLines(tt, id, forceFull, copyPrice)
   if tt == GameTooltip then shownID, shownFull, shownHistory = id, full, had or withHistory end
 
   local price, src, t, rec = ns:GetPrice(id)
-  -- Quest turn-ins (QuestItems.lua): "keep it" in yellow when this character will want
-  -- it for a quest later.
-  local function questLines(compact)
-    if not (on("tipQuest") and ns.QuestLines) then return end
-    for _, q in ipairs(ns:QuestLines(id, compact) or {}) do
-      if q.keep then tt:AddLine(q.text .. ": keep it", 1, 0.82, 0, true)
-      else tt:AddLine(q.text, LR, LG, LB, true) end
+  -- Quests and crafts (summaryLines, listLines above): the lists with Shift held.
+  local expanded = forceFull or IsShiftKeyDown()
+  local function questsAndCrafts()
+    -- Darkmoon Faire turn-ins: one line in coral red, always (Frank, November 14:
+    -- "something noticeable"). Not again when Shift adds the rest to a compact tooltip.
+    if not forceFull and on("tipDarkmoon") and ns.DarkmoonLine then
+      local dmf = ns:DarkmoonLine(id)
+      if dmf then tt:AddLine(dmf, 1, 0.45, 0.4) end
+    end
+    if expanded then
+      listLines(tt, id, s)
+      if tt == GameTooltip then shownLists = true end
+    else
+      summaryLines(tt, id, s)
     end
   end
   -- Why Worth to you is under today's price (CurseForge comment, October 22: "tooltip
@@ -205,8 +265,12 @@ local function addLines(tt, id, forceFull, copyPrice)
     end
   end
 
+  -- The sell suggestion goes first, straight under the game's own lines (Frank, AN4,
+  -- November 13: below Worth to you and its ways he didn't see it).
+  sellLines()
+
   if not full then
-    questLines(true)
+    questsAndCrafts()
     -- Today's cheapest too, so a new scan shows at once (CurseForge comment, October 22).
     local shownCheapest
     if price and on("tipPrice") and rec and rec.m and not rec.none and src ~= "Auctionator" and src ~= "TSM" and src ~= "Auctioneer" then
@@ -227,10 +291,8 @@ local function addLines(tt, id, forceFull, copyPrice)
         tt:AddDoubleLine("Auction price", ns.Money(price), LR, LG, LB, 1, 1, 1)
       end
     elseif not shownCheapest then
-      sellLines()
       return
     end
-    sellLines()
     if withHistory then historyLines(tt, id) end
     tt:AddLine((on("tipHistory") and "Hold Shift for Forever Ledger details, Ctrl for price history"
       or "Hold Shift for Forever Ledger details") .. (on("priceWindow") and (", " .. ns:PriceClickName() .. " for a graph") or ""), 0.5, 0.5, 0.5, true)
@@ -346,8 +408,6 @@ local function addLines(tt, id, forceFull, copyPrice)
     end
   end
 
-  sellLines()
-
   -- Green when the auction price is already at or below it.
   local maxBuy = on("tipBuy") and ns:BuyAtOrBelow(id, true)
   if maxBuy then
@@ -365,27 +425,25 @@ local function addLines(tt, id, forceFull, copyPrice)
 
   if on("tipDisenchant") and ns:AddDisenchantLines(tt, id) then ns.disenchantLinesFor = id end
 
-  local users = on("tipUsedBy") and ns.usage and ns.usage[id]
-  if users then
-    local shown = 0
-    for k, count in pairs(users) do
-      if shown >= 4 then break end
-      local name, prof = k:match("^(.-)|(.*)$")
-      tt:AddLine(("Used by %s: %s, %d recipe%s"):format(name or "?", prof or "?", count, count == 1 and "" or "s"), LR, LG, LB)
-      shown = shown + 1
-    end
+  questsAndCrafts()
+  -- The hint says what Shift, Ctrl and the click show (AN12, November 14: Frank held Ctrl,
+  -- as only Ctrl was named, and didn't see the craft list Shift gives).
+  local hints = {}
+  if not expanded then
+    local quests = on("tipQuest") and ns.QuestSummary and ns:QuestSummary(id)
+    local crafts = on("tipUsedBy") and ns.CraftsUsing and ns:CraftsUsing(id)
+    local what = (crafts and quests and "crafts and quests") or (crafts and "crafts") or (quests and "quests") or nil
+    if what then hints[#hints + 1] = "Shift for the " .. what end
   end
-  questLines(false)
-  -- Dungeon drops you've had (Dungeons.lua): "Dropped for you: Deadmines, 2 in 14 runs".
-  local drops = on("tipDrops") and ns.DropLine and ns:DropLine(id)
-  if drops then tt:AddLine(drops, LR, LG, LB, true) end
   if withHistory then
     historyLines(tt, id)
   elseif not had and on("tipHistory") and price and #(ns:PriceHistory(id)) > 1 then
-    tt:AddLine("Hold Ctrl for price history" .. (on("priceWindow") and (", " .. ns:PriceClickName() .. " for a graph") or ""), 0.5, 0.5, 0.5)
-  elseif not had and on("priceWindow") and price then
-    tt:AddLine(ns:PriceClickName() .. " for a price graph", 0.5, 0.5, 0.5)
+    hints[#hints + 1] = "Ctrl for price history"
   end
+  local click = not had and on("priceWindow") and price and (ns:PriceClickName() .. (#hints > 0 and " for a graph" or " for a price graph"))
+  local text = #hints > 0 and ("Hold " .. table.concat(hints, ", ")) or ""
+  if click then text = text .. (text ~= "" and ", " or "") .. click end
+  if text ~= "" then tt:AddLine(text, 0.5, 0.5, 0.5, true) end
 end
 
 if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall and Enum and Enum.TooltipDataType then
@@ -407,9 +465,9 @@ addLines = ns.Timed("Tooltip lines", addLines)   -- for /fl perf
 -- (Tests 1 and 2: asking the game to redraw the tooltip, by RefreshData or by hovering
 -- the item again, did nothing with the owner's EllesmereUI bags, so add the lines
 -- directly.) They stay until the next hover; holding Shift before hovering shows them too.
-GameTooltip:HookScript("OnHide", function() shownID, shownFull, shownHistory, shownCopyPrice = nil, nil, nil, nil end)
+GameTooltip:HookScript("OnHide", function() shownID, shownFull, shownHistory, shownCopyPrice, shownLists = nil, nil, nil, nil, nil end)
 if GameTooltip.HookScript then
-  pcall(GameTooltip.HookScript, GameTooltip, "OnTooltipCleared", function() shownID, shownFull, shownHistory, shownCopyPrice = nil, nil, nil, nil end)
+  pcall(GameTooltip.HookScript, GameTooltip, "OnTooltipCleared", function() shownID, shownFull, shownHistory, shownCopyPrice, shownLists = nil, nil, nil, nil, nil end)
 end
 ns:On("MODIFIER_STATE_CHANGED", function(key, down)
   if not key then return end
@@ -426,8 +484,16 @@ ns:On("MODIFIER_STATE_CHANGED", function(key, down)
     return
   end
   if not key:find("SHIFT") then return end
-  if not (ns.db and ns.db.settings.tipMode == "compact") then return end
-  if not GameTooltip:IsShown() or not shownID or shownFull then return end
-  addLines(GameTooltip, shownID, true)
+  if not (ns.db and ns.db.settings.tooltip) then return end
+  if not GameTooltip:IsShown() or not shownID then return end
+  if ns.db.settings.tipMode == "compact" then
+    if shownFull then return end
+    addLines(GameTooltip, shownID, true)
+  else
+    -- Full mode: Shift adds the quest and craft lists under the tooltip that's showing.
+    if shownLists then return end
+    shownLists = true
+    listLines(GameTooltip, shownID, ns.db.settings)
+  end
   GameTooltip:Show()   -- resize to fit the new lines
 end)

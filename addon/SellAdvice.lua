@@ -37,9 +37,11 @@ function ns.SellVerdict(f)
   local vendor = (f.vendor and f.vendor > 0) and f.vendor or nil
   local v
   if f.bound then
-    -- Gear you can wear is your call (it may be what you'll wear next).
-    if f.gear and f.usable and (f.quality or 0) >= 2 then return nil end
-    if vendor then v = { kind = "vendor", value = vendor, reason = "can't be sold on the auction house" } end
+    -- Gear you can wear may be what you'll wear next, so its suggestion says "If you won't
+    -- wear it" (Frank, November 14: dungeon and quest drops had no suggestion at all).
+    local wearable = f.gear and f.usable and (f.quality or 0) >= 2
+    if vendor then v = { kind = "vendor", value = vendor, reason = "can't be sold on the auction house", ifUnused = wearable or nil } end
+    if wearable and not v and f.de then v = { kind = "de", ifUnused = true } end
   elseif not vendor then
     if f.ah then v = { kind = "ah", value = f.ah, reason = "vendors don't buy it" } end
   elseif not f.ah then
@@ -65,10 +67,13 @@ function ns.SellVerdict(f)
       v = { kind = "middle", value = f.ah, reason = more }
     end
   end
-  -- Disenchanting, offered beside the verdict when it brings more.
+  -- Disenchanting, offered beside the verdict when it brings more; when it brings clearly
+  -- more (the same 25% as the auction house over a vendor), it's the suggestion and selling
+  -- the other way (Frank, November 13: "making disenchant the main line when its way better").
   if f.de and f.de > ((v and v.value) or 0) then
     v = v or { kind = "de" }
     v.de, v.deWho = f.de, f.deWho
+    if v.kind ~= "de" and v.value and f.de >= v.value * CLEAR then v.deFirst = true end
   end
   return v
 end
@@ -179,10 +184,14 @@ local COLOR = {
   ah = { 0.5, 0.83, 0.61 }, de = { 0.75, 0.62, 1 },
 }
 local LABEL = { vendor = "Vendor", ah = "Auction house" }
+-- Selling as the other way, under a Disenchant suggestion.
+local ALT = { vendor = "or sell to a vendor", ah = "or sell on the auction house", middle = "or sell (close call)" }
+-- After "If you won't wear it: ".
+local UNUSED = { vendor = "sell to a vendor", ah = "sell on the auction house", middle = "sell (close call)" }
 
 -- The tooltip lines (Tooltip.lua): only for an item you have in your bags.
 function ns:AddSellLines(tt, id, bound, usable, copyPrice)
-  if not (id and GetItemCount and (GetItemCount(id) or 0) > 0) then return end
+  if not (id and ns.ItemCount(id) > 0) then return end
   local v = ns.SellVerdict(ns:SellFacts(id, bound, usable, copyPrice))
   if not v then return end
   local c = COLOR[v.kind]
@@ -190,14 +199,23 @@ function ns:AddSellLines(tt, id, bound, usable, copyPrice)
     tt:AddLine("Keep: " .. v.reason, c[1], c[2], c[3], true)
     return
   end
-  if v.kind ~= "de" then
-    local label = LABEL[v.kind] or ns.SELL_MIDDLE
-    tt:AddDoubleLine("Sell: " .. label .. (v.reason and (" |cff999999(" .. v.reason .. ")|r") or ""),
-      ns.Money(v.value), c[1], c[2], c[3], 1, 1, 1)
-  end
-  if v.de then
+  local reason = v.reason and (" |cff999999(" .. v.reason .. ")|r") or ""
+  -- Gear this character can wear: the suggestion is for if it won't wear it.
+  local lead = v.ifUnused and "If you won't wear it: " or ""
+  if v.ifUnused then reason = "" end
+  local function deLine(text)
     local d = COLOR.de
-    tt:AddDoubleLine((v.kind == "de" and "Disenchant" or "  or disenchant") .. (v.deWho and (" |cff999999(" .. v.deWho .. ")|r") or ""),
+    tt:AddDoubleLine(text .. (v.deWho and (" |cff999999(" .. v.deWho .. ")|r") or ""),
       "about " .. ns.Money(v.de), d[1], d[2], d[3], 1, 1, 1)
   end
+  if v.deFirst then
+    deLine(lead .. (v.ifUnused and "disenchant" or "Disenchant"))
+    tt:AddDoubleLine("  " .. (ALT[v.kind] or "or sell") .. reason, ns.Money(v.value), c[1], c[2], c[3], 1, 1, 1)
+    return
+  end
+  if v.kind ~= "de" then
+    local what = v.ifUnused and (UNUSED[v.kind] or "sell it") or ("Sell: " .. (LABEL[v.kind] or ns.SELL_MIDDLE))
+    tt:AddDoubleLine(lead .. what .. reason, ns.Money(v.value), c[1], c[2], c[3], 1, 1, 1)
+  end
+  if v.de then deLine(v.kind == "de" and (lead .. (v.ifUnused and "disenchant" or "Disenchant")) or "  or disenchant") end
 end

@@ -53,23 +53,16 @@ local PAGES = {
       -- Parts of the addon you can switch off whole (owner, October 7: modules, so extras
       -- don't crowd the window). Off means not running at all. More join with the side tabs.
       { name = "Modules", rows = {
-        { sub = "Leveling help" },
-        { key = "moduleLevelling", label = "Leveling help", kind = "check", after = function()
-            ns:LayoutTabs(); ns:RefreshUI()
-            if ns.db.settings.moduleLevelling == false and ns.HideTrainingAdvice then ns:HideTrainingAdvice() end
-          end,
-          help = "The Leveling tab (ways to make gold while leveling, under level 20), training advice at the class trainer and the riding fund on the Dashboard. Off: none of it runs, and the spells you cast aren't counted. It switches itself off on level 60 characters." },
-        { key = "trainerAdvice", label = "  Training advice beside the class trainer", kind = "check",
-          after = function() if ns.db.settings.trainerAdvice == false and ns.HideTrainingAdvice then ns:HideTrainingAdvice() end end,
-          help = "When you open your class trainer, a panel beside it sorts what you can learn now into Must have, Nice to have and Skip while leveling, with what each costs and why (hover). It follows the tree your talent points are in and the spells you actually cast. Advice only: you still train in Blizzard's window." },
-        { key = "ridingFund", label = "  Riding fund on the Dashboard", kind = "check", after = function() ns:RefreshUI() end,
+        -- (Leveling help, the Leveling tab and training advice, was archived November 14.)
+        { sub = "Dashboard" },
+        { key = "ridingFund", label = "Riding fund on the Dashboard", kind = "check", after = function() ns:RefreshUI() end,
           help = "A strip under the tiles: the riding this character doesn't know yet (then epic riding), what it costs, how much gold you have toward it and about how many days at your pace. It goes away once learned. Hide here (on the strip) hides it on one character; /fl fund shows it again." },
       } },
       { name = "Advanced", rows = {
         { sub = "Sync with your other account" },
         { key = "syncMoney", label = "Share gold and sales with your sync partner", kind = "check",
           after = function() if ns.SyncSend then ns:SyncSend(true) end end,
-          help = "Sends your characters' gold, money in and out, Ledger entries and sessions to the character you linked (Settings, Characters), so both accounts' Dashboards and Ledgers show the same. These include your buyers' names, so leave it off if you linked a friend. Unlinking removes what you got from them." },
+          help = "Sends your characters' gold, money in and out, and Ledger entries to the character you linked (Settings, Characters), so both accounts' Dashboards and Ledgers show the same. These include your buyers' names, so leave it off if you linked a friend. Unlinking removes what you got from them." },
         { key = "syncBags", label = "Share bags and bank with your sync partner", kind = "check",
           after = function() if ns.SyncSend then ns:SyncSend(true) end end,
           help = "Sends what your characters carry and keep in the bank to the character you linked (Settings, Characters), so it counts in Have, shopping lists and the Characters tab there. Only for your own second account: off by default. Unlinking removes what you got from them." },
@@ -194,15 +187,15 @@ local PAGES = {
           help = "One line, only on items that bring at least 25% more at the neutral auction house (Booty Bay, Gadgetzan, Everlook) after its 15% cut, from your last scan there. Off by default; the Deals tab's Booty Bay view lists them all." },
         { sub = "Uses and quests" },
         { key = "tipQuest", label = "Quests that need it", kind = "check",
-          help = "Quests that ask for the item (original Classic quests; Forever may have changed some), and \"keep it\" when this character will want it later." },
+          help = "Quests (3): how many quests ask for the item (original Classic quests; Forever may have changed some), and \"keep it\" when this character will want it later. Hold Shift for the quests." },
         { key = "tipQuestMine", label = "  Only quests this character still needs", kind = "check",
           help = "Leaves out quests this character has done, ones gray for its level, and other classes' quests. Off: all of them, marked (done), (too low) or (other class), handy when selling to others." },
-        { key = "tipDrops", label = "Dungeon drops you've had", kind = "check",
-          help = "\"Dropped for you: Deadmines, 2 in 14 runs\", from the dungeon runs Forever Ledger counts (/fl runs)." },
+        { key = "tipDarkmoon", label = "Darkmoon Faire turn-ins", kind = "check",
+          help = "A coral red line on items the Darkmoon Faire takes for Prize Tickets: how many a turn-in takes, the tickets it gives and who takes them (Classic's list; Forever may have changed it)." },
         { key = "tipDisenchant", label = "Disenchants to", kind = "check",
           help = "What a green disenchants into, on average." },
-        { key = "tipUsedBy", label = "Used by (your recipes)", kind = "check",
-          help = "Which of your characters' recipes use it, and how many." },
+        { key = "tipUsedBy", label = "Crafts that use it", kind = "check",
+          help = "Used in crafts (12): how many crafts use it, by profession, from every recipe we know. Hold Shift for their names and which of your characters' recipes use it." },
         { key = "tipCrate", label = "Crate cheapest fill", kind = "check",
           help = "On a Waylaid Crate: the cheapest way to fill it at today's prices." },
         { key = "tipBagSlot", label = "Bag price per slot", kind = "check",
@@ -243,16 +236,6 @@ local PAGES = {
       { sub = "Crates" },
       { key = "crates", label = "Waylaid Crates", kind = "check", after = function() ns:LayoutTabs() end,
         help = "The Crates tab and the \"cheapest fill\" tooltip line." },
-    } },
-
-  { group = "Your gold" },
-  { key = "sessions", title = "Sessions", icon = "Interface\\Icons\\INV_Misc_PocketWatch_01",
-    desc = "Counting what your play time earns.",
-    rows = {
-      { sub = "Loot" },
-      { key = "sessionValue", label = "Count loot at", kind = "choice", options = {
-          { "best", "Best of auction and vendor" }, { "vendor", "Vendor only" } },
-        help = "What a session counts each looted item as worth. Auction house prices are after the cut; items that bind when picked up always count at vendor price. Start a session with /fl session start or on the Dashboard." },
     } },
 
   { group = "Other" },

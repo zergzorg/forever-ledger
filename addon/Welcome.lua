@@ -172,14 +172,13 @@ end
 -- { ..., fix = true } a fix (a wrench). The small ones share one card.
 ---------------------------------------------------------------------------
 ns.WHATS_NEW = {
-  version = "0.23.0",
+  version = "0.25.0",
   lines = {
-    { "No more freezes after a scan: a full scan's prices are saved a little at a time instead of freezing the game for over a second, and the check for new deals no longer stutters.", major = true },
-    { "One tick buys a stack: the tick that starts buying a stack of materials also confirms it, within your limit. Settings can bring back the second click.", major = true },
-    { "Faster flips: the chime comes as soon as a flip is found, the list is read again after half a second, the next flip is looked up straight after a purchase, and buying carries on during full scans.", change = true },
-    { "Scroll to buy: up or down, anywhere over Vendor flips.", change = true },
-    { "\"Refused\" purchases that went through: the Buy queue moves straight on instead of pausing, and no longer gives up on a row it's buying.", fix = true },
-    { "Clearer status line: on a line of its own, and it says when the flip watch waits for your search.", change = true },
+    { "Shorter tooltips: quests and crafts take one line each, \"Quests (3)\" and \"Used in crafts (12)\". Hold Shift for the lists, one craft a line with the skill it needs, yours in green.", major = true },
+    { "Darkmoon Faire turn-ins: a coral red line on every item the Faire takes for Prize Tickets, with how many and for how many tickets." },
+    { "Gear you could wear: dungeon drops and quest rewards now say what to do if you won't wear them: sell to a vendor, or disenchant when that's clearly worth more.", change = true },
+    { "Ledger times: flights, loot, repairs, quests and the rest show with their own times, not as one line a day.", change = true },
+    { "Simpler: the Leveling tab, the training advice and dungeon runs are gone. The riding fund stays.", change = true },
   },
 }
 
