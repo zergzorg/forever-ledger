@@ -54,7 +54,8 @@ Remote `fork` → <https://github.com/zergzorg/forever-ledger>.
 Ветка `ru` — источник перевода; таблица генерируется, а не пишется руками:
 
 1. переключиться на `locale-ru` (там лежит `Locales/ruRU.lua`);
-2. `python3 tools/build-ru-locale.py` — читает `ru` через `git show`,
+2. взять скрипт из этой ветки: `git show ru:tools/build-ru-locale.py > /tmp/build-ru-locale.py`,
+   затем `python3 /tmp/build-ru-locale.py` — он читает `ru` через `git show`,
    сопоставляет литералы построчно и пишет таблицу; ручные добавки (числа,
    склейки, названия) — в самом скрипте;
 3. `python3 tools/list-ru-gaps.py` — что осталось без перевода;
