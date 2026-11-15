@@ -1,0 +1,132 @@
+local T = ...
+local ns, S = T.ns, T.S
+local ID = 99020
+T.test("Deposit estimate duration, stacks, neutral and copper rounding", function()
+  T.eq(ns:DepositEstimate(101, 1, 1, false), 5)   -- 2 hours: 5% of the vendor price
+  T.eq(ns:DepositEstimate(101, 2, 1, false), 20)   -- 8 hours: four times
+  T.eq(ns:DepositEstimate(101, 3, 1, false), 60)   -- 24 hours: twelve times
+  T.eq(ns:DepositEstimate(101, 2, 20, false), 404)
+  T.eq(ns:DepositEstimate(101, 2, 1, true), 100)   -- neutral: 25%
+  T.eq(ns:DepositEstimate(0, 2, 1), 0)
+  T.eq(ns:DepositEstimate(nil, 2, 1), nil)
+  T.eq(ns:DepositEstimate(100, 4, 1), nil)
+  T.eq(ns:DepositEstimate(100, 2, 0), nil)
+  T.eq(ns:DepositEstimate(100, 2, 1.5), nil)
+end)
+T.test("Commodity and item quotes use their distinct arguments, fallback survives errors", function()
+  local realAH, realOpen, realC, realLocation = C_AuctionHouse, ns.IsAHOpen, C_Container, ItemLocation
+  local ok, err = pcall(function()
+    ns.neutralAH = false; ns.db.vendorSell[ID] = 1000
+    ns.IsAHOpen = function() return true end
+    local commodity = true
+    C_AuctionHouse = {
+      GetItemKeyInfo = function(key) T.eq(key.itemID, ID); return { isCommodity = commodity } end,
+      CalculateCommodityDeposit = function(id, duration, qty) T.eq(id, ID); T.eq(duration, 2); T.eq(qty, 20); return 4321 end,
+      CalculateItemDeposit = function(location, duration, qty) T.eq(location.bag, 0); T.eq(location.slot, 1); T.eq(duration, 2); T.eq(qty, 1); return 777 end,
+    }
+    C_Container = { GetContainerNumSlots = function(bag) return bag == 0 and 1 or 0 end,
+      GetContainerItemInfo = function() return { itemID = ID } end }
+    ItemLocation = { CreateFromBagAndSlot = function(_, bag, slot) return { bag = bag, slot = slot } end }
+    T.fire("BAG_UPDATE_DELAYED")
+    local amount, source = ns:AuctionDeposit(ID, 20); T.eq(amount, 4321); T.eq(source, "commodity API")
+    commodity = false; amount, source = ns:AuctionDeposit(ID); T.eq(amount, 777); T.eq(source, "item API")
+    -- A faction quote is never used for a hypothetical Booty Bay sale.
+    amount, source = ns:AuctionDeposit(ID, 1, 2, true); T.eq(amount, 1000); T.eq(source, "Classic estimate")
+    C_AuctionHouse.CalculateItemDeposit = function() error("unsupported") end
+    amount, source = ns:AuctionDeposit(ID); T.eq(amount, 200); T.eq(source, "Classic estimate")
+    C_AuctionHouse.CalculateItemDeposit = function() return 0 end
+    amount, source = ns:AuctionDeposit(ID); T.eq(amount, 0); T.eq(source, "item API")
+    C_AuctionHouse.CalculateItemDeposit = function() return -1 end
+    T.eq((ns:AuctionDeposit(ID)), 200)
+    C_AuctionHouse.CalculateItemDeposit = function() return 0/0 end
+    T.eq((ns:AuctionDeposit(ID)), 200)
+    C_Container.GetContainerNumSlots = function() return 0 end; T.fire("BAG_UPDATE_DELAYED")
+    amount, source = ns:AuctionDeposit(ID); T.eq(amount, 200); T.eq(source, "Classic estimate")
+    ns.IsAHOpen = function() return false end
+    T.eq((ns:AuctionDeposit(ID)), 200)
+  end)
+  C_AuctionHouse, ns.IsAHOpen, C_Container, ItemLocation = realAH, realOpen, realC, realLocation
+  ns.neutralAH = nil; T.fire("BAG_UPDATE_DELAYED"); T.runTimers(); assert(ok, err)
+end)
+-- Owner's Sell tab, October 22: a commodity listing costs at least 1s whatever the
+-- quantity, so the deposit is per unit of a full stack (Medium Leather 2s 65c read 1s 52c).
+T.test("A commodity's minimum deposit is spread over a stack", function()
+  local realAH, realOpen = C_AuctionHouse, ns.IsAHOpen
+  local ok, err = pcall(function()
+    local LEATHER = 99031
+    S.items[LEATHER] = { name = "Medium Leather", stack = 20, sell = 50 }
+    ns.db.vendorSell[LEATHER] = 50; ns.neutralAH = false
+    ns.IsAHOpen = function() return true end
+    C_AuctionHouse = {
+      GetItemKeyInfo = function() return { isCommodity = true } end,
+      CalculateCommodityDeposit = function() return 100 end,   -- the 1s minimum
+    }
+    local net, deposit = ns:AuctionSaleValue(LEATHER, 265)
+    T.eq(deposit, 5, "1s over a stack of 20")
+    T.eq(net, 252 - 5)
+  end)
+  C_AuctionHouse, ns.IsAHOpen = realAH, realOpen
+  ns.neutralAH = nil; assert(ok, err)
+end)
+
+T.test("One failed deposit can select vendor instead, without changing vendor proceeds", function()
+  ns.db.settings.ahCut = 5; ns.db.vendorSell[ID] = 100
+  ns.db.prices[ns.MarketKey()] = { [ID] = { m = 120, a = 120, q = 20, t = S.now } }
+  ns:InvalidateValues(true)
+  local value, opts = ns:GetValue(ID)
+  T.eq(value, 100); T.eq(opts[1].kind, "vendor"); T.ok(opts[1].label:find("Vendor it instead", 1, true))
+  T.eq(opts[2].value, 94); T.eq(opts[2].deposit, 20)
+  T.eq(ns:AfterCut(120), 114, "successful-sale proceeds still refund the deposit")
+end)
+-- Frank, October 7: the Disenchant finder, shuffles and shopping-list limits don't count
+-- deposits; only selling the item itself does.
+T.test("No deposit down a chain: crafts, buying caps and profit are unchanged", function()
+  local OUT = 99021; local me = ns.CharKey()
+  ns.db.vendorSell[OUT] = 100
+  ns.db.prices[ns.MarketKey()] = { [ID] = { m = 10, a = 10, q = 50, t = S.now }, [OUT] = { m = 1000, a = 1000, q = 50, t = S.now } }
+  ns.db.chars = { [me] = { name = "Tester", realm = "Testrealm", faction = "Alliance", profs = {
+    Tailoring = { rank = 300, recipes = { [1] = { n = "Deposit craft", out = OUT, oq = 2, r = { { ID, 2 } } } } }
+  } } }
+  ns:BuildUsageIndex(); ns:InvalidateValues(true)
+  local o = ns:BestOption(ID); T.eq(o.kind, "craft"); T.eq(o.value, 950)
+  local cap = ns:BuyAtOrBelow(ID); T.eq(cap, 855)
+  local vendor, ah = ns:FindShuffles()
+  local found
+  for _, list in ipairs({ vendor, ah }) do for _, s in ipairs(list) do if s.id == ID and s.opt.kind == "craft" then found = s end end end
+  T.ok(found); T.eq(found.profit, 1880); T.eq(found.maxBuy, 855); T.ok(found.perHour > 0); T.eq(found.deposit, 0)
+end)
+T.test("Neutral sale losses guard percentages and reserve the destination deposit", function()
+  ns.db.vendorSell[ID] = 100
+  ns.db.prices["Testrealm|Alliance"] = { [ID] = { m = 120, q = 10 } }
+  ns.db.prices["Testrealm|Neutral"] = { [ID] = { m = 300, q = 10 } }
+  local c = ns:NeutralCompare(ID); T.eq(c.netHere, 94); T.eq(c.netThere, 155)
+  T.eq(c.depositHere, 20); T.eq(c.depositThere, 100); T.eq(c.gain, 61)
+  ns.db.prices["Testrealm|Alliance"][ID].m = 1
+  c = ns:NeutralCompare(ID); T.eq(c.pct, 0); T.eq(c.netHere, -19)
+end)
+
+T.test("Route reserves scale through conversion and mixed disenchant outputs", function()
+  local sale = { kind = "ah", deposit = 30 }
+  T.eq(ns:OptionDeposit({ kind = "convert", per = 3, next = sale }), 90)
+  T.eq(ns:OptionDeposit({ kind = "disenchant", mats = {
+    { count = 1.875, opt = sale }, { count = 0.3, opt = { kind = "vendor" } }
+  } }), 56.25)
+end)
+T.test("Resale deals cannot spend a profit eaten by the deposit", function()
+  local realUsual, realStats = ns.DealUsualPrice, ns.PriceStats
+  local ok, err = pcall(function()
+    ns.DealUsualPrice = function() return 1000, "TSM" end
+    ns.PriceStats = function() return nil end
+    ns.db.settings.dealUsualMin = 0; ns.db.settings.dealUsualPct = 20
+    ns.db.vendorSell[ID] = 1000
+    ns.db.prices[ns.MarketKey()] = { [ID] = { m = 760, a = 760, q = 2, l = "760:2", t = S.now } }
+    T.fire("AUCTION_HOUSE_CLOSED")
+    local usual
+    for _, d in ipairs(ns:FindDeals()) do if d.id == ID and d.kind == "usual" then usual = d end end
+    T.eq(usual, nil, "950c less 200c reserve cannot justify buying at 760c")
+    ns.db.prices[ns.MarketKey()][ID].m = 600; ns.db.prices[ns.MarketKey()][ID].l = "600:2"
+    for _, d in ipairs(ns:FindDeals()) do if d.id == ID and d.kind == "usual" then usual = d end end
+    T.ok(usual); T.eq(usual.each, 150); T.eq(usual.deposit, 200); T.eq(usual.limit, 750)
+  end)
+  ns.DealUsualPrice, ns.PriceStats = realUsual, realStats; assert(ok, err)
+end)

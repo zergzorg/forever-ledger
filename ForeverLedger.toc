@@ -1,0 +1,52 @@
+## Interface: 16001
+## Title: Forever Ledger
+## Notes: Tracks your characters' professions, recipes, vendor prices and auction house prices for flips and shuffles.
+## Author: Forever Ledger
+## Version: @project-version@
+## SavedVariables: ForeverLedgerDB
+## X-Curse-Project-ID: 1720193
+## X-Wago-ID: qGYBBzNg
+
+Core.lua
+Prices.lua
+Sweep.lua
+Quiet.lua
+History.lua
+Inventory.lua
+Professions.lua
+RecipeBook.lua
+Customers.lua
+Deposits.lua
+Values.lua
+Shuffles.lua
+Disenchant.lua
+SellAdvice.lua
+Tooltip.lua
+Theme.lua
+Dashboard.lua
+Ledger.lua
+Deals.lua
+Crates.lua
+ClassicRecipes.lua
+ClassicCrafts.lua
+ForeverCrafts.lua
+ClassicItems.lua
+QuestItems.lua
+RecipesTab.lua
+Characters.lua
+Settings.lua
+UI.lua
+Help.lua
+Welcome.lua
+Sessions.lua
+Training.lua
+Sync.lua
+Version.lua
+AuctionHouse.lua
+SellGuard.lua
+ShoppingLists.lua
+BuyQueue.lua
+Watched.lua
+Auctions.lua
+PriceWindow.lua
+Probe.lua
