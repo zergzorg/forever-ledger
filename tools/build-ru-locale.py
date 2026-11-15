@@ -1,0 +1,536 @@
+#!/usr/bin/env python3
+"""Build Locales/ruRU.lua from the in-place Russian sources in branch `ru`.
+
+Every string literal of the English tree is paired with the Russian literal at the
+same place in `ru`, so the ruRU table is the translation we already run and test,
+not a second one. Plural forms and the few messages Russian phrases differently
+are listed by hand below. Run from the repository root, on the locale branch:
+
+    python3 tools/build-ru-locale.py           # writes Locales/ruRU.lua
+    python3 tools/build-ru-locale.py --report  # says what stayed unpaired
+"""
+import difflib
+import re
+import subprocess
+import sys
+from collections import Counter, defaultdict
+from pathlib import Path
+
+RU_BRANCH = "ru"
+RU_PREFIX = "addon/"
+OUT = Path("Locales/ruRU.lua")
+
+LIT = re.compile(r'"((?:[^"\\\n]|\\.)*)"')
+CYR = re.compile(r"[А-Яа-яЁё]")
+LATIN = re.compile(r"[A-Za-z]{2,}")
+SPEC = re.compile(r"%[%\-+#0]*\d*\.?\d*[cdiouxXeEfgGqs]")
+
+# A string is worth pairing when it can be shown: it has a letter and isn't a Lua
+# pattern, a path, a link or pure markup.
+SKIP_FILES = {"ClassicItems.lua", "ClassicRecipes.lua", "ClassicCrafts.lua",
+              "ForeverCrafts.lua"}
+TECHNICAL = re.compile(r"^\^|\\|^https?://|^[|%]|^[a-z_]+$|^[A-Z_]+$|"
+                       r"^[A-Za-z]+:[A-Za-z0-9]+$")
+
+
+def literals(line):
+    return [m.group(1) for m in LIT.finditer(line)]
+
+
+def has_cyr(text):
+    return CYR.search(text) is not None
+
+
+COLOR = re.compile(r"^\|c[0-9a-fA-F]{8}|\|r$|^\n+")
+
+
+def displayable(text):
+    body = COLOR.sub("", text)
+    if not LATIN.search(body) and not has_cyr(body):
+        return False
+    return TECHNICAL.search(body) is None
+
+
+DIAGNOSTIC = ("print(", "Debug(", "logLine(", "trace(", "PreciseTiming")
+
+
+def diagnostic_keys():
+    """English literals that only ever sit on a line of diagnostic output."""
+    seen, used = {}, set()
+    for name in sorted(p.name for p in Path(".").glob("*.lua")):
+        for line in Path(name).read_text(encoding="utf-8").splitlines():
+            for lit in literals(line):
+                seen[lit] = seen.get(lit, 0) + 1
+                if any(mark in line for mark in DIAGNOSTIC):
+                    used.add(lit)
+    return {lit for lit in used if seen.get(lit) == 1}
+
+
+def ru_lines(name):
+    out = subprocess.run(["git", "show", f"{RU_BRANCH}:{RU_PREFIX}{name}"],
+                         capture_output=True, text=True)
+    if out.returncode != 0:
+        return None
+    return out.stdout.splitlines()
+
+
+WRAPPER = re.compile(r"\bns\.Localize\w+")
+
+
+def skeleton(line):
+    """The line with its strings blanked and the display wrappers dropped: the same code
+    in both languages, so entries whose text differs still line up."""
+    line = WRAPPER.sub("", LIT.sub('""', line.strip()))
+    return re.sub(r"\s+", " ", line.replace("(", "").replace(")", ""))
+
+
+def pair_lines(pr, ru):
+    sm = difflib.SequenceMatcher(None, [skeleton(l) for l in pr],
+                                 [skeleton(l) for l in ru], autojunk=False)
+    pairs = []
+    for tag, i1, i2, j1, j2 in sm.get_opcodes():
+        if tag == "equal" or (tag == "replace" and i2 - i1 == j2 - j1):
+            pairs.extend(zip(range(i1, i2), range(j1, j2)))
+    return pairs
+
+
+def collect():
+    found, unusable = [], []
+    for name in sorted(p.name for p in Path(".").glob("*.lua")):
+        if name in SKIP_FILES:
+            continue
+        pr_lines = Path(name).read_text(encoding="utf-8").splitlines()
+        src = ru_lines(name)
+        if src is None:
+            continue
+        for i, j in pair_lines(pr_lines, src):
+            pl, rl = literals(pr_lines[i]), literals(src[j])
+            if not pl:
+                continue
+            if len(pl) == len(rl):
+                for a, b in zip(pl, rl):
+                    if a != b and has_cyr(b) and displayable(a):
+                        found.append((a, b))
+            elif len(rl) > len(pl):
+                unusable.append((name, i + 1, pl, rl))
+    return found, unusable
+
+
+# -- Plurals -----------------------------------------------------------------
+# Russian needs three forms of a counted noun (1 день, 2 дня, 5 дней). The core
+# picks the form by the first number the message shows; each entry here is that
+# triple. The English keys are the *rendered* text, so both the singular and the
+# plural wording of a message are listed.
+def forms(one, few, many):
+    return (one, few, many)
+
+
+PLURAL = {
+    # Auction house: cancelling undercut listings.
+    "|cffffd100Cancel %d undercut auction and lose its deposit?|r Click again.":
+        forms("|cffffd100Отменить %d перебитый лот и потерять его залог?|r Нажмите ещё раз.",
+              "|cffffd100Отменить %d перебитых лота и потерять их залоги?|r Нажмите ещё раз.",
+              "|cffffd100Отменить %d перебитых лотов и потерять их залоги?|r Нажмите ещё раз."),
+    "|cffffd100Cancel %d undercut auctions and lose their deposits?|r Click again.":
+        forms("|cffffd100Отменить %d перебитый лот и потерять его залог?|r Нажмите ещё раз.",
+              "|cffffd100Отменить %d перебитых лота и потерять их залоги?|r Нажмите ещё раз.",
+              "|cffffd100Отменить %d перебитых лотов и потерять их залоги?|r Нажмите ещё раз."),
+    # Buy queue: list tags and the shopping list's refresh message.
+    "%d item, search":
+        forms("%d предмет, поиск", "%d предмета, поиск", "%d предметов, поиск"),
+    "%d items, search":
+        forms("%d предмет, поиск", "%d предмета, поиск", "%d предметов, поиск"),
+    "%s: Up to refreshed from usual prices and this list's allowance for %d item. Change any you like; \"off\" means don't buy it.":
+        forms("%s: «До» обновлено по обычным ценам и допуску этого списка: %d предмет. Меняйте как угодно; «выкл» — не покупать.",
+              "%s: «До» обновлено по обычным ценам и допуску этого списка: %d предмета. Меняйте как угодно; «выкл» — не покупать.",
+              "%s: «До» обновлено по обычным ценам и допуску этого списка: %d предметов. Меняйте как угодно; «выкл» — не покупать."),
+    "%s: Up to refreshed from usual prices and this list's allowance for %d items. Change any you like; \"off\" means don't buy it.":
+        forms("%s: «До» обновлено по обычным ценам и допуску этого списка: %d предмет. Меняйте как угодно; «выкл» — не покупать.",
+              "%s: «До» обновлено по обычным ценам и допуску этого списка: %d предмета. Меняйте как угодно; «выкл» — не покупать.",
+              "%s: «До» обновлено по обычным ценам и допуску этого списка: %d предметов. Меняйте как угодно; «выкл» — не покупать."),
+    ", %d material short":
+        forms(", не хватает %d материала", ", не хватает %d материалов", ", не хватает %d материалов"),
+    ", %d materials short":
+        forms(", не хватает %d материала", ", не хватает %d материалов", ", не хватает %d материалов"),
+    "%d item has Up to off, so the queue skips it: type a price to buy it.":
+        forms("У %d предмета «До» выкл, очередь его пропускает: введите цену, чтобы купить.",
+              "У %d предметов «До» выкл, очередь их пропускает: введите цену, чтобы купить.",
+              "У %d предметов «До» выкл, очередь их пропускает: введите цену, чтобы купить."),
+    "%d items have Up to off, so the queue skips them: type a price to buy them.":
+        forms("У %d предмета «До» выкл, очередь его пропускает: введите цену, чтобы купить.",
+              "У %d предметов «До» выкл, очередь их пропускает: введите цену, чтобы купить.",
+              "У %d предметов «До» выкл, очередь их пропускает: введите цену, чтобы купить."),
+    # Crates: the fill was put on a shopping list of its own.
+    "Added %d item for %s to the shopping list \"%s\". Set the crate's Want there to fill more than one; tick Buy from this list in the Buy queue to buy what you're short (/fl lists). The list goes when you fill the last crate.":
+        forms("Добавлен %d предмет за %s в список покупок «%s». Задайте «Нужно» у ящика там, чтобы заполнить несколько; отметьте «Покупать из этого списка» в очереди, чтобы докупить недостающее (/fl lists). Список исчезнет после последнего ящика.",
+              "Добавлено %d предмета за %s в список покупок «%s». Задайте «Нужно» у ящика там, чтобы заполнить несколько; отметьте «Покупать из этого списка» в очереди, чтобы докупить недостающее (/fl lists). Список исчезнет после последнего ящика.",
+              "Добавлено %d предметов за %s в список покупок «%s». Задайте «Нужно» у ящика там, чтобы заполнить несколько; отметьте «Покупать из этого списка» в очереди, чтобы докупить недостающее (/fl lists). Список исчезнет после последнего ящика."),
+    "Added %d items for %s to the shopping list \"%s\". Set the crate's Want there to fill more than one; tick Buy from this list in the Buy queue to buy what you're short (/fl lists). The list goes when you fill the last crate.":
+        forms("Добавлен %d предмет за %s в список покупок «%s». Задайте «Нужно» у ящика там, чтобы заполнить несколько; отметьте «Покупать из этого списка» в очереди, чтобы докупить недостающее (/fl lists). Список исчезнет после последнего ящика.",
+              "Добавлено %d предмета за %s в список покупок «%s». Задайте «Нужно» у ящика там, чтобы заполнить несколько; отметьте «Покупать из этого списка» в очереди, чтобы докупить недостающее (/fl lists). Список исчезнет после последнего ящика.",
+              "Добавлено %d предметов за %s в список покупок «%s». Задайте «Нужно» у ящика там, чтобы заполнить несколько; отметьте «Покупать из этого списка» в очереди, чтобы докупить недостающее (/fl lists). Список исчезнет после последнего ящика."),
+    # Characters tab.
+    "%d character": forms("%d персонаж", "%d персонажа", "%d персонажей"),
+    "%d characters": forms("%d персонаж", "%d персонажа", "%d персонажей"),
+    # Crates.
+    "Shopping list \"%s\": %d crate left to fill.":
+        forms("Список покупок «%s»: осталось заполнить %d ящик.",
+              "Список покупок «%s»: осталось заполнить %d ящика.",
+              "Список покупок «%s»: осталось заполнить %d ящиков."),
+    "Shopping list \"%s\": %d crates left to fill.":
+        forms("Список покупок «%s»: осталось заполнить %d ящик.",
+              "Список покупок «%s»: осталось заполнить %d ящика.",
+              "Список покупок «%s»: осталось заполнить %d ящиков."),
+    # Deals: the empty state count, the neutral table's summary and the deals'.
+    "Nothing here matches the filter: %d deal is hidden by it. Click All, or clear the search box.":
+        forms("Ничего не подходит под фильтр: он скрыл %d сделку. Нажмите «Все» или очистите поиск.",
+              "Ничего не подходит под фильтр: он скрыл %d сделки. Нажмите «Все» или очистите поиск.",
+              "Ничего не подходит под фильтр: он скрыл %d сделок. Нажмите «Все» или очистите поиск."),
+    "Nothing here matches the filter: %d deals are hidden by it. Click All, or clear the search box.":
+        forms("Ничего не подходит под фильтр: он скрыл %d сделку. Нажмите «Все» или очистите поиск.",
+              "Ничего не подходит под фильтр: он скрыл %d сделки. Нажмите «Все» или очистите поиск.",
+              "Ничего не подходит под фильтр: он скрыл %d сделок. Нажмите «Все» или очистите поиск."),
+    "%d item": forms("%d предмет", "%d предмета", "%d предметов"),
+    "%d items": forms("%d предмет", "%d предмета", "%d предметов"),
+    "%d deal": forms("%d сделка", "%d сделки", "%d сделок"),
+    "%d deals": forms("%d сделка", "%d сделки", "%d сделок"),
+    # Quests in tooltips, and the Darkmoon line.
+    "and %d more quest": forms("и ещё %d задание", "и ещё %d задания", "и ещё %d заданий"),
+    "and %d more quests": forms("и ещё %d задание", "и ещё %d задания", "и ещё %d заданий"),
+    # Shopping lists: what was added and what is searched for.
+    "Added %d item for %s to shopping list \"%s\". Check Want and Up to there; the Buy queue buys from the list while Buy from this list in the Buy queue is ticked (/fl lists).":
+        forms("Добавлен %d предмет для %s в список покупок «%s». Проверьте там «Надо» и «До»; очередь покупает из списка, пока в ней отмечено «Покупать из этого списка» (/fl lists).",
+              "Добавлено %d предмета для %s в список покупок «%s». Проверьте там «Надо» и «До»; очередь покупает из списка, пока в ней отмечено «Покупать из этого списка» (/fl lists).",
+              "Добавлено %d предметов для %s в список покупок «%s». Проверьте там «Надо» и «До»; очередь покупает из списка, пока в ней отмечено «Покупать из этого списка» (/fl lists)."),
+    "Added %d items for %s to shopping list \"%s\". Check Want and Up to there; the Buy queue buys from the list while Buy from this list in the Buy queue is ticked (/fl lists).":
+        forms("Добавлен %d предмет для %s в список покупок «%s». Проверьте там «Надо» и «До»; очередь покупает из списка, пока в ней отмечено «Покупать из этого списка» (/fl lists).",
+              "Добавлено %d предмета для %s в список покупок «%s». Проверьте там «Надо» и «До»; очередь покупает из списка, пока в ней отмечено «Покупать из этого списка» (/fl lists).",
+              "Добавлено %d предметов для %s в список покупок «%s». Проверьте там «Надо» и «До»; очередь покупает из списка, пока в ней отмечено «Покупать из этого списка» (/fl lists)."),
+    "Added %d item to shopping list \"%s\" for disenchanting. Check Want and Up to there; the Buy queue buys from the list while Buy from this list in the Buy queue is ticked (/fl lists).":
+        forms("Добавлен %d предмет в список покупок «%s» на распыление. Проверьте там «Надо» и «До»; очередь покупает из списка, пока в ней отмечено «Покупать из этого списка» (/fl lists).",
+              "Добавлено %d предмета в список покупок «%s» на распыление. Проверьте там «Надо» и «До»; очередь покупает из списка, пока в ней отмечено «Покупать из этого списка» (/fl lists).",
+              "Добавлено %d предметов в список покупок «%s» на распыление. Проверьте там «Надо» и «До»; очередь покупает из списка, пока в ней отмечено «Покупать из этого списка» (/fl lists)."),
+    "Added %d items to shopping list \"%s\" for disenchanting. Check Want and Up to there; the Buy queue buys from the list while Buy from this list in the Buy queue is ticked (/fl lists).":
+        forms("Добавлен %d предмет в список покупок «%s» на распыление. Проверьте там «Надо» и «До»; очередь покупает из списка, пока в ней отмечено «Покупать из этого списка» (/fl lists).",
+              "Добавлено %d предмета в список покупок «%s» на распыление. Проверьте там «Надо» и «До»; очередь покупает из списка, пока в ней отмечено «Покупать из этого списка» (/fl lists).",
+              "Добавлено %d предметов в список покупок «%s» на распыление. Проверьте там «Надо» и «До»; очередь покупает из списка, пока в ней отмечено «Покупать из этого списка» (/fl lists)."),
+    "Added the materials for %d craft of %s to shopping list \"%s\". Check Want and Up to there (/fl lists).":
+        forms("Добавлены материалы на %d изготовление %s в список покупок «%s». Проверьте там «Надо» и «До» (/fl lists).",
+              "Добавлены материалы на %d изготовления %s в список покупок «%s». Проверьте там «Надо» и «До» (/fl lists).",
+              "Добавлены материалы на %d изготовлений %s в список покупок «%s». Проверьте там «Надо» и «До» (/fl lists)."),
+    "Added the materials for %d crafts of %s to shopping list \"%s\". Check Want and Up to there (/fl lists).":
+        forms("Добавлены материалы на %d изготовление %s в список покупок «%s». Проверьте там «Надо» и «До» (/fl lists).",
+              "Добавлены материалы на %d изготовления %s в список покупок «%s». Проверьте там «Надо» и «До» (/fl lists).",
+              "Добавлены материалы на %d изготовлений %s в список покупок «%s». Проверьте там «Надо» и «До» (/fl lists)."),
+    "Imported %d list (%s) with %d items.":
+        forms("Импортирован %d список (%s), предметов: %d.",
+              "Импортировано %d списка (%s), предметов: %d.",
+              "Импортировано %d списков (%s), предметов: %d."),
+    "Imported %d lists (%s) with %d items.":
+        forms("Импортирован %d список (%s), предметов: %d.",
+              "Импортировано %d списка (%s), предметов: %d.",
+              "Импортировано %d списков (%s), предметов: %d."),
+    "Searching %d item from %s.":
+        forms("Ищу %d предмет в %s.", "Ищу %d предмета в %s.", "Ищу %d предметов в %s."),
+    "Searching %d items from %s.":
+        forms("Ищу %d предмет в %s.", "Ищу %d предмета в %s.", "Ищу %d предметов в %s."),
+    # Shuffles: how many days of scans the usual price rests on, and new deals.
+    "Only %d day of your own scans.":
+        forms("Всего %d день ваших проверок.", "Всего %d дня ваших проверок.", "Всего %d дней ваших проверок."),
+    "Only %d days of your own scans.":
+        forms("Всего %d день ваших проверок.", "Всего %d дня ваших проверок.", "Всего %d дней ваших проверок."),
+    "%d day of your scans": forms("%d день ваших проверок", "%d дня ваших проверок", "%d дней ваших проверок"),
+    "%d days of your scans": forms("%d день ваших проверок", "%d дня ваших проверок", "%d дней ваших проверок"),
+    "%d new deal below the usual price: see the Deals tab (/fl deals)":
+        forms("%d новая сделка ниже обычной цены: смотрите вкладку «Сделки» (/fl deals)",
+              "%d новые сделки ниже обычной цены: смотрите вкладку «Сделки» (/fl deals)",
+              "%d новых сделок ниже обычной цены: смотрите вкладку «Сделки» (/fl deals)"),
+    "%d new deals below the usual price: see the Deals tab (/fl deals)":
+        forms("%d новая сделка ниже обычной цены: смотрите вкладку «Сделки» (/fl deals)",
+              "%d новые сделки ниже обычной цены: смотрите вкладку «Сделки» (/fl deals)",
+              "%d новых сделок ниже обычной цены: смотрите вкладку «Сделки» (/fl deals)"),
+    "%d new deal below the usual price: see the Deals tab (/fl deals).":
+        forms("%d новая сделка ниже обычной цены: смотрите вкладку «Сделки» (/fl deals).",
+              "%d новые сделки ниже обычной цены: смотрите вкладку «Сделки» (/fl deals).",
+              "%d новых сделок ниже обычной цены: смотрите вкладку «Сделки» (/fl deals)."),
+    "%d new deals below the usual price: see the Deals tab (/fl deals).":
+        forms("%d новая сделка ниже обычной цены: смотрите вкладку «Сделки» (/fl deals).",
+              "%d новые сделки ниже обычной цены: смотрите вкладку «Сделки» (/fl deals).",
+              "%d новых сделок ниже обычной цены: смотрите вкладку «Сделки» (/fl deals)."),
+    # Sync.
+    "Sync: filled in %d day of price history from %s.":
+        forms("Синхронизация: дополнен %d день истории цен от %s.",
+              "Синхронизация: дополнено %d дня истории цен от %s.",
+              "Синхронизация: дополнено %d дней истории цен от %s."),
+    "Sync: filled in %d days of price history from %s.":
+        forms("Синхронизация: дополнен %d день истории цен от %s.",
+              "Синхронизация: дополнено %d дня истории цен от %s.",
+              "Синхронизация: дополнено %d дней истории цен от %s."),
+    "Sync turned off. Removed %d character from %s; the auction prices stay.":
+        forms("Синхронизация выключена. Удалён %d персонаж из %s; цены аукциона остались.",
+              "Синхронизация выключена. Удалено %d персонажа из %s; цены аукциона остались.",
+              "Синхронизация выключена. Удалено %d персонажей из %s; цены аукциона остались."),
+    "Sync turned off. Removed %d characters from %s; the auction prices stay.":
+        forms("Синхронизация выключена. Удалён %d персонаж из %s; цены аукциона остались.",
+              "Синхронизация выключена. Удалено %d персонажа из %s; цены аукциона остались.",
+              "Синхронизация выключена. Удалено %d персонажей из %s; цены аукциона остались."),
+    # Watch list.
+    "%d watched. Green: at or under Up to right now.":
+        forms("Наблюдаем: %d предмет. Зелёное — сейчас по «До» или дешевле.",
+              "Наблюдаем: %d предмета. Зелёное — сейчас по «До» или дешевле.",
+              "Наблюдаем: %d предметов. Зелёное — сейчас по «До» или дешевле."),
+    # Chains: how the steps carry on.
+    "%d more steps": forms("ещё %d шаг", "ещё %d шага", "ещё %d шагов"),
+}
+
+# -- Messages Russian phrases differently ------------------------------------
+MANUAL = {
+    # Tooltip: price history line and the Shift/Ctrl hints.
+    "  typical, last %d day": forms("  обычно за %d день", "  обычно за %d дня", "  обычно за %d дней"),
+    "  typical, last %d days": forms("  обычно за %d день", "  обычно за %d дня", "  обычно за %d дней"),
+    "Shift for the ": "Shift — ",
+    "Ctrl for price history": "Ctrl — история цен",
+    " for a graph": " — график",
+    " for a price graph": " — график цены",
+    "Hold ": "Удерживайте ",
+    "crafts and quests": "изготовление и задания",
+    "crafts": "изготовление",
+    "quests": "задания",
+    # Disenchant bands: "Item level 5-10 green armor".
+    "Item level %s blue armor": "Уровень предмета %s: синяя броня",
+    "Item level %s blue weapons": "Уровень предмета %s: синее оружие",
+    "Item level %s purple armor": "Уровень предмета %s: фиолетовая броня",
+    "Item level %s purple weapons": "Уровень предмета %s: фиолетовое оружие",
+    "Item level %s green armor": "Зелёная броня, уровень предмета %s",
+    "Item level %s green weapons": "Зелёное оружие, уровень предмета %s",
+    # Core import summary: two counts, phrased so neither needs a plural form.
+    "Imported %d characters and %d prices.": "Импортировано: персонажей — %d, цен — %d.",
+    # Ride fund names (Training.lua).
+    "Apprentice Riding": "Ученик наездника",
+    "Riding at 40": "Езда на 40",
+    "Journeyman Riding": "Наездник",
+    "Epic riding at 60": "Эпическая езда на 60",
+    # Deals: the sell-speed word when there is none yet.
+    "None": "Нет",
+    # Auction house: the disenchant finder's list name parts.
+    "Disenchant: item level ": "Распыление: уровень предмета ",
+    " (worth disenchanting)": " (стоит распыления)",
+    "armor and weapons": "броня и оружие",
+    "no types": "нет типов",
+    # Counted sentences that read as a whole.
+    "%d of %d items done%s. Open the auction house to search and buy.":
+        "%d из %d предметов готово%s. Откройте аукцион для поиска и покупки.",
+    "%d of %d done. %d at your price%s: in the buy queue.":
+        "%d из %d готово. %d по вашей цене%s: в очереди покупок.",
+    "|cff7fd39cYou have all the materials:|r %d to craft, then it's complete.":
+        "|cff7fd39cВсе материалы есть:|r изготовить %d, и готово.",
+    "Searching %d items from a test list.": "Ищу %d предметов из тестового списка.",
+    # Darkmoon tickets: the ticket count would need its own plural form, so the
+    # line says how many go in and how many tickets come out without a noun.
+    "Darkmoon Faire: %d for %d ticket (%s)": "Ярмарка Новолуния: %d за %d (%s)",
+    "Darkmoon Faire: %d for %d tickets (%s)": "Ярмарка Новолуния: %d за %d (%s)",
+    # Customers: work log lines are built by concatenation.
+    "Enchanted ": "Зачаровано ",
+    "Gave ": "Отдал ",
+    " more": " ещё ",
+    "(this one)": "(этот)",
+    # Numbers the sentence itself shows.
+    "Gold over %s": "Золото за %s",
+    "top: %s": "лучшее: %s",
+    "Used by: %s": "Используют: %s",
+    "last seen %s": "последний раз %s",
+    "New list: %s": "Новый список: %s",
+    "Profit %s": "Прибыль %s",
+    # Settings help values.
+    "Default: %s.": "По умолчанию: %s.",
+    "Default: Auto.": "По умолчанию: авто.",
+    "Default: %g%s.": "По умолчанию: %g%s.",
+    "Default: %d%s.": "По умолчанию: %d%s.",
+    "off": "выкл",
+    # Crate names have a prefix the addon adds itself.
+    "Crate: ": "Ящик: ",
+    "  in bags": "  в сумках",
+    # Shuffles table pair labels.
+    "Based on": "На основе",
+    # Recipes tab: "none on AH", the auction house word.
+    "  none on AH": "  на аукционе нет",
+    "AH": "АУК",
+    # UI subtab labels.
+    "Sells on the auction house": "Продажа на аукционе",
+    "Sells to a vendor": "Продажа торговцу",
+    # Help: the one topic the Russian build merged into its neighbours.
+    "Also": "Также",
+    "Disenchant results, which of your recipes use it, and the cheapest crate fill.":
+        "Результаты распыления, какие ваши рецепты его используют, и самое дешёвое заполнение ящика.",
+    # Auction house: the deposit in the "cancel undercut" question.
+    "its deposit": "его залог",
+    "their deposits": "их залоги",
+    "the crate": "ящик",
+    " Not added (not seen in a scan yet): ": " Не добавлено (ещё не видно в проверках): ",
+    # How long ago ("5m ago"): ns.Age builds these before any wrapper sees them.
+    "%dm ago": "%d мин назад",
+    "%dh ago": "%d ч назад",
+    "%dd ago": "%d дн назад",
+    # Money ranges ("2g to 3g") read with a dash in Russian.
+    # Buy queue: why the last items stayed unbought.
+    "That's everything you can buy: the %d left %s more than %s, or %s waiting for a lower price.":
+        "Это всё, что можно купить: осталось %d — %s дороже, чем %s, или %s более низкой цены.",
+    "costs": "стоит",
+    "cost": "стоят",
+    "your limit allows": "позволяет лимит",
+    "you have": "у вас есть",
+    "is": "ждёт",
+    "are": "ждут",
+    # Essences: greater and lesser, by kind.
+    "Combine into Greater Magic Essence": "Соединить в большую эссенцию (магии)",
+    "Combine into Greater Astral Essence": "Соединить в большую эссенцию (астральная)",
+    "Combine into Greater Mystic Essence": "Соединить в большую эссенцию (мистическая)",
+    "Combine into Greater Nether Essence": "Соединить в большую эссенцию (Пустоты)",
+    "Combine into Greater Eternal Essence": "Соединить в большую эссенцию (вечная)",
+    "Split into Lesser Magic Essence": "Разделить на малые эссенции (магии)",
+    "Split into Lesser Astral Essence": "Разделить на малые эссенции (астральная)",
+    "Split into Lesser Mystic Essence": "Разделить на малые эссенции (мистическая)",
+    "Split into Lesser Nether Essence": "Разделить на малые эссенции (Пустоты)",
+    "Split into Lesser Eternal Essence": "Разделить на малые эссенции (вечная)",
+    "1 more step": "ещё 1 шаг",
+    # Buy queue: "Craft them (2 pcs)".
+    "Craft them (%d %s)": "Изготовить (%d %s)",
+    "pcs": "шт.",
+}
+
+# Same English source, different Russian in our tree: pick the one this place wants.
+OVERRIDES = {
+    "Cancel": "Отмена",
+    "Cheap": "Дешёвых",
+    "Each": "За шт.",
+    "Sells": "Сбыт",
+    "Shuffle": "Цепочка",
+    "Stop watching": "Не следить",
+    "Craft": "Изготовить",
+    "Disenchant": "Распылить",
+    "New": "Новый",
+    "Sold": "Продано",
+    "Undercut": "Перебить",
+    "Yours": "Ваши",
+    "armor": "броня",
+    "weapons": "оружие",
+    "Full scan: Ready": "Полная проверка: готова",
+    "Search my lists": "Искать списки",
+    "Rename": "Переименовать",
+    "Post anyway": "Всё равно",
+    "Add to shopping list": "В список покупок",
+    "Auction house": "Аукцион",
+    "Vendor": "Торговец",
+    "Item": "Предмет",
+    "Watch flips": "Следить",
+    "Silence": "Приглушить",
+    "all time": "всё время",
+    "this month": "за месяц",
+    "your auctions": "ваши лоты",
+    "sell to vendor": "продать торговцу",
+    "Sell to vendor": "Продажа торговцу",
+    "Export / import": "Экспорт и импорт",
+    "Usual price + %g%% (this list's allowance). Refreshed when buying is switched on or on Buy again.":
+        "Обычная цена + %g%% (допуск этого списка). Обновляется при включении покупки или по «Купить снова».",
+}
+
+
+# Our tree merged these into wording the table below covers in full; the generic
+# English template would drop a placeholder, so it is not part of the table.
+BLACKLIST = {
+    "Item level %s %s %s",
+}
+
+
+def lua_string(text):
+    return '"' + text.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+
+def main():
+    report = "--report" in sys.argv
+    found, unusable = collect()
+    mapping = defaultdict(Counter)
+    for a, b in found:
+        mapping[a][b] += 1
+    auto = {a: c.most_common(1)[0][0] for a, c in mapping.items()}
+    auto.update(OVERRIDES)
+    auto.update(MANUAL)
+    # A plural form wins over a single translation for the same key.
+    table = dict(auto)
+    table.update(PLURAL)
+    for key in BLACKLIST | diagnostic_keys():
+        table.pop(key, None)
+
+    if report:
+        print(f"пар: {len(found)}, ключей: {len(auto)}, форм: {len(PLURAL)}, "
+              f"строк под ручную работу: {len(unusable)}", file=sys.stderr)
+        for name, line, pl, rl in unusable:
+            print(f"{name}:{line}  {pl}", file=sys.stderr)
+        return
+
+    out = ["if GetLocale() ~= \"ruRU\" then return end",
+           "",
+           "local _, ns = ...",
+           "-- Russian: every message, label and tooltip line Forever Ledger shows, keyed by",
+           "-- the English source it replaces. A table of three strings is a counted noun: the",
+           "-- core picks the form the number needs (language.forms below).",
+           "local language = { strings = {}, short = {}, upper = {} }",
+           "",
+           "-- The Russian client ships a Cyrillic copy of the UI font; a Latin build of the",
+           "-- client doesn't, so it is used only when it loads.",
+           "do",
+           "  local path = \"Fonts\\\\FRIZQT___CYR.TTF\"",
+           "  local probe = CreateFrame(\"Frame\"):CreateFontString()",
+           "  local ok, loaded = pcall(probe.SetFont, probe, path, 12, \"\")",
+           "  if ok and loaded ~= false and probe:GetFont() then",
+           "    language.font = path",
+           "  end",
+           "end",
+           "local dictionary = language.strings",
+           ""]
+    for key in sorted(table):
+        value = table[key]
+        if isinstance(value, tuple):
+            body = ", ".join(lua_string(v) for v in value)
+            out.append(f"dictionary[{lua_string(key)}] = {{ {body} }}")
+        else:
+            out.append(f"dictionary[{lua_string(key)}] = {lua_string(value)}")
+    out.append("")
+    out.append("-- Short templates a pattern can match: the core only builds patterns for")
+    out.append("-- strings with five letters to spare, and counted nouns are shorter.")
+    short = sorted(k for k in table if SPEC.search(k) and
+                   len(re.sub(r"[^A-Za-z]", "", SPEC.sub("", k))) < 5)
+    for key in short:
+        out.append(f"language.short[{lua_string(key)}] = true")
+    out.append("")
+    out.append("-- A price range the addon builds itself (\"2g 50s to 3g\") reads with a dash.")
+    out.append("-- Only a number, its money units and \"to\" between them are touched.")
+    out.append("function language.TransformVisible(s)")
+    out.append("  return (s:gsub(\"(%d[%w%s]-%s)to(%s%d)\", \"%1—%2\"))")
+    out.append("end")
+    out.append("")
+    out.append("-- Three forms of a counted noun, chosen by the first number shown:")
+    out.append("-- 1 день, 2 дня, 5 дней. The core asks for a form only when an entry is a")
+    out.append("-- table of three.")
+    out.append("function language.forms(n)")
+    out.append("  n = math.abs(tonumber(n) or 0)")
+    out.append("  local mod100, mod10 = n % 100, n % 10")
+    out.append("  if mod100 >= 11 and mod100 <= 14 then return 3 end")
+    out.append("  if mod10 == 1 then return 1 end")
+    out.append("  if mod10 >= 2 and mod10 <= 4 then return 2 end")
+    out.append("  return 3")
+    out.append("end")
+    out.append("")
+    out.append("for english, translated in pairs(language.strings) do")
+    out.append("  if type(translated) == \"string\" then")
+    out.append("    language.upper[string.upper(english)] = translated")
+    out.append("  end")
+    out.append("end")
+    out.append("ns.RegisterLocale(\"ruRU\", language)")
+    out.append("")
+    OUT.write_text("\n".join(out), encoding="utf-8")
+    print(f"Locales/ruRU.lua: {len([k for k in table])} строк", file=sys.stderr)
+
+
+if __name__ == "__main__":
+    main()
