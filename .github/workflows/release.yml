@@ -1,0 +1,185 @@
+name: Build release
+
+# Runs when you push a tag like v0.2.0. Builds the addon zip, publishes a GitHub release,
+# and uploads it to CurseForge and Wago. Can also be run by hand for an existing tag to
+# upload it to Wago and/or CurseForge only (no new GitHub release).
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to upload, e.g. v0.7.0"
+        required: true
+      curseforge:
+        description: "Also upload to CurseForge"
+        type: boolean
+        default: false
+      wago:
+        description: "Upload to Wago"
+        type: boolean
+        default: true
+      announce:
+        description: "Post the announcement on Discord"
+        type: boolean
+        default: false
+      dry_run:
+        description: "Only show the announcement in the log, don't post it"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  issues: read
+
+env:
+  CF_PROJECT: "1720193"
+  WAGO_PROJECT: "qGYBBzNg"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get the code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Work out the version from the tag
+        id: ver
+        run: |
+          TAG="${{ inputs.tag || github.ref_name }}"
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Build the addon zip
+        run: |
+          VERSION="${{ steps.ver.outputs.version }}"
+          mkdir -p build/ForeverLedger
+          cp ForeverLedger.toc *.lua README.md CHANGELOG.md LICENSE build/ForeverLedger/
+          cp -r media build/ForeverLedger/
+          sed -i "s/@project-version@/${VERSION}/" build/ForeverLedger/ForeverLedger.toc
+          cd build && zip -r "../ForeverLedger-${VERSION}.zip" ForeverLedger
+
+      - name: Copy this version's notes from the changelog
+        run: |
+          VERSION="${{ steps.ver.outputs.version }}"
+          awk -v v="$VERSION" '
+            index($0, "## [" v "]") == 1 { found = 1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md > release-notes.md
+          if [ ! -s release-notes.md ]; then echo "No changelog entry for ${VERSION}." > release-notes.md; fi
+
+      - name: Publish the release
+        if: github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Forever Ledger ${{ steps.ver.outputs.version }}
+          body_path: release-notes.md
+          files: ForeverLedger-${{ steps.ver.outputs.version }}.zip
+          prerelease: ${{ startsWith(steps.ver.outputs.version, '0.') }}
+
+      # CurseForge. Needs the CF_API_TOKEN secret. The game version is worked out from the
+      # .toc's Interface line (16001 = 1.60.1); if CurseForge doesn't list exactly one
+      # match, nothing is uploaded and the log shows what it does list.
+      # A failure here never undoes the GitHub release above.
+      - name: Upload to CurseForge
+        if: github.event_name == 'push' || inputs.curseforge
+        continue-on-error: true
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+        run: |
+          if [ -z "$CF_API_TOKEN" ]; then echo "No CF_API_TOKEN secret, skipping."; exit 0; fi
+          VERSION="${{ steps.ver.outputs.version }}"
+          PROJECT="$CF_PROJECT"
+          INTERFACE=$(grep -m1 '^## Interface:' ForeverLedger.toc | sed 's/.*: *//' | tr -d '\r')
+          GAME="$((INTERFACE / 10000)).$(((INTERFACE / 100) % 100)).$((INTERFACE % 100))"
+          echo "Project $PROJECT, game version $GAME"
+          curl -sf -H "X-Api-Token: $CF_API_TOKEN" https://wow.curseforge.com/api/game/versions > versions.json
+          IDS=$(jq -c --arg g "$GAME" '[.[] | select(.name == $g) | .id]' versions.json)
+          if [ "$(echo "$IDS" | jq length)" != "1" ]; then
+            echo "Expected one CurseForge game version named $GAME, found: $IDS"
+            jq -c --arg g "$GAME" '.[] | select(.name == $g)' versions.json
+            exit 1
+          fi
+          case "$VERSION" in 0.*) TYPE=beta ;; *) TYPE=release ;; esac
+          jq -n --rawfile log release-notes.md --arg name "Forever Ledger $VERSION" --arg type "$TYPE" --argjson ids "$IDS" \
+            '{changelog: $log, changelogType: "markdown", displayName: $name, gameVersions: $ids, releaseType: $type}' > metadata.json
+          curl -sf -H "X-Api-Token: $CF_API_TOKEN" \
+            -F "metadata=<metadata.json" \
+            -F "file=@ForeverLedger-${VERSION}.zip" \
+            "https://wow.curseforge.com/api/projects/${PROJECT}/upload-file"
+          echo
+          echo "Uploaded Forever Ledger $VERSION to CurseForge ($TYPE)."
+
+      # Wago. Needs the WAGO_API_TOKEN secret. Wago lists Forever as its own game type
+      # ("forever", patch 1.60.1 in October 2026), worked out from the .toc like above.
+      - name: Upload to Wago
+        if: github.event_name == 'push' || inputs.wago
+        continue-on-error: true
+        env:
+          WAGO_API_TOKEN: ${{ secrets.WAGO_API_TOKEN }}
+        run: |
+          if [ -z "$WAGO_API_TOKEN" ]; then echo "No WAGO_API_TOKEN secret, skipping."; exit 0; fi
+          VERSION="${{ steps.ver.outputs.version }}"
+          INTERFACE=$(grep -m1 '^## Interface:' ForeverLedger.toc | sed 's/.*: *//' | tr -d '\r')
+          GAME="$((INTERFACE / 10000)).$(((INTERFACE / 100) % 100)).$((INTERFACE % 100))"
+          curl -sf -H "authorization: Bearer $WAGO_API_TOKEN" -H "accept: application/json" https://addons.wago.io/api/data/game > wago.json
+          if ! jq -e --arg g "$GAME" '.patches.forever | index($g)' wago.json > /dev/null; then
+            echo "Wago doesn't list Forever patch $GAME. It lists:"; jq -c '.patches.forever' wago.json
+            exit 1
+          fi
+          case "$VERSION" in 0.*) STABILITY=beta ;; *) STABILITY=stable ;; esac
+          jq -n --rawfile log release-notes.md --arg label "$VERSION" --arg stability "$STABILITY" --arg game "$GAME" \
+            '{label: $label, stability: $stability, changelog: $log, supported_forever_patches: [$game]}' > wago-metadata.json
+          curl -sS --fail-with-body -H "authorization: Bearer $WAGO_API_TOKEN" -H "accept: application/json" \
+            -F "metadata=<wago-metadata.json" \
+            -F "file=@ForeverLedger-${VERSION}.zip" \
+            "https://addons.wago.io/api/projects/${WAGO_PROJECT}/version"
+          echo
+          echo "Uploaded Forever Ledger $VERSION to Wago ($STABILITY, Forever $GAME)."
+
+      # Discord #announcements, through the channel's webhook (secret
+      # DISCORD_ANNOUNCE_WEBHOOK, posts as "Forever Ledger"), built from the changelog
+      # notes by .github/scripts/discord_announce.py. The repo variable
+      # DISCORD_UPDATES_ROLE (a role ID, optional) adds a ping for that role.
+      - name: Announce on Discord
+        if: github.event_name == 'push' || inputs.announce
+        continue-on-error: true
+        env:
+          DISCORD_ANNOUNCE_WEBHOOK: ${{ secrets.DISCORD_ANNOUNCE_WEBHOOK }}
+          UPDATES_ROLE: ${{ vars.DISCORD_UPDATES_ROLE }}
+          # The bot looks up the server's change-mark emojis by name (discord_announce.py).
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          GUILD_ID: "1555189575650123776"
+        run: |
+          if [ -z "$DISCORD_ANNOUNCE_WEBHOOK" ]; then echo "No DISCORD_ANNOUNCE_WEBHOOK secret, skipping."; exit 0; fi
+          VERSION="${{ steps.ver.outputs.version }}"
+          URL="https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md"
+          # Script and changelog come from main, so a re-announce of an old tag uses
+          # today's format and any Highlights added since.
+          git fetch -q origin main
+          git show origin/main:.github/scripts/discord_announce.py > announce.py
+          git show origin/main:CHANGELOG.md > changelog-main.md
+          python3 announce.py changelog-main.md "$VERSION" "$URL" "$UPDATES_ROLE" > discord.json
+          if [ "${{ inputs.dry_run }}" = "true" ]; then echo "Dry run, not posting:"; jq -r '.content, .embeds[0].title, .embeds[0].description' discord.json; exit 0; fi
+          curl -sS --fail-with-body -H "Content-Type: application/json" -d @discord.json "$DISCORD_ANNOUNCE_WEBHOOK"
+          echo "Announced Forever Ledger $VERSION on Discord."
+
+      # Discord bug and idea threads fixed since the previous release: "Now live in X".
+      - name: Tell fixed Discord threads
+        if: (github.event_name == 'push' || inputs.announce) && !inputs.dry_run
+        continue-on-error: true
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.ver.outputs.version }}
+          GUILD_ID: "1555189575650123776"
+          BUG_FORUM: "1555195887771451412"
+          IDEA_FORUM: "1555196054658490388"
+        run: |
+          if [ -z "$DISCORD_BOT_TOKEN" ]; then echo "No DISCORD_BOT_TOKEN secret, skipping."; exit 0; fi
+          git fetch -q origin main
+          git show origin/main:.github/scripts/discord_sync.py > discord_sync.py
+          python3 discord_sync.py released

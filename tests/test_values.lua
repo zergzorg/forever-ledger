@@ -1,0 +1,324 @@
+-- What an item is worth (Values.lua ns:GetValue): the best of the auction house after
+-- the cut, a vendor, disenchanting, converting essences and crafting, following chains.
+local T = ...
+local ns, S = T.ns, T.S
+local ME = ns.CharKey()
+local DUST, LESSER_MAGIC, GREATER_MAGIC = 10940, 10938, 10939
+
+local function price(id, p, listed)
+  local key = ns.MarketKey()
+  ns.db.prices[key] = ns.db.prices[key] or {}
+  ns.db.prices[key][id] = { m = p, a = p, q = listed or 50, t = S.now }
+end
+
+-- A character of yours with these professions; recipes { { name, out, { {id, qty}, ... } } }.
+local function me(profs)
+  ns.db.chars = { [ME] = { name = "Tester", realm = "Testrealm", faction = "Alliance", profs = profs or {} } }
+  ns:BuildUsageIndex()
+  ns:InvalidateValues(true)
+end
+local function recipes(list)
+  local out = {}
+  for i, r in ipairs(list) do out[i] = { n = r[1], out = r[2], oq = 1, r = r[3] } end
+  return { Tailoring = { rank = 300, recipes = out } }
+end
+
+local function near(got, want, what)
+  if type(got) ~= "number" or math.abs(got - want) > 0.001 then
+    error(("%s: expected %s, got %s"):format(what or "value", tostring(want), tostring(got)), 2)
+  end
+end
+
+T.test("The auction house, after the cut", function()
+  me()
+  price(60001, 1000)
+  ns.db.vendorSell[60001] = 100
+  local v, opts = ns:GetValue(60001)
+  T.eq(v, 930)
+  T.eq(opts[1].kind, "ah")
+  T.eq(opts[1].label, "Sell on the auction house, after 5% cut and one unsold listing")
+  T.eq(opts[2].kind, "vendor", "the vendor next")
+end)
+
+-- Issue #15 (October 22): choose which ways Worth to you counts; only what's shown.
+T.test("Worth to you counts only the ticked ways, in tooltips only", function()
+  me()
+  price(60005, 1000)
+  ns.db.vendorSell[60005] = 100
+  ns.db.settings.worthAH = false
+  T.eq((ns:GetValue(60005, true)), 100, "auction house off: the vendor")
+  T.eq((ns:GetValue(60005)), 930, "everything else still counts the auction house")
+  ns.db.settings.worthVendor = false
+  T.eq((ns:GetValue(60005, true)), nil, "nothing left to count")
+  ns.db.settings.worthAH, ns.db.settings.worthVendor = nil, nil
+  T.eq((ns:GetValue(60005, true)), 930)
+end)
+
+T.test("The cut follows the setting", function()
+  me()
+  ns.db.settings.ahCut = 15
+  price(60002, 1000)
+  T.eq((ns:GetValue(60002)), 850)
+  ns.db.settings.ahCut = 5
+end)
+
+T.test("A vendor when it pays more", function()
+  me()
+  price(60003, 100)
+  ns.db.vendorSell[60003] = 300
+  local v, opts = ns:GetValue(60003)
+  T.eq(v, 300)
+  T.eq(opts[1].label, "Sell to vendor")
+end)
+
+-- Owner's screenshot, November 9: Sell Price 20s 69c at 42/45 durability, Worth to you 21s 2c.
+T.test("A damaged copy is worth what the game says a vendor pays for it", function()
+  local opts = { { kind = "vendor", value = 2102 }, { kind = "disenchant", value = 1330 } }
+  local best, out = ns:WorthOfCopy(2102, opts, 2069)
+  T.eq(best, 2069)
+  T.eq(out[1].value, 2069)
+  T.eq(opts[1].value, 2102, "the shared list isn't touched")
+  local best2, out2 = ns:WorthOfCopy(2102, opts, 1000)
+  T.eq(best2, 1330, "another way can come out on top")
+  T.eq(out2[1].kind, "disenchant")
+  local _, same = ns:WorthOfCopy(2102, opts, 2102)
+  T.eq(same, opts, "undamaged: nothing changes")
+  T.eq((ns:WorthOfCopy(2102, opts, 9000)), 2102, "a whole stack's price")
+  T.eq((ns:WorthOfCopy(2102, opts, nil)), 2102, "the game didn't say")
+end)
+
+T.test("The sell price line in the game's tooltip data", function()
+  local real = rawget(_G, "Enum")
+  rawset(_G, "Enum", { TooltipDataLineType = { SellPrice = 11 } })
+  T.eq(ns.TooltipSellPrice({ lines = { { type = 0 }, { type = 11, price = 2069 } } }), 2069)
+  T.eq(ns.TooltipSellPrice({ lines = { { type = 0 } } }), nil, "no such line")
+  T.eq(ns.TooltipSellPrice(nil), nil)
+  rawset(_G, "Enum", nil)
+  T.eq(ns.TooltipSellPrice({ lines = { { type = 11, price = 5 } } }), nil, "an older client")
+  rawset(_G, "Enum", real)
+end)
+
+-- Owner's saved data, November 9: 879 items on the auction house character were marked
+-- "vendors won't buy it" (667 priced on the other account), so their vendor flips were
+-- gone until a reload. Only a 1c price (Forever's essences) is checked against the line.
+T.test("A missing sell price line only rules out a 1c vendor price", function()
+  local BOOTS, ESSENCE = 60301, 60302
+  S.items[BOOTS] = { name = "Test Boots", sell = 250 }
+  S.items[ESSENCE] = { name = "Test Essence", sell = 1 }
+  local real = rawget(_G, "C_TooltipInfo")
+  rawset(_G, "C_TooltipInfo", { GetItemByID = function() return { lines = { { type = 0 } } } end })
+  T.eq(ns:GetSellPrice(BOOTS), 250)
+  T.eq(ns:GetSellPrice(ESSENCE), 1, "not known yet")
+  T.runTimers()
+  T.eq(ns:GetSellPrice(BOOTS), 250, "a real price stands without the line")
+  T.eq(ns:GetSellPrice(ESSENCE), nil, "1c with no line 3 seconds later: vendors won't buy it")
+  T.eq(ns.db.vendorSell[ESSENCE], 0)
+  rawset(_G, "C_TooltipInfo", real)
+end)
+
+T.test("A vendor price wrongly saved as none comes back", function()
+  local GLOVES = 60303
+  S.items[GLOVES] = { name = "Test Gloves", sell = 120 }
+  ns.db.vendorSell[GLOVES] = 0
+  T.eq(ns:GetSellPrice(GLOVES), 120)
+  T.eq(ns.db.vendorSell[GLOVES], 120)
+end)
+
+-- Owner, November 11: Instant Poison was a vendor flip at its 5c vendor price, and the
+-- vendor wouldn't buy it.
+T.test("Rogue poisons have no vendor price, so they're never a vendor flip", function()
+  local INSTANT, WOUND = 6947, 10922
+  S.items[INSTANT] = { name = "Instant Poison", sell = 5 }
+  S.items[WOUND] = { name = "Wound Poison IV", sell = 40 }
+  ns.db.vendorSell[INSTANT] = 5
+  T.eq(ns:GetSellPrice(INSTANT), nil)
+  T.eq(ns.db.vendorSell[INSTANT], 0, "remembered as vendors won't buy it")
+  T.eq(ns:GetSellPrice(WOUND), nil, "every rank")
+  price(INSTANT, 2)
+  T.eq(ns:VendorFlip(INSTANT), nil, "listed at 2c: not a flip")
+  ns.db.prices[ns.MarketKey()][INSTANT] = nil
+  S.items[INSTANT], S.items[WOUND], ns.db.vendorSell[INSTANT] = nil, nil, nil
+end)
+
+-- Frank, November 13: vendors won't buy Blinding Powder. He first wrote blasting powder by
+-- mistake, and that version saved its vendor price as 0; vendors do buy it, so it comes back.
+T.test("Blinding Powder has no vendor price; blasting powder's comes back", function()
+  local BLINDING, ROUGH = 5530, 4357
+  S.items[BLINDING] = { name = "Blinding Powder", sell = 125 }
+  S.items[ROUGH] = { name = "Rough Blasting Powder", sell = 4 }
+  ns.db.vendorSell[BLINDING] = 125
+  T.eq(ns:GetSellPrice(BLINDING), nil)
+  price(BLINDING, 103)
+  T.eq(ns:VendorFlip(BLINDING), nil, "listed at 1s 03c: not a flip")
+  ns.db.vendorSell[ROUGH] = 0
+  T.eq(ns:GetSellPrice(ROUGH), 4, "saved as 0 by the mistake: the game's price again")
+  ns.db.prices[ns.MarketKey()][BLINDING] = nil
+  S.items[BLINDING], S.items[ROUGH] = nil, nil
+  ns.db.vendorSell[BLINDING], ns.db.vendorSell[ROUGH] = nil, nil
+end)
+
+-- Gold audit, November 9: an old price became a shuffle or list limit.
+T.test("A chain isn't worked out from a price past the age limit", function()
+  local MAT, OUT = 60101, 60102
+  me(recipes({ { "Test craft", OUT, { { MAT, 1 } } } }))
+  price(OUT, 1000)
+  T.ok((ns:GetValue(MAT)), "valued from today's price")
+  ns.db.prices[ns.MarketKey()][OUT].t = S.now - 13 * 3600
+  ns:InvalidateValues(true)
+  T.eq((ns:GetValue(MAT)), nil, "not from one 13 hours old")
+  T.ok((ns:GetValue(OUT)), "the item's own price still shows")
+  ns.db.prices[ns.MarketKey()][OUT].t = S.now
+end)
+
+T.test("Nothing known: no value", function()
+  me()
+  local v, opts = ns:GetValue(60004)
+  T.eq(v, nil)
+  T.eq(#opts, 0)
+end)
+
+T.test("Disenchanting, with an enchanter", function()
+  -- A level 12 green chest: 1.20 Strange Dust and 0.30 Lesser Magic Essence on average.
+  S.items[60010] = { name = "Green Vest", quality = 2, ilvl = 12, classID = 4, equipLoc = "INVTYPE_CHEST" }
+  price(DUST, 1000)
+  price(LESSER_MAGIC, 2000)
+  me({ Enchanting = { rank = 50 } })
+  local v, opts = ns:GetValue(60010)
+  near(v, 1.20 * 950 + 0.30 * 1900, "disenchant value")
+  T.eq(opts[1].kind, "disenchant")
+  T.eq(opts[1].label, "Disenchant")
+end)
+
+T.test("No disenchanting without an enchanter", function()
+  S.items[60011] = { name = "Green Gloves", quality = 2, ilvl = 12, classID = 4, equipLoc = "INVTYPE_HAND" }
+  price(DUST, 1000)
+  me()
+  T.eq((ns:GetValue(60011)), nil)
+end)
+
+T.test("Disenchanting ignores thin markets for the materials", function()
+  S.items[60012] = { name = "Green Boots", quality = 2, ilvl = 12, classID = 4, equipLoc = "INVTYPE_FEET" }
+  price(DUST, 1000, 2)   -- only 2 listed
+  price(LESSER_MAGIC, 2000)
+  me({ Enchanting = { rank = 50 } })
+  near((ns:GetValue(60012)), 0.30 * 1900, "only the essence counts")
+end)
+
+-- Owner's disenchant log, November 10 (and a player on Discord): green weapons of item
+-- level 21-30 give Greater Magic Essence in Forever, not Astral. Armor is Classic's.
+T.test("Disenchanting: item level 21-30 green weapons give Greater Magic Essence", function()
+  S.items[60013] = { name = "Dire Wand", quality = 2, ilvl = 26, classID = 2, equipLoc = "INVTYPE_RANGEDRIGHT" }
+  S.items[60014] = { name = "Green Sword", quality = 2, ilvl = 23, classID = 2, equipLoc = "INVTYPE_WEAPON" }
+  S.items[60015] = { name = "Green Belt", quality = 2, ilvl = 23, classID = 4, equipLoc = "INVTYPE_WAIST" }
+  local function has(yield, id)
+    for _, y in ipairs(yield or {}) do if y[1] == id then return y[2] end end
+  end
+  near(has(ns:DisenchantYield(60013), GREATER_MAGIC), 1.125, "item level 26")
+  T.eq(has(ns:DisenchantYield(60013), 11082), nil, "not Greater Astral")
+  near(has(ns:DisenchantYield(60014), GREATER_MAGIC), 1.125, "item level 23")
+  T.eq(has(ns:DisenchantYield(60014), 10998), nil, "not Lesser Astral")
+  T.ok(has(ns:DisenchantYield(60015), 10998), "armor still gives Lesser Astral")
+  T.eq(has(ns:DisenchantYield(60015), GREATER_MAGIC), nil)
+  T.eq(ns:DisenchantYield(60013).tested, true, "marked as tested in Forever")
+end)
+
+-- A player on Discord, November 10: Astral Essence was bought out and relisted high, and
+-- expensive items showed as profitable disenchants. A chain's result is valued at no more
+-- than its usual price this week; a drop still counts at once.
+T.test("Disenchanting: a spike in a material's price doesn't raise what a disenchant is worth", function()
+  S.items[60016] = { name = "Green Hat", quality = 2, ilvl = 12, classID = 4, equipLoc = "INVTYPE_HEAD" }
+  me({ Enchanting = { rank = 50 } })
+  price(DUST, 1000)
+  price(LESSER_MAGIC, 9000)   -- bought out and relisted at 90s today
+  local key, d = ns.MarketKey(), ns.LocalDay()
+  ns.db.history = ns.db.history or {}
+  ns.db.history[key] = ns.db.history[key] or {}
+  local days = {}
+  for i = 1, 5 do days[#days + 1] = ("%d:%d:%d"):format(d - i, 1900, 2000) end
+  ns.db.history[key][LESSER_MAGIC] = table.concat(days, "|")
+  ns:InvalidateValues(true)
+  near((ns:GetValue(60016)), 1.20 * 950 + 0.30 * 1900, "the essence at its usual 20s, after the cut")
+  price(LESSER_MAGIC, 1000)   -- and a drop counts at once
+  ns:InvalidateValues(true)
+  near((ns:GetValue(60016)), 1.20 * 950 + 0.30 * 950, "today's 10s")
+  ns.db.history[key][LESSER_MAGIC] = nil
+  ns:InvalidateValues(true)
+end)
+
+T.test("Essences: splitting a greater one into 3 lesser", function()
+  price(LESSER_MAGIC, 5000)
+  price(GREATER_MAGIC, 10000)
+  me()
+  local v, opts = ns:GetValue(GREATER_MAGIC)
+  near(v, 3 * 4750, "3 lesser at 4750")
+  T.eq(opts[1].kind, "convert")
+  T.eq(opts[1].label, "Split into Lesser Magic Essence, sell on the auction house")
+  near((ns:GetValue(LESSER_MAGIC)), 4750, "the lesser one sells as it is")
+end)
+
+T.test("Essences: combining 3 lesser into a greater", function()
+  price(LESSER_MAGIC, 1000)
+  price(GREATER_MAGIC, 9000)
+  me()
+  local v, opts = ns:GetValue(LESSER_MAGIC)
+  near(v, 8550 / 3, "a third of a greater")
+  T.eq(opts[1].label, "Combine into Greater Magic Essence, sell on the auction house")
+end)
+
+T.test("A craft: what's left after buying the other materials, per unit", function()
+  -- 2 of the item and 1 thread (a vendor sells it for 100) make one that sells for 10000.
+  ns.db.vendorBuy[60021] = { p = 100 }
+  price(60022, 10000)
+  price(60020, 1000)
+  me(recipes({ { "Fine Shirt", 60022, { { 60020, 2 }, { 60021, 1 } } } }))
+  local v, opts = ns:GetValue(60020)
+  T.eq(v, (9500 - 100) / 2)
+  T.eq(opts[1].kind, "craft")
+  T.eq(opts[1].label, "Craft Fine Shirt, sell on the auction house")
+end)
+
+T.test("A craft whose other material has no price isn't counted", function()
+  price(60032, 10000)
+  price(60030, 1000)
+  me(recipes({ { "Fine Hat", 60032, { { 60030, 2 }, { 60031, 1 } } } }))
+  local _, opts = ns:GetValue(60030)
+  T.eq(opts[1].kind, "ah")
+  T.eq(#opts, 1)
+end)
+
+T.test("A loop in the recipes (A makes B, B makes A) doesn't hang", function()
+  ns.db.vendorSell[60040] = 10
+  me(recipes({ { "Make B", 60041, { { 60040, 1 } } }, { "Make A", 60040, { { 60041, 1 } } } }))
+  -- Stop after a few million steps instead of hanging, so a loop fails the test.
+  debug.sethook(function() error("GetValue didn't finish: a loop?") end, "", 5e6)
+  local ok, v, opts = pcall(ns.GetValue, ns, 60040)
+  local ok2, v2 = pcall(ns.GetValue, ns, 60041)
+  debug.sethook()
+  T.ok(ok, tostring(v))
+  T.ok(ok2, tostring(v2))
+  T.eq(v, 10, "A is worth its vendor price")
+  T.eq(opts[1].kind, "vendor")
+  T.eq(v2, 10, "B is worth making into A")
+end)
+
+T.test("A longer chain of crafts stops after a few steps", function()
+  -- 60050 -> 60051 -> ... -> 60059, only the last one sells.
+  local list = {}
+  for i = 0, 8 do list[#list + 1] = { "Step " .. i, 60051 + i, { { 60050 + i, 1 } } } end
+  price(60059, 1000)
+  me(recipes(list))
+  T.eq((ns:GetValue(60055)), 950, "4 steps away: reached")
+  T.eq((ns:GetValue(60050)), nil, "9 steps away: too far")
+end)
+
+T.test("Items that bind are worth only their vendor price (loot)", function()
+  -- 99001 is a bound item (tests/run.lua); Values.lua ns:LootValue values loot this way (dungeon runs).
+  price(99001, 5000)
+  ns.db.vendorSell[99001] = 30
+  ns.db.settings.source = "own"
+  T.eq(ns:IsClassicBound(99001), true)
+  T.eq(ns:LootValue(99001), 30)
+  price(60060, 5000)
+  ns.db.vendorSell[60060] = 30
+  T.eq(ns:LootValue(60060), 4750, "an item that doesn't bind: the auction house")
+end)
