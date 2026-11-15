@@ -423,8 +423,8 @@ local function buildFinder(side)
 
     add("Уровень предмета " .. b.label .. " (зелёные)", white)
     local armorT, weaponT = b.armor and b.armor.tested, b.weapon and b.weapon.tested
-    add((armorT and weaponT and "Проверено в Forever") or (armorT and "Броня проверена в Forever")
-      or (weaponT and "Оружие проверено в Forever") or "Таблица Classic", dim)
+    add((armorT and weaponT and "Видели в Forever; шансы оценены") or (armorT and "Броня видена в Forever; шансы оценены")
+      or (weaponT and "Оружие видено в Forever; шансы оценены") or "Оценка; в Forever ещё не встречалось", dim)
     add("Шанс на предмет", accent, per(function(_, k) return k == "armor" and "Броня" or "Оружие" end), accent)
     -- Every material either kind can give, each with its chance for armor and for weapons
     -- (item level 21-30 weapons give a different essence: Values.lua).

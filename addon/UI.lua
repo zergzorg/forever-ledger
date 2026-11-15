@@ -112,8 +112,6 @@ local TABS = {
   { key = "crates", label = "Ящики", setting = "crates" },
   { key = "recipes", label = "Рецепты" },
   { key = "characters", label = "Персонажи" },
-  -- Levelling help module, under level 20 (Levelling.lua; owner, October 7).
-  { key = "levelling", label = "Прокачка", show = function() return ns.LevellingTabShown and ns:LevellingTabShown() end },
   { key = "settings", label = "Настройки" },
   { key = "help", label = "Справка" },
 }
@@ -188,7 +186,6 @@ local function buildMain()
     crates = ns:BuildCrates(main.body),
     recipes = ns:BuildRecipes(main.body),
     characters = ns:BuildCharacters(main.body),   -- Characters.lua
-    levelling = ns:BuildLevelling(main.body),   -- Levelling.lua
     help = ns:BuildHelp(main.body),   -- Help.lua
   }
   main.views.settings = ns:BuildSettings(main.body)   -- Settings.lua
@@ -316,7 +313,7 @@ function ns:RefreshFlipsIfShown()
     if not main.shuffles then ns:RefreshShuffles(); return end
     main.shuffles.flips = ns:FindVendorFlips()
     main.shuffleInfo:SetText(("Цепочек: %d, перепродаж торговцу: %d (%s). Клик — поиск на аукционе, правый клик — подробности."):format(
-      #main.shuffles.vendor + #main.shuffles.ah + #main.shuffles.oneOff, #main.shuffles.flips, date("%H:%M")))
+      #main.shuffles.vendor + #main.shuffles.ah, #main.shuffles.flips, date("%H:%M")))
     layoutShuffles()
   end)
 end
@@ -385,8 +382,6 @@ function ns:RefreshUI()
     ns:RefreshRecipes()
   elseif main.view == "characters" then
     ns:RefreshCharacters()
-  elseif main.view == "levelling" then
-    ns:RefreshLevelling()
   elseif build then
     local L = {}
     build(function(s) L[#L + 1] = s or "" end)
@@ -436,8 +431,6 @@ local function buildMinimapButton()
 
   mm:SetScript("OnClick", function(_, which)
     if IsShiftKeyDown() then ns:ShowSidePanel("lists")
-    elseif IsControlKeyDown() then
-      if ns:GeneralSessionRunning() then ns:StopGeneralSession() else ns:StartGeneralSession() end
     elseif which == "RightButton" then ns:ToggleUI("shuffles") else ns:ToggleUI() end
   end)
   mm:SetScript("OnDragStart", function(self)
@@ -456,7 +449,6 @@ local function buildMinimapButton()
     GameTooltip:AddLine("Клик — открыть или закрыть.", 1, 1, 1)
     GameTooltip:AddLine("Правый клик — цепочки.", 1, 1, 1)
     GameTooltip:AddLine("Shift+клик — списки покупок.", 1, 1, 1)
-    GameTooltip:AddLine(ns:GeneralSessionRunning() and "Ctrl+клик — остановить сессию." or "Ctrl+клик — начать сессию.", 1, 1, 1)
     GameTooltip:AddLine("Перетащите, чтобы переместить. /fl minimap скрывает.", 0.7, 0.7, 0.7)
     GameTooltip:Show()
   end)
@@ -485,7 +477,6 @@ local SUBTABS = {
   -- (owner, November 5). If none turn up for a few weeks, the vendor tab may go.
   { key = "ah", label = "Продажа на аукционе" },
   { key = "vendor", label = "Продажа торговцу" },
-  { key = "oneOff", label = "Ограниченный запас" },
 }
 local COLUMNS = {
   shuffles = {
@@ -610,7 +601,7 @@ buildTable = function()
   f.allProfs:HookScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
     GameTooltip:AddLine("Все профессии", 1, 1, 1)
-    GameTooltip:AddLine("Изготовление любой профессии, которое продаётся торговцу дороже материалов по сегодняшним ценам, знает её кто-то из ваших или нет. Рецепты берутся из окон профессий; для профессий, которые не открывал ни один ваш персонаж, — из оригинального Classic (в Forever они ещё не встречались). В шагах указана профессия и кто из ваших её знает. «Рецепты от» на это время откладываются.", nil, nil, nil, true)
+    GameTooltip:AddLine("Изготовление любой профессии, которое продаётся торговцу дороже материалов по сегодняшним ценам, знает её кто-то из ваших или нет. Сначала рецепты из окон профессий; те, которых там не было, — из данных игры, с пометкой (Forever), а если нет и их — из Classic, с пометкой (Classic). Некоторые могут быть ещё не изучимы в игре. В шагах указана профессия и кто из ваших её знает. «Рецепты от» на это время откладываются.", nil, nil, nil, true)
     GameTooltip:Show()
   end)
   f.allProfs:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -771,7 +762,9 @@ local function fillRow(r, s, lay, index, width)
   r.name:ClearAllPoints()
   r.name:SetPoint("LEFT", r.icon, "RIGHT", 6, 0)
   r.name:SetWidth(lay.name.w - 26)
-  r.name:SetText(ns:ShuffleName(s))
+  -- A Classic recipe (All professions) says so on its row, not only in its steps (Frank,
+  -- AN6, November 13: he didn't see it).
+  r.name:SetText(ns:ShuffleName(s) .. (s.classic and dim(" (Classic)") or (s.forever and dim(" (Forever)") or "")))
 
   local runs = ns:ShuffleRuns(s)
   local values = {
@@ -972,8 +965,14 @@ layoutShuffles = function()
   f.sf:ClearAllPoints()
   local vendorNote = not flips and subtab == "vendor"
   f.vendorNote:SetShown(vendorNote)
+  local classicRows, foreverRows = 0, 0
+  for _, s in ipairs(everyProf and main.shufflesAll.list or {}) do
+    if s.classic then classicRows = classicRows + 1 end
+    if s.forever then foreverRows = foreverRows + 1 end
+  end
   f.vendorNote:SetText(everyProf
-    and ("Все профессии: для профессий, которые не открывал ни один ваш персонаж, — рецепты Classic; %d пропущено — у материала ещё нет цены."):format(main.shufflesAll.noPrice or 0)
+    and ("Не из окон профессий: %d (Forever, данные игры), %d (Classic). %d пропущено — у материала ещё нет цены."):format(
+      foreverRows, classicRows, main.shufflesAll.noPrice or 0)
     or "Blizzard ослабил большинство цепочек у торговцев, поэтому вкладка часто будет пустой.")
   f.sf:SetPoint("TOPLEFT", 0, -top)
   f.sf:SetPoint("BOTTOMRIGHT", 0, vendorNote and 22 or 0)
@@ -1049,12 +1048,12 @@ end)
 
 function ns:RefreshShuffles()
   if not main then return end
-  local vendor, ah, oneOff, flips = ns:FindShuffles()
+  local vendor, ah, flips = ns:FindShuffles()
 
   -- Debug: name the shuffles that came or went since the last refresh.
   if ns.db.settings.debug then
     local now, before = {}, main.shuffleKeys
-    for _, list in ipairs({ vendor, ah, oneOff, flips }) do
+    for _, list in ipairs({ vendor, ah, flips }) do
       for _, s in ipairs(list) do now[s.key] = ns:ShuffleTitle(s) .. " (" .. ns.Money(s.profit) .. ")" end
     end
     if before then
@@ -1064,11 +1063,11 @@ function ns:RefreshShuffles()
     main.shuffleKeys = now
   end
 
-  main.shuffles = { vendor = vendor, ah = ah, oneOff = oneOff, flips = flips }
+  main.shuffles = { vendor = vendor, ah = ah, flips = flips }
   if allProfs then computeAllProfs() end
   -- Short, so it fits the smallest window (the tabs' own tips say the rest).
   main.shuffleInfo:SetText(("Цепочек: %d, перепродаж торговцу: %d (%s). %s"):format(
-    #vendor + #ah + #oneOff, #flips, date("%H:%M"),
+    #vendor + #ah, #flips, date("%H:%M"),
     main.view == "flips" and "Клик — поиск на аукционе, правый клик — подробности." or "Клик по столбцу — сортировка, по строке — подробности."))
   if main.view == "shuffles" or main.view == "flips" then layoutShuffles() end
 end

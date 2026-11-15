@@ -2,7 +2,7 @@
 ## Title: Forever Ledger
 ## Notes: Учитывает профессии и рецепты персонажей, цены торговцев и аукциона для флипов и цепочек.
 ## Author: Forever Ledger
-## Version: 0.23.0
+## Version: 0.25.0
 ## SavedVariables: ForeverLedgerDB
 ## X-Curse-Project-ID: 1720193
 ## X-Wago-ID: qGYBBzNg
@@ -30,6 +30,7 @@ Deals.lua
 Crates.lua
 ClassicRecipes.lua
 ClassicCrafts.lua
+ForeverCrafts.lua
 ClassicItems.lua
 QuestItems.lua
 RecipesTab.lua
@@ -38,12 +39,7 @@ Settings.lua
 UI.lua
 Help.lua
 Welcome.lua
-Sessions.lua
-Dungeons.lua
 Training.lua
-TrainerAdvice.lua
-TrainingPanel.lua
-Levelling.lua
 Sync.lua
 Version.lua
 AuctionHouse.lua

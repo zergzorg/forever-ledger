@@ -5,7 +5,6 @@ local _, ns = ...
 -- through crafting, disenchanting, converting or selling to a vendor.
 ---------------------------------------------------------------------------
 local OVERHEAD = 0.1    -- actions per unit for buying and selling
-local MIN_LISTED = 5    -- fewer listed than this counts as a one-off deal
 local SHOWN = 5         -- shuffles shown per section
 
 local function itemName(id) return ns.ItemName(id) end
@@ -121,9 +120,6 @@ local function build(id, o, cost, listed, market, margin, secs)
 
   s.maxBuy = o.value * (1 - margin)
   s.perHour = s.profit / ((actions(o) + OVERHEAD) * s.units * secs) * 3600
-  for _, b in ipairs(s.buys) do
-    if b.listed and b.listed < MIN_LISTED then s.oneOff = true end
-  end
   return s
 end
 
@@ -190,9 +186,11 @@ function ns:VendorFlip(id)
   }
 end
 
--- Returns four lists: shuffles that end with vendor sales, ones that end with auction
--- house sales, one-off deals (best profit per hour first), and vendor flips (buy on the
--- auction house, sell straight to a vendor).
+-- Returns three lists: shuffles that end with vendor sales and ones that end with auction
+-- house sales (best profit per hour first), and vendor flips (buy on the auction house,
+-- sell straight to a vendor). A shuffle whose material has under 5 listed used to go in a
+-- list of its own, "Limited supply" in the window; Frank never saw one there (November 13),
+-- so it stays in its own list, where Runs says how few times it can be done.
 function ns:FindShuffles()
   local margin = (ns.db.settings.margin or 10) / 100
   local secs = ns.db.settings.actionSeconds or 3
@@ -204,7 +202,7 @@ function ns:FindShuffles()
   end
   for id in pairs(ns.db.vendorBuy) do candidates[id] = true end
 
-  local vendor, ah, oneOff, flips, seen = {}, {}, {}, {}, {}
+  local vendor, ah, seen = {}, {}, {}
   for id in pairs(candidates) do
     local cost, listed = buyInfo(id, market)
     if cost and cost > 0 then
@@ -221,7 +219,7 @@ function ns:FindShuffles()
             if s and not seen[s.key] then
               seen[s.key] = true
               -- Buying and selling straight to a vendor is a vendor flip, not a shuffle.
-              local list = (s.oneOff and oneOff) or (section == "ah" and ah) or vendor
+              local list = section == "ah" and ah or vendor
               list[#list + 1] = s
             end
           end
@@ -235,39 +233,21 @@ function ns:FindShuffles()
   vendor, ah = groupDisenchants(vendor), groupDisenchants(ah)
   table.sort(vendor, byHour)
   table.sort(ah, byHour)
-  table.sort(oneOff, byHour)
-  return vendor, ah, oneOff, ns:FindVendorFlips()
+  return vendor, ah, ns:FindVendorFlips()
 end
 
 -- Every profession's crafts that sell to a vendor for more than their materials cost,
 -- whoever knows them (owner, November 12: "show all possible crafts that could provide a
 -- profit crafting and selling to a vendor", to see whether the Sells to a vendor tab is
 -- still worth having). Recipes from the recipe book (every recipe of a profession whose
--- window one of your characters has opened, learned or not); for the other professions,
--- Classic's crafts (ClassicCrafts.lua), marked as such. Materials at today's prices (the
+-- window one of your characters has opened, learned or not); missing recipes from the
+-- versioned Forever client (ForeverCrafts.lua), then Classic's crafts, each marked.
+-- Precedence is per recipe: a partially captured profession does not hide Forever's
+-- other recipes; Classic's only fills an item no Forever recipe of that profession makes.
+-- Materials at today's prices (the
 -- cheaper of the auction house and a vendor you've seen sell them); a recipe with a
 -- material that has no price is left out and counted. Returns the shuffles (shaped like
 -- FindShuffles' vendor list) and how many recipes were left out for a missing price.
-local PROF_RU = {
-  Alchemy = "Алхимия", Blacksmithing = "Кузнечное дело", Enchanting = "Наложение чар",
-  Engineering = "Инженерное дело", Leatherworking = "Кожевничество", Tailoring = "Портняжное дело",
-  Cooking = "Кулинария", ["First Aid"] = "Первая помощь", Fishing = "Рыбная ловля",
-  Herbalism = "Травничество", Mining = "Горное дело", Skinning = "Снятие шкур",
-}
-
-local PROF_EN = {}
-for en, ru in pairs(PROF_RU) do PROF_EN[ru] = en end
-
-local function profName(prof)
-  return PROF_RU[prof] or prof
-end
-
--- The recipe book is filed under the client's profession names (Russian on ruRU), while
--- Classic's data uses English ones: one key for both.
-local function profKey(prof)
-  return PROF_EN[prof] or prof
-end
-
 function ns:FindAllVendorCrafts()
   local margin = (ns.db.settings.margin or 10) / 100
   local secs = ns.db.settings.actionSeconds or 3
@@ -280,8 +260,8 @@ function ns:FindAllVendorCrafts()
   for key, c in pairs(ns.db.chars or {}) do
     if ns:SameMarketChar(key) then
       for prof, p in pairs(c.profs or {}) do
-        local k = knownBy[profKey(prof)] or { ids = {}, outs = {} }
-        knownBy[profKey(prof)] = k
+        local k = knownBy[ns.ProfKey(prof)] or { ids = {}, outs = {} }
+        knownBy[ns.ProfKey(prof)] = k
         for rid, r in pairs(p.recipes or {}) do
           k.ids[rid] = k.ids[rid] or c.name
           if r.out then k.outs[r.out] = k.outs[r.out] or c.name end
@@ -289,18 +269,67 @@ function ns:FindAllVendorCrafts()
       end
     end
   end
-  local recipes, seenProf = {}, {}
+  local recipes, seenRecipe, seenRoute = {}, {}, {}
+  local function recipeKey(prof, rid) return prof .. ":" .. tostring(rid) end
+  local function routeKey(prof, out, mats)
+    if not out or not mats or #mats == 0 then return nil end
+    local sums, ids = {}, {}
+    for _, m in ipairs(mats) do
+      if not sums[m[1]] then ids[#ids + 1] = m[1] end
+      sums[m[1]] = (sums[m[1]] or 0) + m[2]
+    end
+    table.sort(ids)
+    local parts = {}
+    for _, id in ipairs(ids) do parts[#parts + 1] = id .. ":" .. sums[id] end
+    return prof .. ":" .. out .. ":" .. table.concat(parts, ",")
+  end
+  -- Items a profession makes in Forever (your profession windows, or the game's own data):
+  -- Classic's recipe for one of these is out of date, as Forever's own recipe for it is
+  -- already here. Claude's review of 03378d1: 229 of Classic's 1,117 rows make an item
+  -- that Forever makes from other materials (Minor Mana Potion: Peacebloom, not
+  -- Silverleaf), and showed as a second, wrong "(Classic)" row.
+  local foreverMakes = {}
+  local function makesKey(prof, out) return out and (prof .. ":" .. out) or nil end
   for prof, book in pairs(ns.db.recipeBook or {}) do
-    seenProf[profKey(prof)] = true
+    seenProf[ns.ProfKey(prof)] = true
+    local canon = ns.ProfKey(prof)
     for rid, r in pairs(book) do
-      recipes[#recipes + 1] = { prof = profKey(prof), rid = rid, n = r.n, out = r.out, oq = r.oq or 1, r = r.r }
+      recipes[#recipes + 1] = { prof = canon, rid = rid, n = r.n, out = r.out, oq = r.oq or 1, r = r.r }
+      seenRecipe[recipeKey(canon, rid)] = true
+      local key = routeKey(canon, r.out, r.r)
+      if key then seenRoute[key] = true end
+      local made = makesKey(canon, r.out)
+      if made then foreverMakes[made] = true end
     end
   end
-  for _, c in ipairs(ns.CLASSIC_CRAFTS or {}) do
-    if not seenProf[c[1]] then
-      local mats = {}
-      for id, q in c[7]:gmatch("(%d+):(%d+)") do mats[#mats + 1] = { tonumber(id), tonumber(q) } end
-      recipes[#recipes + 1] = { prof = c[1], out = c[3], oq = (c[4] + c[5]) / 2, sell = c[6], r = mats, classic = true, mats = c[7] }
+  for _, c in ipairs(ns.FOREVER_CRAFTS or {}) do
+    local made = makesKey(c.prof, c.out)
+    if made then foreverMakes[made] = true end
+  end
+  local capturedRoutes = {}
+  for key in pairs(seenRoute) do capturedRoutes[key] = true end
+  for _, c in ipairs(ns.FOREVER_CRAFTS or {}) do
+    local key = routeKey(c.prof, c.out, c.r)
+    if not seenRecipe[recipeKey(c.prof, c.id)] and not (key and capturedRoutes[key]) then
+      recipes[#recipes + 1] = { prof = c.prof, rid = c.id, n = c.n, out = c.out,
+        oq = (c.low + c.high) / 2, sell = c.sell, r = c.r,
+        forever = true, source = c.source, build = c.build }
+      seenRecipe[recipeKey(c.prof, c.id)] = true
+    end
+    -- Even if a captured version makes this route obsolete or unprofitable, do not
+    -- revive it from Classic just because the higher-priority row makes no list entry.
+    if key then seenRoute[key] = true end
+  end
+  local seenClassic = {}
+  for _, c in ipairs(ns.CLASSIC_CRAFT_LIST or {}) do
+    local mats = {}
+    for id, q in c[7]:gmatch("(%d+):(%d+)") do mats[#mats + 1] = { tonumber(id), tonumber(q) } end
+    local key = routeKey(c[1], c[3], mats)
+    local classicKey = key and (key .. ":" .. c[4] .. ":" .. c[5])
+    if key and not seenRoute[key] and not seenClassic[classicKey] and not foreverMakes[makesKey(c[1], c[3])] then
+      recipes[#recipes + 1] = { prof = c[1], out = c[3], oq = (c[4] + c[5]) / 2, sell = c[6], r = mats, classic = true,
+        mats = c[7] .. ":" .. c[4] .. ":" .. c[5] }
+      seenClassic[classicKey] = true
     end
   end
 
@@ -334,7 +363,7 @@ function ns:FindAllVendorCrafts()
       if not (cost and cost > 0) or not left then
         noPrice = noPrice + 1
       else
-        local name = rec.n or itemName(rec.out)
+        local name = itemName(rec.out) or rec.n
         local k = knownBy[rec.prof]
         local who = k and (rec.rid and k.ids[rec.rid] or (not rec.rid and k.outs[rec.out])) or nil
         local o = {
@@ -342,7 +371,8 @@ function ns:FindAllVendorCrafts()
           next = { kind = "vendor", value = sell, id = rec.out },
           rec = { n = name, out = rec.out, oq = rec.oq, r = rec.r }, units = first[2], buys = buys,
           prof = rec.prof,
-          who = profName(rec.prof) .. (who and (": " .. who) or ", никто из ваших") .. (rec.classic and ", рецепт Classic" or ""),
+          who = ns.ProfName(rec.prof) .. (who and (": " .. who) or ", никто из ваших")
+            .. (rec.classic and ", рецепт Classic" or (rec.forever and ", данные игры Forever" or "")),
         }
         local s = build(first[1], o, cost, listed, market, margin, secs)
         -- One row per recipe, not per item made: build's key is the item, which would
@@ -351,7 +381,7 @@ function ns:FindAllVendorCrafts()
         if s then s.key = s.key .. ":" .. rec.prof .. ":" .. (rec.rid or rec.mats or "") end
         if s and not seen[s.key] then
           seen[s.key] = true
-          s.prof, s.classic, s.known = rec.prof, rec.classic, who ~= nil
+          s.prof, s.classic, s.forever, s.known = rec.prof, rec.classic, rec.forever, who ~= nil
           list[#list + 1] = s
         end
       end
@@ -727,8 +757,8 @@ local function printSection(title, list, n)
 end
 
 function ns:PrintShuffles(showAll)
-  local vendor, ah, oneOff, flips = ns:FindShuffles()
-  if #vendor + #ah + #oneOff + #flips == 0 then
+  local vendor, ah, flips = ns:FindShuffles()
+  if #vendor + #ah + #flips == 0 then
     ns:Print("Цепочек при текущих ценах нет. Проверьте аукцион и откройте окна профессий.")
     return
   end
@@ -737,13 +767,10 @@ function ns:PrintShuffles(showAll)
   printSection("Продажа торговцу (надёжно):", vendor, n)
   printSection("Продажа на аукционе (зависит от покупателей):", ah, n)
   printSection("Перепродажи торговцу (купить на аукционе, продать торговцу):", flips, n)
-  if showAll then
-    printSection(("Разовые сделки (в продаже меньше %d):"):format(MIN_LISTED), oneOff, n)
-  else
-    local hidden = math.max(0, #vendor - n) + math.max(0, #ah - n) + math.max(0, #flips - n) + #oneOff
+  if not showAll then
+    local hidden = math.max(0, #vendor - n) + math.max(0, #ah - n) + math.max(0, #flips - n)
     if hidden > 0 then
-      local deals = #oneOff > 0 and (", включая разовых сделок: %d"):format(#oneOff) or ""
-      ns:Print(("И ещё %d%s. Введите /fl shuffles all, чтобы увидеть всё."):format(hidden, deals))
+      ns:Print(("И ещё %d. Введите /fl shuffles all, чтобы увидеть всё."):format(hidden))
     end
   end
 end

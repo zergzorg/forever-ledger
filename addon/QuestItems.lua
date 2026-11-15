@@ -250,6 +250,53 @@ function ns:QuestLines(id, compact)
   return #lines > 0 and lines or nil
 end
 
+-- Darkmoon Faire turn-ins for Prize Tickets (Frank, November 14: a noticeable tooltip line on
+-- every one). Classic's list (warcraft.wiki.gg, Darkmoon Faire (Classic), read November 14;
+-- Forever may have changed it): [itemID] = { how many a turn-in takes, tickets it gives, who }.
+ns.DARKMOON = {
+  -- Animal parts, Yebb Neblegear
+  [5134] = { 5, 1, "Йеб Неблегир" },   [11407] = { 5, 4, "Йеб Неблегир" },  -- Small Furry Paw, Torn Bear Pelt
+  [4582] = { 5, 8, "Йеб Неблегир" },   [5117] = { 5, 12, "Йеб Неблегир" },  -- Soft Bushy Tail, Vibrant Plume
+  [11404] = { 10, 20, "Йеб Неблегир" }, [19933] = { 10, 20, "Йеб Неблегир" }, -- Evil Bat Eye, Glowing Scorpid Blood
+  -- Blacksmithing, Kerri Hicks
+  [3240] = { 10, 1, "Керри Хикс" }, [3486] = { 7, 4, "Керри Хикс" },   -- Coarse Weightstone, Heavy Grinding Stone
+  [3835] = { 3, 8, "Керри Хикс" },  [7945] = { 1, 12, "Керри Хикс" },  -- Green Iron Bracers, Big Black Mace
+  [12644] = { 8, 20, "Керри Хикс" },                                    -- Dense Grinding Stone
+  -- Engineering, Rinling
+  [4363] = { 5, 1, "Ринлинг" }, [4375] = { 7, 4, "Ринлинг" },           -- Copper Modulator, Whirring Bronze Gizmo
+  [9313] = { 36, 8, "Ринлинг" }, [11590] = { 6, 12, "Ринлинг" },        -- Green Firework, Mechanical Repair Kit
+  [15994] = { 6, 20, "Ринлинг" },                                       -- Thorium Widget
+  -- Leatherworking, Chronos
+  [2309] = { 3, 1, "Хронос" }, [2314] = { 3, 4, "Хронос" },           -- Embossed Leather Boots, Toughened Leather Armor
+  [5739] = { 3, 8, "Хронос" }, [8185] = { 1, 12, "Хронос" },          -- Barbaric Harness, Turtle Scale Leggings
+  [15564] = { 8, 20, "Хронос" },                                       -- Rugged Armor Kit
+}
+
+-- "Darkmoon Faire: 5 for 4 tickets (Yebb Neblegear)", or nil.
+function ns:DarkmoonLine(id)
+  local d = id and ns.DARKMOON[id]
+  if not d then return end
+  return ("Ярмарка Новолуния: %d за %d %s (%s)"):format(d[1], d[2], ns.Plural(d[2], "билет", "билета", "билетов"), d[3])
+end
+
+-- The tooltip's short line (Frank, November 14: "Quests (#)" in the normal view, the quests
+-- themselves when you hold Shift): how many quests ask for it (the same ones QuestLines
+-- lists) and how many of them this character still wants it for. nil when none.
+function ns:QuestSummary(id)
+  local needs = ns:QuestNeeds(id)
+  if not needs then return end
+  local onlyMine = ns.db.settings.tipQuestMine ~= false
+  local n, keep = 0, 0
+  for _, q in ipairs(needs) do
+    if q.mine or not onlyMine then
+      n = n + 1
+      if q.keep then keep = keep + 1 end
+    end
+  end
+  if n == 0 then return end
+  return n, keep
+end
+
 -- For the Deals tab: leveling players need it for a quest (any faction).
 function ns:IsQuestItem(id)
   if not byItem then build() end

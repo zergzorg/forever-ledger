@@ -963,8 +963,23 @@ function ns:RefreshRecipes()
   local n = trainers and trainerRows(width, lay) or (current and recipeRows(current, width, lay) or 0)
   for i = n + 1, #rows do rows[i]:Hide() end
   f.empty:SetShown(n == 0)
-  f.empty:SetText(trainers and "Тренеры ещё не найдены. Откройте окно тренера профессии." or
-    "Рецепты не найдены. Откройте окно этой профессии один раз, чтобы записать рецепты.")
+  -- Recipes recorded but all hidden by the choices above: say so (Frank, AN6, November 13:
+  -- Skinning looked empty on Known, as none of his characters knows its 3 recipes).
+  local total = 0
+  for _ in pairs((not trainers and current and ns.db.recipeBook[current]) or {}) do total = total + 1 end
+  local why = {}
+  if s.view == "known" then why[#why + 1] = "Только известные" elseif s.view == "unknown" then why[#why + 1] = "Только неизвестные" end
+  if s.type ~= "all" and TYPES[s.type] then why[#why + 1] = TYPES[s.type].label end
+  local match = f.search:GetText() or ""
+  if match ~= "" then why[#why + 1] = ('поиск "%s"'):format(match) end
+  if trainers then
+    f.empty:SetText("Тренеры ещё не найдены. Откройте окно тренера профессии.")
+  elseif total > 0 then
+    f.empty:SetText(("%s: записано рецептов — %d, но ни один не подходит под выбранное выше (%s). Выберите «Все», чтобы увидеть их."):format(
+      current, total, table.concat(why, ", ")))
+  else
+    f.empty:SetText("Рецепты не найдены. Откройте окно этой профессии один раз, чтобы записать рецепты.")
+  end
   f.content:SetHeight(math.max(n * ROW, 30))
   f.sf.UpdateScrollBar()
 end

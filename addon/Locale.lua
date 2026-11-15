@@ -37,6 +37,25 @@ do
   end
 end
 
+-- English <-> the client's profession names. The game gives recipes under its own
+-- language ("Алхимия"), while the addon's reference data uses English ("Alchemy").
+local PROF_RU = {
+  Alchemy = "Алхимия", Blacksmithing = "Кузнечное дело", Enchanting = "Наложение чар",
+  Engineering = "Инженерное дело", Leatherworking = "Кожевничество", Tailoring = "Портняжное дело",
+  Cooking = "Кулинария", ["First Aid"] = "Первая помощь", Fishing = "Рыбная ловля",
+  Herbalism = "Травничество", Mining = "Горное дело", Skinning = "Снятие шкур",
+}
+local PROF_EN = {}
+for en, ru in pairs(PROF_RU) do PROF_EN[ru] = en end
+
+function ns.ProfName(prof)
+  return PROF_RU[prof] or prof
+end
+
+function ns.ProfKey(prof)
+  return PROF_EN[prof] or prof
+end
+
 -- n followed by the right form of a counted noun: ns.Plural(3, "день", "дня", "дней").
 function ns.Plural(n, one, few, many)
   n = math.abs(tonumber(n) or 0)

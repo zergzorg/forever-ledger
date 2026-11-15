@@ -76,7 +76,7 @@ function ns.ItemName(id)
   end
   -- Items the game hasn't loaded (or doesn't have yet, like flasks above the beta's
   -- level cap): the original Classic name (ClassicItems.lua).
-  return (ns.CLASSIC_ITEMS and ns.CLASSIC_ITEMS[id]) or ("item " .. id)
+  return (ns.FOREVER_ITEM_NAMES and ns.FOREVER_ITEM_NAMES[id]) or (ns.CLASSIC_ITEMS and ns.CLASSIC_ITEMS[id]) or ("item " .. id)
 end
 
 ns:On("GET_ITEM_INFO_RECEIVED", function(id, success)
@@ -182,6 +182,9 @@ local VENDOR_WONT_BUY = {
   [3775] = true, [3776] = true,                                                                -- Crippling Poison, II
   [5237] = true, [6951] = true, [9186] = true,                                                 -- Mind-numbing Poison to III
   [10918] = true, [10920] = true, [10921] = true, [10922] = true,                              -- Wound Poison to IV
+  -- Blinding Powder, the rogue reagent (Frank, November 13: vendors won't buy it; he first
+  -- wrote "blasting powder" by mistake, which vendors do buy):
+  [5530] = true,
 }
 ns.VENDOR_WONT_BUY = VENDOR_WONT_BUY
 

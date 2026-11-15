@@ -5,16 +5,56 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [0.25.0] - 2026-11-14
+
+### Highlights
+- Δ **Shorter tooltips**: quests and crafts take one line each, "Quests (3)" and "Used in crafts (12)". Hold Shift for the lists, one craft a line with the skill it needs, yours in green.
+- + **Darkmoon Faire turn-ins**: a coral red line on every item the Faire takes for Prize Tickets, with how many and for how many tickets.
+- ~ **Gear you could wear**: dungeon drops and quest rewards now say what to do if you won't wear them: sell to a vendor, or disenchant when that's clearly worth more.
+- ~ **Ledger times**: flights, loot, repairs, quests and the rest show with their own times, not as one line a day.
+- ~ **Simpler**: the Leveling tab, the training advice and dungeon runs are gone. The riding fund stays.
+
 ### Added
-- Sell suggestion in the tooltip of items in your bags: Keep (a quest needs it, a recipe of one of your characters uses it, you watch it, or it's on your list), or Sell: Vendor, Sell: Auction house or Sell: Close call when the two are near, with the reason; disenchanting too when it brings more. Only a suggestion: nothing is sold. Settings, Tooltips, Sell suggestion.
-- `/fl api` lists which of the game's WoW Forever frame art and window templates your client has, for the coming WoW Forever look (the last report is kept in the saved data).
-- Shuffles, Sells to a vendor: an All professions tick box shows every profession's crafts that sell to a vendor for more than their materials cost at today's prices, whoever knows them. Recipes come from your profession windows; for professions none of your characters has opened, from Classic's recipes (marked as such, not yet seen in Forever). Each one's steps say the profession and who of yours knows it.
+- Tooltips: items the Darkmoon Faire takes for Prize Tickets get a coral red line, "Darkmoon Faire: 5 for 1 ticket (Yebb Neblegear)": the animal parts and the Blacksmithing, Engineering and Leatherworking turn-ins (Classic's list). Settings, Tooltips, Darkmoon Faire turn-ins.
 
 ### Changed
+- Sell suggestion: soulbound gear this character can wear (dungeon drops, quest rewards) now says what to do if you won't wear it: "If you won't wear it: sell to a vendor", or disenchant when that's clearly worth more.
+- Tooltips: quests and crafts take one short line each, "Quests (3)" and "Used in crafts (12): Tailoring 8, Leatherworking 4" (every recipe we know, yours or not). Hold Shift for the quests and the crafts, one a line by profession with the skill each needs, yours in green. If ProfTooltip is installed, you're asked once whether to keep both.
+- Ledger: repairs, mail, trades, loot, quests, training and flights now show each with its time, not as one line a day (for the last 30 days; loot within 5 minutes is one entry; what came before the update shows as one line per kind).
+
+### Removed
+- The Leveling tab, the training advice beside class trainers, and dungeon runs (`/fl runs`, "Dropped for you" in tooltips). Other addons do leveling help better; dungeon runs may come back with a farming section. The riding fund stays.
+
+## [0.24.0] - 2026-11-14
+
+### Highlights
+- Δ **Sell suggestion**: items in your bags say what to do with them: keep, sell to a vendor, sell on the auction house, or disenchant when it's clearly worth more.
+- Δ **Every profession's recipes**: tick All professions on Sells to a vendor for every profession's crafts that sell to a vendor at a profit, from Forever's own recipes, even for professions none of your characters has.
+- ~ **Disenchanting, Forever's way**: any Enchanting skill counts, blues and purples are valued too, and items that can't be disenchanted are left out.
+- ~ **Simpler**: sessions and the Limited supply tab are gone, and the Dashboard's gold graph is bigger.
+- ✓ **Two accounts**: no more "script ran too long" when your other account's full scan arrives.
+- ✓ **Recipes under the wrong profession**: opening Skinning no longer saves other professions' recipes under it, and copies already saved are put right.
+
+### Added
+- Sell suggestion in the tooltip of items in your bags: Keep (a quest needs it, a recipe of one of your characters uses it, you watch it, or it's on your list), or Sell: Vendor, Sell: Auction house or Sell: Close call when the two are near, with the reason; disenchanting too when it brings more, as the first line when it brings a quarter more or better. Only a suggestion: nothing is sold. Settings, Tooltips, Sell suggestion.
+- `/fl api` lists which of the game's WoW Forever frame art and window templates your client has, for the coming WoW Forever look (the last report is kept in the saved data).
+- Shuffles, Sells to a vendor: an All professions tick box shows every profession's crafts that sell to a vendor for more than their materials cost at today's prices, whoever knows them. Recipes come from your profession windows; ones your windows haven't shown come from the game's own data, marked (Forever), and for an item that has none, Classic's, marked (Classic). Each one's steps say the profession and who of yours knows it.
+
+### Changed
+- Disenchanting: any Enchanting skill counts (Forever needs only 1), blues from item level 21 and purples from 40 are valued too, and items the game says can't be disenchanted are left out. What items give comes from public Forever data.
+- Recipes tab: when the choices above (Known, a type, a search) hide every recipe of a profession, it says how many are recorded and to choose All, instead of "No recipes match".
 - Clicking Watch flips reads the auction house list at once, instead of waiting out the half minute after your own search (an item's page that's still open is still waited for).
 
 ### Fixed
+- Lowest-level green armor disenchant values now agree with their displayed chances and quantities.
 - Live sync: prices from your other account's full scan no longer cause a "script ran too long" error. Their price history is now saved a little at a time.
+- Shopping lists count what's in your bags and bank with the game's current item count. The old one, which they used, may be missing in WoW Forever.
+- Blinding Powder is no longer valued at a vendor or offered as a vendor flip: vendors won't buy it, though the game gives it a vendor price.
+- Recipe book: opening a gathering profession's window (Skinning) could save the recipes of a profession window opened before it under that profession too, so the Recipes tab listed them there and All professions showed them twice. They're no longer saved there, and at login a copy already saved under the wrong profession is removed when it's clear which one it belongs to.
+
+### Removed
+- Sessions: the session tracker, Start a session on the Dashboard (the gold graph takes its room), Ctrl-click on the minimap button, `/fl session`, the Ledger's Sessions sub-tab and the Sessions settings page. Few used them; they can come back if asked for. Your past sessions stay in the saved data, and dungeon runs are still counted (`/fl runs`).
+- Shuffles, Limited supply: shuffles with a material that has fewer than 5 listed now show in Sells on the auction house or Sells to a vendor like the rest, where Runs says how few times you can do them.
 
 ## [0.23.0] - 2026-11-11
 
