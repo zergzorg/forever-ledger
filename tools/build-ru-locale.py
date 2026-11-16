@@ -17,7 +17,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 RU_BRANCH = "ru"
-RU_PREFIX = "addon/"
+RU_PREFIX = ""
 OUT = Path("Locales/ruRU.lua")
 
 LIT = re.compile(r'"((?:[^"\\\n]|\\.)*)"')
@@ -281,10 +281,57 @@ PLURAL = {
               "Наблюдаем: %d предметов. Зелёное — сейчас по «До» или дешевле."),
     # Chains: how the steps carry on.
     "%d more steps": forms("ещё %d шаг", "ещё %d шага", "ещё %d шагов"),
+    # Groups tab: the source appends only "s", so the rendered sentence is the key
+    # and the number picks the Russian form of the whole line.
+    "Used by %d group: %s. A change here reaches all of them.":
+        forms("Используется в %d группе: %s. Изменение здесь затронет всех.",
+              "Используется в %d группах: %s. Изменение здесь затронет всех.",
+              "Используется в %d группах: %s. Изменение здесь затронет всех."),
+    "Used by %d groups: %s. A change here reaches all of them.":
+        forms("Используется в %d группе: %s. Изменение здесь затронет всех.",
+              "Используется в %d группах: %s. Изменение здесь затронет всех.",
+              "Используется в %d группах: %s. Изменение здесь затронет всех."),
+    "Delete your rule %s? %d group using it go back to Same as above. This can't be undone.":
+        forms("Удалить ваше правило «%s»? %d группа вернётся к «Как выше». Отменить нельзя.",
+              "Удалить ваше правило «%s»? %d группы вернутся к «Как выше». Отменить нельзя.",
+              "Удалить ваше правило «%s»? %d групп вернутся к «Как выше». Отменить нельзя."),
+    "Delete your rule %s? %d groups using it go back to Same as above. This can't be undone.":
+        forms("Удалить ваше правило «%s»? %d группа вернётся к «Как выше». Отменить нельзя.",
+              "Удалить ваше правило «%s»? %d группы вернутся к «Как выше». Отменить нельзя.",
+              "Удалить ваше правило «%s»? %d групп вернутся к «Как выше». Отменить нельзя."),
+    "%d item.": forms("%d предмет.", "%d предмета.", "%d предметов."),
+    "%d items.": forms("%d предмет.", "%d предмета.", "%d предметов."),
+    "%d sellers": forms("%d продавец", "%d продавца", "%d продавцов"),
 }
 
 # -- Messages Russian phrases differently ------------------------------------
 MANUAL = {
+    # The Groups tab builds these labels from pieces ("Same as " .. name), so the
+    # assembled line is the key. The rule names come from KIND_LABEL.
+    "Same as %s": "Как в «%s»",
+    "Same as above (default)": "Как выше (по умолчанию)",
+    "Your rule: %s": "Ваше правило: %s",
+    "Changed on %s": "Изменено в «%s»",
+    "Default (set on %s)": "По умолчанию (задано в «%s»)",
+    "Default post": "По умолчанию: выставление",
+    "Default buy": "По умолчанию: покупка",
+    "Default vendor": "По умолчанию: торговец",
+    "Default craft": "По умолчанию: изготовление",
+    "Post rule": "Правило выставления",
+    "Buy rule": "Правило покупки",
+    "Vendor rule": "Правило торговца",
+    "Craft rule": "Правило изготовления",
+    "Post · %d": "Выставление · %d",
+    "Buy · %d": "Покупка · %d",
+    "Vendor · %d": "Торговец · %d",
+    "Craft · %d": "Изготовление · %d",
+    "%s › %s · %s": "%s › %s · %s",
+    # Gold making: the who column and the profit unit are joined in the code.
+    "Known by %s": "Знает: %s",
+    "%s each": "%s за штуку",
+    # Tooltips: the colour-coded tail is translated on its own.
+    "added by you": "добавлено вами",
+    "can't be bought": "нельзя купить",
     # Tooltip: price history line and the Shift/Ctrl hints.
     "  typical, last %d day": forms("  обычно за %d день", "  обычно за %d дня", "  обычно за %d дней"),
     "  typical, last %d days": forms("  обычно за %d день", "  обычно за %d дня", "  обычно за %d дней"),
