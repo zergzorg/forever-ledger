@@ -302,6 +302,19 @@ PLURAL = {
     "%d item.": forms("%d предмет.", "%d предмета.", "%d предметов."),
     "%d items.": forms("%d предмет.", "%d предмета.", "%d предметов."),
     "%d sellers": forms("%d продавец", "%d продавца", "%d продавцов"),
+    # Scan status and sync history: the item or day word is a suffix in the source.
+    "Searching %d item from %s.":
+        forms("Ищу %d предмет в %s.", "Ищу %d предмета в %s.", "Ищу %d предметов в %s."),
+    "Searching %d items from %s.":
+        forms("Ищу %d предмет в %s.", "Ищу %d предмета в %s.", "Ищу %d предметов в %s."),
+    "Sync: filled in %d day of price history from %s.":
+        forms("Синхронизация: дополнено %d день истории цен от %s.",
+              "Синхронизация: дополнено %d дня истории цен от %s.",
+              "Синхронизация: дополнено %d дней истории цен от %s."),
+    "Sync: filled in %d days of price history from %s.":
+        forms("Синхронизация: дополнено %d день истории цен от %s.",
+              "Синхронизация: дополнено %d дня истории цен от %s.",
+              "Синхронизация: дополнено %d дней истории цен от %s."),
 }
 
 # -- Messages Russian phrases differently ------------------------------------
@@ -326,6 +339,24 @@ MANUAL = {
     "Vendor · %d": "Торговец · %d",
     "Craft · %d": "Изготовление · %d",
     "%s › %s · %s": "%s › %s · %s",
+    "%d items, the first %d shown.": "Предметов: %d, показаны первые %d.",
+    "My post rule": "Моё правило: выставление",
+    "My buy rule": "Моё правило: покупка",
+    "My vendor rule": "Моё правило: торговец",
+    "My craft rule": "Моё правило: изготовление",
+    # Restoring built-in groups: each count carries its own suffix, so every rendered
+    # wording is a key of its own.
+    "Restore the built-in groups to their defaults?\n\n%d item you added taken out, %d you took out put back, %d rule you changed back to Default.\n\nYour own groups and saved rules stay. This can't be undone.":
+        "Вернуть встроенные группы к наборам по умолчанию?\n\nУйдёт добавленных вами: %d. Вернётся убранных: %d. Правил, которые вы меняли, вернётся к «По умолчанию»: %d.\n\nВаши группы и сохранённые правила останутся. Отменить нельзя.",
+    "Restore the built-in groups to their defaults?\n\n%d item you added taken out, %d you took out put back, %d rules you changed back to Default.\n\nYour own groups and saved rules stay. This can't be undone.":
+        "Вернуть встроенные группы к наборам по умолчанию?\n\nУйдёт добавленных вами: %d. Вернётся убранных: %d. Правил, которые вы меняли, вернётся к «По умолчанию»: %d.\n\nВаши группы и сохранённые правила останутся. Отменить нельзя.",
+    "Restore the built-in groups to their defaults?\n\n%d items you added taken out, %d you took out put back, %d rule you changed back to Default.\n\nYour own groups and saved rules stay. This can't be undone.":
+        "Вернуть встроенные группы к наборам по умолчанию?\n\nУйдёт добавленных вами: %d. Вернётся убранных: %d. Правил, которые вы меняли, вернётся к «По умолчанию»: %d.\n\nВаши группы и сохранённые правила останутся. Отменить нельзя.",
+    "Restore the built-in groups to their defaults?\n\n%d items you added taken out, %d you took out put back, %d rules you changed back to Default.\n\nYour own groups and saved rules stay. This can't be undone.":
+        "Вернуть встроенные группы к наборам по умолчанию?\n\nУйдёт добавленных вами: %d. Вернётся убранных: %d. Правил, которые вы меняли, вернётся к «По умолчанию»: %d.\n\nВаши группы и сохранённые правила останутся. Отменить нельзя.",
+    # Essences: the kind is joined in the middle of the label.
+    "Combine into Greater %s Essence": "Соединить в большую эссенцию (%s)",
+    "Split into Lesser %s Essence": "Разделить на малые эссенции (%s)",
     # Gold making: the who column and the profit unit are joined in the code.
     "Known by %s": "Знает: %s",
     "%s each": "%s за штуку",
@@ -490,7 +521,8 @@ BLACKLIST = {
 
 
 def lua_string(text):
-    return '"' + text.replace("\\", "\\\\").replace('"', '\\"') + '"'
+    return '"' + (text.replace("\\", "\\\\").replace('"', '\\"')
+                  .replace("\n", "\\n").replace("\r", "\\r")) + '"'
 
 
 def main():
