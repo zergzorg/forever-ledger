@@ -69,8 +69,9 @@ Remote `fork` → <https://github.com/zergzorg/forever-ledger>.
 1. переключиться на `locale-ru-026` (там лежит `Locales/ruRU.lua`);
 2. `git show ru:tools/build-ru-locale.py > tools/build-ru-locale.py` — скрипт
    хранится в `ru` и в PR не входит; он читает `ru` через `git show`,
-   сопоставляет литералы построчно и пишет таблицу; ручные добавки (числа,
-   склейки вроде `"Same as " .. name`, заголовки правил) — в самом скрипте,
+   сопоставляет литералы построчно и пишет таблицу; справку сопоставляет по
+   разделам (новый раздел сдвигает темы), ручные добавки (числа, склейки вроде
+   `"Same as " .. name`, заголовки правил) — в самом скрипте,
    `RU_PREFIX = ""`; после сборки временный файл удалить;
 3. `git show ru:tools/list-ru-gaps.py > /tmp/list-ru-gaps.py &&
    python3 /tmp/list-ru-gaps.py` — что осталось без перевода;

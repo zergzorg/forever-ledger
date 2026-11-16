@@ -94,6 +94,58 @@ def pair_lines(pr, ru):
     return pairs
 
 
+HELP_SECTION = re.compile(r'^  \{ "[^"]+", \{\s*$')
+HELP_END = "  } },"
+
+
+def help_sections(lines):
+    out, start = [], None
+    for i, line in enumerate(lines):
+        if start is None and HELP_SECTION.match(line):
+            start = i
+        elif start is not None and line.startswith(HELP_END):
+            out.append((start, i))
+            start = None
+    return out
+
+
+def help_pairs(pr, ru):
+    """Help topics are all `{ "Title", "Text" }` lines, so a section added or removed
+    upstream shifts every later topic onto the wrong translation. Pair sections (and
+    their topics) by position and skip a section the other version doesn't have."""
+    es, rs = help_sections(pr), help_sections(ru)
+    def count(lines, span):
+        return sum(1 for i in range(span[0], span[1] + 1) if re.match(r'^    \{ "', lines[i]))
+    best = None
+    for skip in [None] + list(range(len(rs))):
+        keep = [s for k, s in enumerate(rs) if k != skip]
+        if len(keep) != len(es):
+            continue
+        score = sum(1 for a, b in zip(es, keep) if count(pr, a) == count(ru, b))
+        if best is None or score > best[0]:
+            best = (score, keep)
+    if best is None:
+        return pair_lines(pr, ru)
+    pairs = []
+    for esp, rsp in zip(es, best[1]):
+        pl, rl = list(range(esp[0], esp[1] + 1)), list(range(rsp[0], rsp[1] + 1))
+        if len(pl) == len(rl):
+            pairs.extend(zip(pl, rl))
+        else:
+            inner = pair_lines([pr[i] for i in pl], [ru[i] for i in rl])
+            pairs.extend((pl[a], rl[b]) for a, b in inner)
+    # The addon lists, overlap labels and popups sit outside the sections.
+    first_e, first_r = es[0][0], best[1][0][0]
+    head_en, head_ru = list(range(0, first_e)), list(range(0, first_r))
+    for a, b in pair_lines([pr[i] for i in head_en], [ru[i] for i in head_ru]):
+        pairs.append((head_en[a], head_ru[b]))
+    last_e, last_r = es[-1][1] + 1, best[1][-1][1] + 1
+    tail_en, tail_ru = list(range(last_e, len(pr))), list(range(last_r, len(ru)))
+    for a, b in pair_lines([pr[i] for i in tail_en], [ru[i] for i in tail_ru]):
+        pairs.append((tail_en[a], tail_ru[b]))
+    return pairs
+
+
 def collect():
     found, unusable = [], []
     for name in sorted(p.name for p in Path(".").glob("*.lua")):
@@ -103,7 +155,8 @@ def collect():
         src = ru_lines(name)
         if src is None:
             continue
-        for i, j in pair_lines(pr_lines, src):
+        pairs = help_pairs(pr_lines, src) if name == "Help.lua" else pair_lines(pr_lines, src)
+        for i, j in pairs:
             pl, rl = literals(pr_lines[i]), literals(src[j])
             if not pl:
                 continue
@@ -510,6 +563,15 @@ OVERRIDES = {
     "Export / import": "Экспорт и импорт",
     "Usual price + %g%% (this list's allowance). Refreshed when buying is switched on or on Buy again.":
         "Обычная цена + %g%% (допуск этого списка). Обновляется при включении покупки или по «Купить снова».",
+    # The localization branch is still on the version where Deals and Shuffles have
+    # their own tabs; 0.27 renamed these keys, so keep the wording that matches it.
+    "Buy vendor flips": "Покупайте предметы для перепродажи торговцу",
+    "Find deals": "Ищите сделки",
+    "Open Deals": "Открыть сделки",
+    "Right-click for shuffles.": "Правый клик — цепочки.",
+    "The Deals tab (/fl deals list in chat).": "Вкладка «Сделки» (/fl deals list — списком в чате).",
+    "The Deals tab lists items selling well below their usual price, to buy and resell.":
+        "Вкладка «Сделки» показывает предметы заметно ниже обычной цены — для покупки и перепродажи.",
 }
 
 
