@@ -202,9 +202,9 @@ PLURAL = {
               "%s: «До» обновлено по обычным ценам и допуску этого списка: %d предмета. Меняйте как угодно; «выкл» — не покупать.",
               "%s: «До» обновлено по обычным ценам и допуску этого списка: %d предметов. Меняйте как угодно; «выкл» — не покупать."),
     ", %d material short":
-        forms(", не хватает %d материала", ", не хватает %d материалов", ", не хватает %d материалов"),
+        forms(" (не хватает %d материала)", " (не хватает %d материалов)", " (не хватает %d материалов)"),
     ", %d materials short":
-        forms(", не хватает %d материала", ", не хватает %d материалов", ", не хватает %d материалов"),
+        forms(" (не хватает %d материала)", " (не хватает %d материалов)", " (не хватает %d материалов)"),
     "%d item has Up to off, so the queue skips it: type a price to buy it.":
         forms("У %d предмета «До» выкл, очередь его пропускает: введите цену, чтобы купить.",
               "У %d предметов «До» выкл, очередь их пропускает: введите цену, чтобы купить.",
@@ -294,22 +294,22 @@ PLURAL = {
         forms("Всего %d день ваших проверок.", "Всего %d дня ваших проверок.", "Всего %d дней ваших проверок."),
     "%d day of your scans": forms("%d день ваших проверок", "%d дня ваших проверок", "%d дней ваших проверок"),
     "%d days of your scans": forms("%d день ваших проверок", "%d дня ваших проверок", "%d дней ваших проверок"),
-    "%d new deal below the usual price: see the Deals tab (/fl deals)":
-        forms("%d новая сделка ниже обычной цены: смотрите вкладку «Сделки» (/fl deals)",
-              "%d новые сделки ниже обычной цены: смотрите вкладку «Сделки» (/fl deals)",
-              "%d новых сделок ниже обычной цены: смотрите вкладку «Сделки» (/fl deals)"),
-    "%d new deals below the usual price: see the Deals tab (/fl deals)":
-        forms("%d новая сделка ниже обычной цены: смотрите вкладку «Сделки» (/fl deals)",
-              "%d новые сделки ниже обычной цены: смотрите вкладку «Сделки» (/fl deals)",
-              "%d новых сделок ниже обычной цены: смотрите вкладку «Сделки» (/fl deals)"),
-    "%d new deal below the usual price: see the Deals tab (/fl deals).":
-        forms("%d новая сделка ниже обычной цены: смотрите вкладку «Сделки» (/fl deals).",
-              "%d новые сделки ниже обычной цены: смотрите вкладку «Сделки» (/fl deals).",
-              "%d новых сделок ниже обычной цены: смотрите вкладку «Сделки» (/fl deals)."),
-    "%d new deals below the usual price: see the Deals tab (/fl deals).":
-        forms("%d новая сделка ниже обычной цены: смотрите вкладку «Сделки» (/fl deals).",
-              "%d новые сделки ниже обычной цены: смотрите вкладку «Сделки» (/fl deals).",
-              "%d новых сделок ниже обычной цены: смотрите вкладку «Сделки» (/fl deals)."),
+    "%d new deal below the usual price: see Gold making, Deals (/fl)":
+        forms("%d новая сделка ниже обычной цены: смотрите «Заработок», «Сделки» (/fl)",
+              "%d новые сделки ниже обычной цены: смотрите «Заработок», «Сделки» (/fl)",
+              "%d новых сделок ниже обычной цены: смотрите «Заработок», «Сделки» (/fl)"),
+    "%d new deals below the usual price: see Gold making, Deals (/fl)":
+        forms("%d новая сделка ниже обычной цены: смотрите «Заработок», «Сделки» (/fl)",
+              "%d новые сделки ниже обычной цены: смотрите «Заработок», «Сделки» (/fl)",
+              "%d новых сделок ниже обычной цены: смотрите «Заработок», «Сделки» (/fl)"),
+    "%d new deal below the usual price: see Gold making, Deals (/fl).":
+        forms("%d новая сделка ниже обычной цены: смотрите «Заработок», «Сделки» (/fl).",
+              "%d новые сделки ниже обычной цены: смотрите «Заработок», «Сделки» (/fl).",
+              "%d новых сделок ниже обычной цены: смотрите «Заработок», «Сделки» (/fl)."),
+    "%d new deals below the usual price: see Gold making, Deals (/fl).":
+        forms("%d новая сделка ниже обычной цены: смотрите «Заработок», «Сделки» (/fl).",
+              "%d новые сделки ниже обычной цены: смотрите «Заработок», «Сделки» (/fl).",
+              "%d новых сделок ниже обычной цены: смотрите «Заработок», «Сделки» (/fl)."),
     # Sync.
     "Sync: filled in %d day of price history from %s.":
         forms("Синхронизация: дополнен %d день истории цен от %s.",
@@ -526,7 +526,57 @@ MANUAL = {
     "1 more step": "ещё 1 шаг",
     # Buy queue: "Craft them (2 pcs)".
     "Craft them (%d %s)": "Изготовить (%d %s)",
+    "Craft them (%d craft)": "Изготовить (%d шт.)",
+    "Craft them (%d crafts)": "Изготовить (%d шт.)",
     "pcs": "шт.",
+    # Buy queue: the list header, its version filter and the craft-or-buy tooltip.
+    "%s  |cff888888%d to buy|r%s": "%s  |cff888888к покупке: %d|r%s",
+    "scroll anywhere here to buy": "прокрутите в любом месте, чтобы купить",
+    "scroll here to buy": "прокрутите здесь, чтобы купить",
+    "click Buy, or tick Scroll to buy": "нажмите «Купить» или отметьте «Покупка колесом»",
+    "%d listed, from %s": "лотов: %d, от %s",
+    "%s: none listed": "%s: лотов нет",
+    "This list wants only the \"%s\" version; Listed and Cheapest count just that one.":
+        "В списке только версия «%s»; «Лотов» и «Минимум» считают только её.",
+    "%s is cheaper by %s.%s": "%s дешевле на %s.%s",
+    "Crafting": "Изготовление",
+    "Buying": "Покупка",
+    " Switch it to Craft with the button.": " Переключите на «Изготовление» кнопкой.",
+    " Switch it to Buy with the button.": " Переключите на «Покупку» кнопкой.",
+    "%d of %d up at the last check. Click an item to look at it on the auction house.":
+        "%d из %d выставлено на последней проверке. Клик по предмету — посмотреть на аукционе.",
+    "You can afford %d of the %d cheap ones with %s%s, so the profit shown is for those. All %d would make %s.":
+        "Вам хватает на %d из %d дешёвых за %s%s, поэтому прибыль показана для них. Все %d дали бы %s.",
+    " left to spend": " останется потратить",
+    # Dashboard, Ledger and Post.
+    "%s a day": "%s в день",
+    "%s%d selected:|r in %s, out %s, net %s": "%sвыбрано: %d|r приход %s, расход %s, итог %s",
+    "%d in your bags": "%d в сумках",
+    "%s. |cff9fe8dcRule from: %s.|r": "%s. |cff9fe8dcПравило: %s.|r",
+    # Recipes tab.
+    "%d listed, scanned %s": "лотов: %d, проверка %s",
+    "%s: %d recipes, %d known. Showing %d%s. (Classic) = original Classic data, unconfirmed in Forever until you see it.":
+        "%s: рецептов %d, изучено %d. Показано %d%s. (Classic) — данные оригинального Classic, в Forever не подтверждены, пока вы их не увидите.",
+    "%d trainers seen, %d from city guards, %d more from Classic (unconfirmed). Ask a guard for a profession trainer to add Forever's real spot.":
+        "Тренеров найдено: %d, от городских стражников: %d, ещё из Classic: %d (не подтверждено). Спросите стражника о тренере профессии, чтобы добавить настоящее место в Forever.",
+    "%s has %d recipe recorded, but none match what's chosen above (%s). Choose All to see them.":
+        "%s: записано рецептов — %d, но ни один не подходит под выбранное выше (%s). Выберите «Все», чтобы увидеть их.",
+    "%s has %d recipes recorded, but none match what's chosen above (%s). Choose All to see them.":
+        "%s: записано рецептов — %d, но ни один не подходит под выбранное выше (%s). Выберите «Все», чтобы увидеть их.",
+    # Sell advice.
+    "%s's %s uses it": "%s использует его (%s)",
+    # Shuffles profit line and the status lines above the tables.
+    "%sProfit %s %s (%d%%)%s.": "%sПрибыль %s %s (%d%%)%s.",
+    "each": "за штуку",
+    "per craft": "за изготовление",
+    "%d shuffles, %d vendor flips (%s). Click to search the AH, right-click for details.":
+        "Цепочек: %d, перепродаж торговцу: %d (%s). Клик — поиск на аукционе, правый клик — подробности.",
+    "%d shuffles, %d vendor flips (%s). %s": "Цепочек: %d, перепродаж торговцу: %d (%s). %s",
+    "Click to search the AH, right-click for details.": "Клик — поиск на аукционе, правый клик — подробности.",
+    "Click a column to sort, a row for details.": "Клик по столбцу — сортировка, по строке — подробности.",
+    "%s%s at %s  %s": "%s%s по %s  %s",
+    "%d listed": "%d в продаже",
+    "from a vendor": "у торговца",
 }
 
 # Same English source, different Russian in our tree: pick the one this place wants.
