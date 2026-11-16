@@ -47,6 +47,13 @@ SellGuard.lua
 ShoppingLists.lua
 BuyQueue.lua
 Watched.lua
+Groups.lua
 Auctions.lua
+AHTabs.lua
+ScanOnce.lua
+Post.lua
+GroupsTab.lua
+CraftPlan.lua
+GoldMaking.lua
 PriceWindow.lua
 Probe.lua

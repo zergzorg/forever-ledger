@@ -391,7 +391,7 @@ end
 ns.FindAllVendorCrafts = ns.Timed("Finding every profession's vendor crafts", ns.FindAllVendorCrafts)
 
 -- Just the vendor flips: far quicker than every shuffle, so the Vendor flips tab can
--- follow the flip watch without a hitch (owner's /fl perf, October 2: the whole
+-- follow Live watch without a hitch (owner's /fl perf, October 2: the whole
 -- shuffle search ran 29 times in 106 seconds at about 195 ms each).
 -- Vendor flips have no crafting time, so they're ranked by total profit on offer.
 function ns:FindVendorFlips()
@@ -1092,7 +1092,7 @@ function ns:DealExplain(d)
   L[#L + 1] = { head = "How sure: " .. (ns.DEAL_LEVEL_TEXT[d.level] or d.level) }
   L[#L + 1] = { note = ns.DEAL_LEVEL_WHY[d.level] or "", color = { 0.75, 0.75, 0.75 } }
   for _, w in ipairs(d.warnings) do L[#L + 1] = { note = w, color = { 1, 0.6, 0.3 } } end
-  L[#L + 1] = { note = "The auction house shows what's listed, not what sold. \"Sells\" counts listings that vanished before they could have expired (bought, or canceled): a low estimate that gets better the more full scans you run, fastest with Watch flips.",
+  L[#L + 1] = { note = "The auction house shows what's listed, not what sold. \"Sells\" counts listings that vanished before they could have expired (bought, or canceled): a low estimate that gets better the more full scans you run, fastest with Live watch.",
     color = { 0.5, 0.5, 0.5 } }
   return L
 end
@@ -1167,17 +1167,20 @@ local function announce(all, usual)
   else
     -- Names the tab: the auction house panel only holds flips and shopping lists (owner,
     -- November 9: looked for 2 deals there and found nothing).
-    text = ("%d new %s below the usual price: see the Deals tab (/fl deals)"):format(usual, usual == 1 and "deal" or "deals")
+    text = ("%d new %s below the usual price: see Gold making, Deals (/fl)"):format(usual, usual == 1 and "deal" or "deals")
   end
   -- Off in Settings if it covers your windows (Magic, October 3: it landed on the Buy queue).
-  if ns.db.settings.dealScreen ~= false and RaidNotice_AddMessage and RaidWarningFrame then
+  -- Never while the auction house is open (Frank, November 15: it covered the Buy tab's
+  -- top right, and the tab's count and the chime already say it).
+  if ns.db.settings.dealScreen ~= false and RaidNotice_AddMessage and RaidWarningFrame
+    and not (ns.IsAHOpen and ns:IsAHOpen()) then
     RaidNotice_AddMessage(RaidWarningFrame, text, { r = 0.05, g = 0.82, b = 0.62 })
   end
   if ns.db.settings.dealSound and PlaySound and SOUNDKIT and SOUNDKIT.RAID_WARNING then
     PlaySound(SOUNDKIT.RAID_WARNING, "Master")
   end
   if #flips > 0 then
-    -- Only after a full scan, not the flip watch's quick checks (ns.fullScanDone).
+    -- Only after a full scan, not Live watch's quick checks (ns.fullScanDone).
     if ns.db.settings.openFlips and ns.OpenFlips and ns.fullScanDone then ns:OpenFlips() end
     for _, f in ipairs(chat and flips or {}) do
       if f.watched == "you" then
@@ -1190,7 +1193,7 @@ local function announce(all, usual)
     end
   end
   if usual > 0 and chat then
-    ns:Print(("%d new %s below the usual price: see the Deals tab (/fl deals)."):format(
+    ns:Print(("%d new %s below the usual price: see Gold making, Deals (/fl)."):format(
       usual, usual == 1 and "deal" or "deals"))
   end
 end

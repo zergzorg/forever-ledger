@@ -463,7 +463,7 @@ function ns:RefreshDeals()
       filtered, filtered == 1 and "deal is" or "deals are"))
   elseif #list == 0 then
     f.empty:SetText(newest and "No deals that pass the checks right now. Tick \"Show doubtful deals too\" to see them."
-      or "No deals yet. Deals need prices from the last hour (a full scan or the flip watch) and at least 4 days of scans "
+      or "No deals yet. Deals need prices from the last hour (a full scan or Live watch) and at least 4 days of scans "
       .. "to know an item's usual price (or TSM installed).")
   end
   f.empty:SetShown(#list == 0)

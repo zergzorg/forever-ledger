@@ -452,12 +452,12 @@ StaticPopupDialogs["FOREVER_LEDGER_SHARE_BOOKS"] = {
 }
 
 StaticPopupDialogs["FOREVER_LEDGER_BANK_CHAR"] = {
-  text = "Is this your auction house character?\n\nForever Ledger can turn the game's sound off while the flip watch runs and play its chimes at full volume, even with the game in the background. You can change this later in Settings, Auction house, Alerts.",
+  text = "Is this your auction house character?\n\nForever Ledger can turn the game's sound off while Live watch runs and play its chimes at full volume, even with the game in the background. You can change this later in Settings, Auction house, Alerts.",
   button1 = "Yes, turn it on", button2 = "No",
   OnAccept = function()
     ns.db.settings.quietWatch = true
     if ns.UpdateQuiet then ns:UpdateQuiet() end
-    ns:Print("Quiet mode will come on while the flip watch runs.")
+    ns:Print("Quiet mode will come on while Live watch runs.")
   end,
   timeout = 0, whileDead = true, hideOnEscape = true,
 }

@@ -48,7 +48,7 @@ local PAGES = {
             { "auto", "Auto" }, { "local", "My scans" }, { "tsm", "TSM" } },
           help = "Auto uses TSM's history where it has a price, otherwise your own scans." },
         { key = "dealUsualMin", label = "Least resale profit each", kind = "money",
-          help = "Deals tab: profit after the auction house cut, reselling at the usual price or under the next listing. \"off\" for no minimum." },
+          help = "Deals (Gold making): profit after the auction house cut, reselling at the usual price or under the next listing. \"off\" for no minimum." },
       } },
       -- Parts of the addon you can switch off whole (owner, October 7: modules, so extras
       -- don't crowd the window). Off means not running at all. More join with the side tabs.
@@ -96,6 +96,9 @@ local PAGES = {
         { sub = "Auction house window" },
         { key = "ahHighlight", label = "Mark good buys", kind = "check",
           help = "Listings at or below an item's buy limit get a green tint, bar and BUY badge." },
+        { key = "ahTabs", label = "Forever Ledger's tabs in the auction house", kind = "check",
+          after = function() if ns.ApplyAHTabs then ns:ApplyAHTabs() end end,
+          help = "Buy and My auctions tabs after Blizzard's Buy, Sell and Auctions, inside the auction house window. Off: the Buy queue panel opens beside the window instead, with its Buy queue button." },
         { sub = "Buy queue" },
         { key = "vendorItemsAH", label = "Buy vendor items on the auction house too", kind = "check",
           after = function() if ns.RefreshListsView then ns:RefreshListsView() end; if ns.RebuildBuyQueue then ns:RebuildBuyQueue() end end,
@@ -104,8 +107,8 @@ local PAGES = {
           help = "When a full scan finds vendor flips and the Buy queue beside the auction house is closed, open it. New flips found between full scans only chime." },
         { key = "stackTwoClicks", label = "Confirm stacks with a second click", kind = "check",
           help = "Off: a stack of materials is bought in one tick or click, since the one that starts the purchase also confirms it once the final price comes back within the limit and what you can spend. On: a second tick or click confirms it, after the final price is shown." },
-        { key = "watchResume", label = "Resume the flip watch", kind = "check",
-          help = "If the flip watch was on when you closed the auction house, start it again when you come back. It can only scan while the auction house is open." },
+        { key = "watchResume", label = "Resume Live watch", kind = "check",
+          help = "If Live watch was on when you closed the auction house, start it again when you come back. It can only scan while the auction house is open." },
         { key = "keepGold", label = "Buy queue: always keep", kind = "money", plainUnit = "g",
           help = "The Buy queue never takes your gold below this, so there's always enough for repairs, training or a mount. Type 100 for 100g. \"off\": it may spend all of it. (The most to spend each visit is on the Buy queue itself.)" },
       } },
@@ -128,9 +131,9 @@ local PAGES = {
       { name = "Alerts", rows = {
         { sub = "New flips and deals" },
         { key = "dealSound", label = "Chime for new flips and deals", kind = "check", help = "Plays the raid warning sound when a scan finds new vendor flips or deals." },
-        { key = "quietWatch", label = "Quiet mode while the flip watch runs", kind = "check", after = function() ns:UpdateQuiet() end,
-          help = "While the flip watch runs: the game's music, effects, ambience and voices go off, and Forever Ledger's chimes play at full volume, even with the game in the background, plus a chime when you win an auction. Your sound settings come back when the watch stops. /fl quiet turns it on for one character until you type it again." },
-        { key = "dealScreen", label = "Big message on screen", kind = "check", help = "Shows new flips and deals in large text at the top of the screen, where raid warnings go. Turn it off if it covers your windows." },
+        { key = "quietWatch", label = "Quiet mode while Live watch runs", kind = "check", after = function() ns:UpdateQuiet() end,
+          help = "While Live watch runs: the game's music, effects, ambience and voices go off, and Forever Ledger's chimes play at full volume, even with the game in the background, plus a chime when you win an auction. Your sound settings come back when the watch stops. /fl quiet turns it on for one character until you type it again." },
+        { key = "dealScreen", label = "Big message on screen", kind = "check", help = "Shows new flips and deals in large text at the top of the screen, where raid warnings go, except while the auction house is open (the Buy tab counts them there). Turn it off if it covers your windows." },
         { key = "dealChat", label = "Chat line for new flips and deals", kind = "check", help = "Lists each new vendor flip and deal in chat." },
       } },
       { name = "Disenchant finder", rows = {

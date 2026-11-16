@@ -83,7 +83,10 @@ ns.ThemedWindow = themedWindow
 
 function ns:ApplyScale()
   local s = ((ns.db and ns.db.settings.uiScale) or 100) / 100
-  for _, f in ipairs(ns.scaledWindows or {}) do f:SetScale(s) end
+  -- (Not the Buy queue panel while it's inside the auction house window: AHTabs.lua.)
+  for _, f in ipairs(ns.scaledWindows or {}) do
+    if not f.inside then f:SetScale(s) end
+  end
 end
 
 -- A thin horizontal line.
@@ -105,12 +108,16 @@ local setView, layoutShuffles, buildTable
 
 local TABS = {
   { key = "dashboard", label = "Dashboard" },
-  { key = "shuffles", label = "Shuffles" },
-  -- Vendor flips moved to the Buy queue beside the auction house (owner, October 2).
-  { key = "deals", label = "Deals" },
+  -- Gold making (redesign build step 6, November 15) puts Shuffles and Deals into one list.
+  -- Their tabs are hidden (/fl deals still opens Deals) until Frank has compared the two;
+  -- their code goes once Gold making has replaced them.
+  { key = "gold", label = "Gold making" },
+  { key = "shuffles", label = "Shuffles", show = function() return false end },
+  { key = "deals", label = "Deals", show = function() return false end },
   { key = "ledger", label = "Ledger" },
   { key = "crates", label = "Crates", setting = "crates" },
   { key = "recipes", label = "Recipes" },
+  { key = "groups", label = "Groups" },   -- GroupsTab.lua (redesign build step 6)
   { key = "characters", label = "Characters" },
   { key = "settings", label = "Settings" },
   { key = "help", label = "Help" },
@@ -186,6 +193,8 @@ local function buildMain()
     crates = ns:BuildCrates(main.body),
     recipes = ns:BuildRecipes(main.body),
     characters = ns:BuildCharacters(main.body),   -- Characters.lua
+    groups = ns:BuildGroups(main.body),   -- GroupsTab.lua
+    gold = ns:BuildGoldMaking(main.body),   -- GoldMaking.lua
     help = ns:BuildHelp(main.body),   -- Help.lua
   }
   main.views.settings = ns:BuildSettings(main.body)   -- Settings.lua
@@ -230,6 +239,7 @@ local function buildMain()
   main.footer = {
     dashboard = { full, newsBtn },
     deals = { full },
+    gold = { full },
     characters = { full, dataBtn },
     help = { welcomeBtn, newsBtn },
   }
@@ -300,7 +310,7 @@ setView = function(view)
   end
 end
 
--- The flip watch and price saves call this: if the Vendor flips tab is on screen, work
+-- Live watch and price saves call this: if the Vendor flips tab is on screen, work
 -- out just the flips again (not every shuffle, which took 195 ms each time), at most
 -- every 2 seconds.
 local flipsQueued = false
@@ -324,7 +334,7 @@ end
 
 -- After a full scan finds vendor flips: open the Buy queue beside the auction house, if
 -- it's closed. It never switches a tab you're on (a shopping list you're working on),
--- and the flip watch's quick checks don't open anything (owner, October 2).
+-- and Live watch's quick checks don't open anything (owner, October 2).
 function ns:OpenFlips()
   if ns.OpenBuyQueueGently then ns:OpenBuyQueueGently() end
 end
@@ -378,6 +388,10 @@ function ns:RefreshUI()
     ns:RefreshDeals()
   elseif main.view == "help" then
     ns:RefreshHelp()
+  elseif main.view == "groups" then
+    ns:RefreshGroupsTab()
+  elseif main.view == "gold" then
+    ns:RefreshGoldMaking()
   elseif main.view == "recipes" then
     ns:RefreshRecipes()
   elseif main.view == "characters" then
@@ -433,7 +447,7 @@ local function buildMinimapButton()
     if IsShiftKeyDown() then ns:ShowSidePanel("lists")
     elseif IsControlKeyDown() and ns.GeneralSessionRunning then   -- (sessions, back November 15)
       if ns:GeneralSessionRunning() then ns:StopGeneralSession() else ns:StartGeneralSession() end
-    elseif which == "RightButton" then ns:ToggleUI("shuffles") else ns:ToggleUI() end
+    elseif which == "RightButton" then ns:ToggleUI("gold") else ns:ToggleUI() end
   end)
   mm:SetScript("OnDragStart", function(self)
     self:SetScript("OnUpdate", function()
@@ -449,7 +463,7 @@ local function buildMinimapButton()
     GameTooltip:SetOwner(self, "ANCHOR_LEFT")
     GameTooltip:AddLine("Forever Ledger")
     GameTooltip:AddLine("Click to open or close.", 1, 1, 1)
-    GameTooltip:AddLine("Right-click for shuffles.", 1, 1, 1)
+    GameTooltip:AddLine("Right-click for Gold making.", 1, 1, 1)
     GameTooltip:AddLine("Shift-click for shopping lists.", 1, 1, 1)
     if ns.GeneralSessionRunning then
       GameTooltip:AddLine(ns:GeneralSessionRunning() and "Ctrl-click to stop the session." or "Ctrl-click to start a session.", 1, 1, 1)
@@ -1113,7 +1127,7 @@ ns:OnReady(function()
   end)
 end)
 
--- Plain text in the status corner (the flip watch's countdown between checks).
+-- Plain text in the status corner (Live watch's countdown between checks).
 -- The Buy queue panel shows the same line (ns.statusText).
 function ns:SetStatusText(text)
   ns.statusText = text or ""
@@ -1132,12 +1146,26 @@ end
 -- the job, so the ones under the auction house window are hidden (owner, October 3).
 function ns:UpdateAHScanButtons()
   local docked = ns.SidePanelDocked and ns:SidePanelDocked()
+  -- With our tabs in the auction house window (AHTabs.lua) the Buy tab has these buttons
+  -- and replaces the Buy queue button: none under the window (owner, November 15).
+  local tabs = ns.AHTabsOn and ns:AHTabsOn()
   for _, b in ipairs({ ns.ahButton or false, ns.ahFullButton or false, ns.ahWatchButton or false }) do
-    if b then b:SetShown(not docked) end
+    if b then b:SetShown(not docked and not tabs) end
+  end
+  local ah = AuctionHouseFrame
+  if ns.ahButton and ah then
+    ns.ahButton:ClearAllPoints()
+    ns.ahButton:SetPoint("TOPRIGHT", ah, "BOTTOMRIGHT", -4, (tabs or ns.ahAuctionator) and -34 or -2)
+  end
+  if ns.ahWatchButton then
+    ns.ahWatchButton:ClearAllPoints()
+    local leftOf = (tabs or not ns.ahFinderButton) and ns.ahFullButton or ns.ahFinderButton
+    if leftOf then ns.ahWatchButton:SetPoint("RIGHT", leftOf, "LEFT", -4, 0) end
   end
   -- The Buy queue button says it closes the panel while it's open, and stays lit.
   local b = ns.ahFinderButton
   if b then
+    b:SetShown(not tabs)
     b:SetText(docked and "Close buy queue" or "Buy queue")
     if docked then b:LockHighlight() else b:UnlockHighlight() end
   end
@@ -1154,7 +1182,7 @@ function ns:OnAHShow()
     ns.ahButton:HookScript("OnEnter", function(self)
       GameTooltip:SetOwner(self, "ANCHOR_TOP")
       GameTooltip:AddLine("Pause", 1, 1, 1)
-      GameTooltip:AddLine("Holds the flip watch and the Buy queue's own lookups, so your searches and the page you're on stay as you leave them. Click Resume to carry on; closing the auction house ends it too.", nil, nil, nil, true)
+      GameTooltip:AddLine("Holds Live watch and the Buy queue's own lookups, so your searches and the page you're on stay as you leave them. Click Resume to carry on; closing the auction house ends it too.", nil, nil, nil, true)
       GameTooltip:Show()
     end)
     ns.ahButton:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -1162,6 +1190,7 @@ function ns:OnAHShow()
     -- bottom, reaching the right side: go one row lower so we don't cover them.
     local isLoaded = (C_AddOns and C_AddOns.IsAddOnLoaded) or IsAddOnLoaded
     local auctionator = Auctionator ~= nil or (isLoaded and isLoaded("Auctionator"))
+    ns.ahAuctionator = auctionator
     ns.ahButton:SetPoint("TOPRIGHT", ah, "BOTTOMRIGHT", -4, auctionator and -34 or -2)
     ns.ahButton:SetFrameLevel(ah:GetFrameLevel() + 20)
     ns.ahFullButton = blizzButton(ah, "Full scan", 130, function() ns.Scan:Start("full") end)

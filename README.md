@@ -26,8 +26,8 @@
 ### Finding gold
 - **Tooltips:** what an item is worth to you (you choose which ways count) and the best few ways to use it, the auction price, how fast it sells, what it disenchants into, how many crafts and quests use it (Shift lists them; "keep it" if you will), and Darkmoon Faire turn-ins. Hold Ctrl for its price history. One line with Shift for more, if you prefer.
 - **Deals:** listings well below their usual price, with the usual price, how many days of scans it's based on, the next listing up and the resale profit, rated Good, Fair or Thin. A Booty Bay view compares the neutral auction house with yours, each after its own cut.
-- **Vendor flips:** things on the auction house for less than a vendor pays. Watch flips keeps scanning while the auction house is open, reading every item's cheapest price about every 20 seconds between full scans, and chimes when one turns up. Pause holds it (and the Buy queue's own lookups) while you search yourself.
-- **Watched items:** items you always want checked, each with the most you'd pay (or only under what a vendor pays). Watch flips looks for them every time it reads the auction house, and they go first in the Buy queue.
+- **Vendor flips:** things on the auction house for less than a vendor pays. Live watch keeps scanning while the auction house is open, reading every item's cheapest price about every 20 seconds between full scans, and chimes when one turns up. Pause holds it (and the Buy queue's own lookups) while you search yourself.
+- **Watched items:** items you always want checked, each with the most you'd pay (or only under what a vendor pays). Live watch looks for them every time it reads the auction house, and they go first in the Buy queue.
 - **Shuffles:** buy materials, craft, disenchant or convert, and sell, ranked by gold an hour, with every step spelled out. All professions shows every profession's crafts that sell to a vendor at a profit, from Forever's own recipes, even ones none of your characters has.
 - **Sell suggestion:** items in your bags say what to do with them: keep (a quest or one of your recipes needs it), sell to a vendor, sell on the auction house, or disenchant.
 - **On the auction house:** listings worth buying get a green bar and a badge saying why (FLIP, DE, CRAFT, USE).
@@ -109,7 +109,7 @@ Most things have a button; these are for when you'd rather type. The main ones:
 |---|---|
 | `/fl` | Open or close the window |
 | `/fl scan` | Full scan if one is allowed, otherwise scan your materials (auction house open) |
-| `/fl watch` | Watch flips: keep scanning while the auction house is open |
+| `/fl watch` | Live watch: keep scanning while the auction house is open |
 | `/fl queue`, `/fl lists` | The Buy queue, or your shopping lists (lists open anywhere) |
 
 <details>

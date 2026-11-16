@@ -731,7 +731,7 @@ function ns:UpdateWatchButton()
   local w = ns.ahWatchButton
   if not w then return end
   local on = ns:IsFlipWatching()
-  w:SetText(on and "     Stop watching" or "Watch flips")
+  w:SetText(on and "     Stop watching" or "Live watch")
   if not w.eye then w.eye = watchEye(w) end
   w.eye:SetShown(on)
   w.eye:SetScript("OnUpdate", on and eyeUpdate or nil)
@@ -760,7 +760,7 @@ ns:On("AUCTION_HOUSE_SHOW", function()
       ns.ahFinderButton = b
     end
     if ns.SetUpSidePanel then ns:SetUpSidePanel() end
-    -- Flip watch on/off (/fl watch).
+    -- Live watch on/off (/fl watch).
     if not ns.ahWatchButton then
       local w = CreateFrame("Button", nil, AuctionHouseFrame, "UIPanelButtonTemplate")
       w:SetSize(128, 24)   -- narrow enough not to reach the Auctions tab
@@ -769,7 +769,7 @@ ns:On("AUCTION_HOUSE_SHOW", function()
       w:SetScript("OnClick", function() ns:ToggleFlipWatch() end)
       w:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
-        GameTooltip:AddLine("Flip watch", 1, 1, 1)
+        GameTooltip:AddLine("Live watch", 1, 1, 1)
         GameTooltip:AddLine("Keeps looking for items below vendor price while the auction house stays open: a full scan every 15 minutes, and the whole auction house list read about every 20 seconds in between. Chimes as soon as it finds one, and new flips join the Buy queue straight away.", nil, nil, nil, true)
         GameTooltip:Show()
       end)

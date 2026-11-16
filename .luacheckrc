@@ -18,7 +18,10 @@ read_globals = {
   "TooltipDataProcessor", "UiMapPoint",
 
   -- Frames, UI enums, localized strings and constants supplied by Blizzard.
-  "AuctionFrame", "AuctionHouseFrame", "AuctionHouseFrameDisplayMode",
+  "AuctionFrame", "AuctionHouseFrame", "AuctionHouseFrameDisplayMode", "LibStub",
+  "PanelTemplates_DeselectTab", "PanelTemplates_SelectTab", "PanelTemplates_TabResize", "ChatEdit_InsertLink",
+  "ButtonFrameTemplate_HidePortrait", "ButtonFrameTemplate_ShowPortrait",
+  "WOW_PROJECT_ID", "WOW_PROJECT_MAINLINE",
   "GameTooltip", "ItemRefTooltip", "Minimap", "ProfessionsFrame", "RaidWarningFrame",
   "TradeFrameRecipientNameText", "TradeSkillFrame", "UIErrorsFrame", "UIParent",
   "ATTACHMENTS_MAX_RECEIVE", "BOOKTYPE_SPELL", "CLASS_ICON_TCOORDS", "CONTAINER_SLOTS",
@@ -71,4 +74,10 @@ globals = { "StaticPopupDialogs", "SlashCmdList", "UISpecialFrames", "ColorPicke
 -- Only Core owns these global registrations. Other files must use the namespace.
 files["Core.lua"] = {
   globals = { "ForeverLedgerDB", "SLASH_FOREVERLEDGER1", "SLASH_FOREVERLEDGER2" },
+}
+
+-- AHTabs.lua clears AuctionHouseFrame.displayMode after emptying Blizzard's content for
+-- our tabs (as the shared LibAHTab does), so a Blizzard tab clicked next opens again.
+files["AHTabs.lua"] = {
+  globals = { "AuctionHouseFrame" },
 }

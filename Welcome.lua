@@ -10,8 +10,8 @@ local T = ns.Theme
 local STEPS = {
   { "Learn your recipes", "Open each profession window once on every character. Forever Ledger reads your recipes from it." },
   { "Price everything", "At the auction house, click Full scan. It reads every listing in a few seconds; the game allows one about every 15 minutes. Prices and flips work from the first scan; deals and sell speed get sharper as a few days of scans build up." },
-  { "Buy vendor flips", "At the auction house, click Buy queue: a panel beside it lists things selling for less than a vendor pays, with Watch flips to keep scanning while you're there. Click Buy to buy the next one, or scroll down over its top strip." },
-  { "Find deals", "The Deals tab lists items selling well below their usual price, to buy and resell.", "Open Deals", "deals" },
+  { "Buy vendor flips", "At the auction house, click the Buy tab along the bottom of its window: it lists things selling for less than a vendor pays, with Live watch to keep scanning while you're there. Click Buy to buy the next one, or scroll down over its top strip." },
+  { "Find gold", "The Gold making tab lists every way to make gold we find: crafts that sell, vendor flips, deals well below the usual price, disenchanting and Booty Bay. Click one for how it adds up.", "Open Gold making", "gold" },
   { "Plan your shopping", "Shopping lists hold what you want to buy and the most you'd pay. Plan anywhere; they show beside the auction house when you get there.", "Open shopping lists", "lists" },
 }
 

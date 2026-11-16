@@ -4,7 +4,7 @@ local T = ns.Theme
 ---------------------------------------------------------------------------
 -- Your auctions (owner, October 3: undercut alerts "absolutely", from the ForeverForge
 -- list). The side panel's fourth tab lists what you have up: quantity, your price each,
--- the cheapest now, and whether you've been undercut. Scans (and the flip watch) check
+-- the cheapest now, and whether you've been undercut. Scans (and Live watch) check
 -- it as they save prices; Check prices looks up all of yours at once. An undercut gets
 -- a sound and a chat line once per price. Cancel is one auction per click, two clicks
 -- each (cancelling loses the deposit). Blizzard needs a click for every cancel and post.
@@ -284,6 +284,17 @@ local function undercutBy(e)
   if now and now < e.each and priceFresh(rec) then return now end
 end
 
+-- The cheapest, but well under the usual price: you could ask more (owner's mockup,
+-- November 15). Returns the usual price.
+local function couldAskMore(e)
+  if e.sold or not e.each or undercutBy(e) then return end
+  local now, rec = cheapestNow(e)
+  if not (now and priceFresh(rec)) then return end
+  local stats = ns.PriceStats and ns:PriceStats(e.id, "month")
+  local usual = stats and stats.points and stats.points >= 3 and stats.usual
+  if usual and e.each <= usual * 0.9 then return math.floor(usual) end
+end
+
 -- A sound and a chat line, once per auction and price (again if it drops further).
 local function checkAlerts()
   local m = mine()
@@ -436,6 +447,10 @@ local view = "all"
 local cancelState     -- nil, "asking" (first click, until asked = time), or "on" (each click cancels one)
 local askedAt = 0
 local pending = {}    -- [auctionID] = true: cancel sent, waiting for the list to update
+-- My auctions in the auction house window (owner's mockup comments, November 15):
+local skipCancel = {}      -- [auctionID] = true: middle-clicked, never cancelled this visit
+local scrollCancel = false -- Scroll to cancel: each wheel tick over the list cancels the next
+local askMore = false      -- also cancel the ones you could ask more for (off each visit)
 
 local function shortLeft(secs)
   if not secs then return "" end
@@ -456,7 +471,9 @@ end
 local function undercutList(list)
   local out = {}
   for _, e in ipairs(list) do
-    if e.a and not pending[e.a] and undercutBy(e) then out[#out + 1] = e end
+    if e.a and not pending[e.a] and not skipCancel[e.a] and (undercutBy(e) or (askMore and couldAskMore(e))) then
+      out[#out + 1] = e
+    end
   end
   return out
 end
@@ -515,6 +532,13 @@ local function getRow(i)
     GameTooltip:Show()
   end)
   r.cancel:HookScript("OnLeave", function() GameTooltip:Hide() end)
+  -- Middle-click: skip it, so it's never cancelled this visit (again to undo).
+  r:SetScript("OnMouseUp", function(self, button)
+    local e = self.entry
+    if button ~= "MiddleButton" or not (e and e.a) then return end
+    skipCancel[e.a] = not skipCancel[e.a] or nil
+    refresh()
+  end)
   r:SetScript("OnEnter", function(self)
     local e = self.entry
     if not e then return end
@@ -590,6 +614,7 @@ refresh = function()
   for i, e in ipairs(shown) do
     local r = getRow(i)
     r.entry = e
+    r:SetAlpha((e.a and skipCancel[e.a]) and 0.5 or 1)
     r:ClearAllPoints()
     r:SetPoint("TOPLEFT", frame.content, "TOPLEFT", 0, -(i - 1) * ROW)
     r:SetWidth(width)
@@ -609,7 +634,9 @@ refresh = function()
       local stale = now and not priceFresh(rec)
       r.now:SetText(now and ((stale and "|cff888888" or by and "|cffee8597" or "|cff7fd39c") .. ns.MoneyPlain(now) .. "|r") or "|cff888888?|r")
       if e.a and pending[e.a] then r.status:SetText("|cff888888canceling...|r")
+      elseif e.a and skipCancel[e.a] then r.status:SetText("|cff888888skipped (middle-click to undo)|r")
       elseif by then r.status:SetText("|cffee8597undercut|r")
+      elseif couldAskMore(e) then r.status:SetText("|cffffd100cheapest: could ask more|r")
       elseif stale then r.status:SetText("|cff888888check prices|r")
       elseif now then r.status:SetText("|cff7fd39ccheapest|r")
       else r.status:SetText("|cff888888not priced|r") end
@@ -655,7 +682,7 @@ refresh = function()
       #todo, #todo == 1 and "auction" or "auctions", #todo == 1 and "its deposit" or "their deposits"))
   elseif #todo > 0 then
     local e = todo[1]
-    frame.info:SetText(("Next: %s x%d, yours %s, cheapest %s.%s"):format(ns.ItemName(e.id), e.q or 1, ns.MoneyPlain(e.each), ns.MoneyPlain(undercutBy(e)),
+    frame.info:SetText(("Next: %s x%d, yours %s, cheapest %s.%s"):format(ns.ItemName(e.id), e.q or 1, ns.MoneyPlain(e.each), ns.MoneyPlain(undercutBy(e) or cheapestNow(e) or e.each),
       cancelState == "on" and "" or " |cff888888(First click asks, then one click each.)|r"))
   elseif counts.up > 0 then
     frame.info:SetText(("%d up, none undercut at the last check%s."):format(counts.up, m and m.t and (" (" .. ns.Age(m.t) .. ")") or ""))
@@ -674,7 +701,14 @@ ns:On("OWNED_AUCTIONS_UPDATED", function()
     if not still[a] or GetTime() - at > 4 then pending[a] = nil end
   end
 end)
-ns:On("AUCTION_HOUSE_CLOSED", function() cancelState = nil; wipe(pending) end)
+ns:On("AUCTION_HOUSE_CLOSED", function()
+  cancelState = nil
+  wipe(pending)
+  wipe(skipCancel)
+  scrollCancel, askMore = false, false
+  if frame and frame.askMore then frame.askMore:SetChecked(false) end
+  if frame and frame.scrollSwitch then frame.scrollSwitch:SetChecked(false) end
+end)
 
 function ns:YourAuctionsFrame(side)
   if frame or not side then return frame end
@@ -713,7 +747,56 @@ function ns:YourAuctionsFrame(side)
   end
   frame.sf, frame.content = T:Scroll(frame)
   frame.sf:SetPoint("TOPLEFT", 6, -56)
-  frame.sf:SetPoint("BOTTOMRIGHT", -6, 74)
+  frame.sf:SetPoint("BOTTOMRIGHT", -6, 98)
+  -- Scroll to cancel: each mouse wheel tick over the list cancels the next one (owner's
+  -- mockup comments, November 15). Off at each visit and by Esc, so the list can scroll.
+  local wheelList = frame.sf:GetScript("OnMouseWheel")
+  frame.sf:SetScript("OnMouseWheel", function(self, delta)
+    if scrollCancel then
+      local todo = frame.todo or {}
+      if todo[1] then cancelOne(todo[1]) end
+      refresh()
+      return
+    end
+    if wheelList then wheelList(self, delta) end
+  end)
+  local function setScrollCancel(on)
+    scrollCancel = on and true or false
+    frame.scrollSwitch:SetChecked(scrollCancel)
+    frame:EnableKeyboard(scrollCancel)
+    -- Turning it on is the confirmation the button asks for.
+    if scrollCancel then cancelState = "on" end
+    refresh()
+  end
+  frame.setScrollCancel = setScrollCancel
+  frame:SetScript("OnKeyDown", function(self, key)
+    if key == "ESCAPE" and scrollCancel then
+      setScrollCancel(false)
+      self:SetPropagateKeyboardInput(false)
+    else
+      self:SetPropagateKeyboardInput(true)
+    end
+  end)
+  frame.scrollSwitch = T:Check(frame, function(b) setScrollCancel(b:GetChecked()) end, "switch")
+  frame.scrollSwitch:SetPoint("BOTTOMLEFT", 12, 78)
+  frame.scrollSwitch.label:SetText("Scroll to cancel")
+  frame.scrollSwitch:HookScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_TOP")
+    GameTooltip:AddLine("Scroll to cancel", 1, 1, 1)
+    GameTooltip:AddLine("While it's on, each mouse wheel tick over the list cancels the next undercut auction (the one the line below names): the items come back by mail and the deposit is lost. Off, or Esc: the wheel scrolls the list. It starts off every visit. Middle-click a row to skip it.", nil, nil, nil, true)
+    GameTooltip:Show()
+  end)
+  frame.scrollSwitch:HookScript("OnLeave", function() GameTooltip:Hide() end)
+  frame.askMore = T:Check(frame, function(b) askMore = b:GetChecked() and true or false; refresh() end)
+  frame.askMore:SetPoint("LEFT", frame.scrollSwitch.label, "RIGHT", 18, 0)
+  frame.askMore.label:SetText("Also cancel ones I could ask more for")
+  frame.askMore:HookScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_TOP")
+    GameTooltip:AddLine("Also cancel ones I could ask more for", 1, 1, 1)
+    GameTooltip:AddLine("Adds your auctions that are the cheapest but at least 10% under the usual price, to repost higher. Off each visit.", nil, nil, nil, true)
+    GameTooltip:Show()
+  end)
+  frame.askMore:HookScript("OnLeave", function() GameTooltip:Hide() end)
   frame.empty = T:Text(frame.content, 12, T.dim)
   frame.empty:SetPoint("TOPLEFT", 8, -8)
   frame.empty:SetPoint("RIGHT", frame.content, "RIGHT", -8, 0)
@@ -724,7 +807,7 @@ function ns:YourAuctionsFrame(side)
   frame.check:HookScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
     GameTooltip:AddLine("Check prices", 1, 1, 1)
-    GameTooltip:AddLine("Looks up everything you have listed on the auction house now, one item at a time, and marks the ones that have been undercut. Full scans and the flip watch check them too.", nil, nil, nil, true)
+    GameTooltip:AddLine("Looks up everything you have listed on the auction house now, one item at a time, and marks the ones that have been undercut. Full scans and Live watch check them too.", nil, nil, nil, true)
     GameTooltip:Show()
   end)
   frame.check:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -773,7 +856,10 @@ function ns:YourAuctionsFrame(side)
   frame.gold:SetJustifyH("LEFT")
   frame.gold:SetWordWrap(false)
   frame:SetScript("OnShow", function() query(); refresh() end)
-  frame:SetScript("OnHide", function() cancelState = nil end)
+  frame:SetScript("OnHide", function()
+    cancelState = nil
+    if scrollCancel then frame.setScrollCancel(false) end
+  end)
   C_Timer.NewTicker(2, function() if frame:IsVisible() then refresh() end end)   -- countdowns, "Sure?" times out
   frame:Hide()
   return frame
