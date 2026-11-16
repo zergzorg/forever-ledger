@@ -105,12 +105,12 @@ function ns.GoldPlanLines(need, order, plan, recipeOf, money)
     local e = plan[id]
     if not e then return end
     local parts = {}
-    if e.owned > 0 then parts[#parts + 1] = ("%d from your bags"):format(e.owned) end
+    if e.owned > 0 then parts[#parts + 1] = ("%d из сумок"):format(e.owned) end
     if e.bought > 0 then
-      parts[#parts + 1] = ("buy %d on the AH, up to %s (%s)"):format(e.bought, money(e.top), money(e.boughtCost))
+      parts[#parts + 1] = ("купить %d на аукционе, до %s (%s)"):format(e.bought, money(e.top), money(e.boughtCost))
     end
-    if e.vendor > 0 then parts[#parts + 1] = ("%d from a vendor (%s)"):format(e.vendor, money(e.vendorCost)) end
-    if e.made > 0 then parts[#parts + 1] = ("make %d"):format(e.made) end
+    if e.vendor > 0 then parts[#parts + 1] = ("%d у торговца (%s)"):format(e.vendor, money(e.vendorCost)) end
+    if e.made > 0 then parts[#parts + 1] = ("изготовить %d"):format(e.made) end
     local head = depth == 0 and ("%d %s"):format(need[id] or 0, "%s") or "%s"
     lines[#lines + 1] = { depth = depth, id = id, head = head, text = table.concat(parts, ", "), parts = parts, entry = e }
     if e.made > 0 then
@@ -159,13 +159,13 @@ local function shuffleRow(s, section)
   if o.kind == "craft" then
     row.prof = o.prof
     row.who = firstName(o.who) or myName()
-    row.whoLong = o.who and ("Known by " .. o.who) or "You know this recipe."
+    row.whoLong = o.who and ("Знает: " .. o.who) or "Рецепт знаете вы."
   elseif o.kind == "disenchant" then
-    row.prof = "Enchanting"
+    row.prof = "Наложение чар"
     local who = ns:BestEnchanter()
-    row.who = firstName(who) or "an enchanter"
+    row.who = firstName(who) or "зачарователь"
   else
-    row.who = "anyone"
+    row.who = "любой"
   end
   return row
 end
@@ -178,8 +178,8 @@ local function unknownCraftRow(s)
   if not row then return end
   row.unknown = true
   row.who = s.prof or "?"
-  row.whoLong = ("%s recipe none of your characters know%s."):format(s.prof or "A",
-    s.classic and " (from Classic: Forever may have changed it)" or (s.forever and " (from Forever's game data)" or ""))
+  row.whoLong = ("%s: рецепт, которого не знает никто из ваших персонажей%s."):format(s.prof or "?",
+    s.classic and " (из Classic: Forever мог это изменить)" or (s.forever and " (из данных игры Forever)" or ""))
   return row
 end
 
@@ -192,7 +192,7 @@ local function dealRow(d)
   local below = d.worth and d.worth > 0 and math.floor((1 - d.price / d.worth) * 100 + 0.5) or nil
   return { key = "deal:" .. d.id, kind = "deal", d = d, id = d.id, name = ns.ItemName(d.id), who = "anyone",
     cost = d.price, brings = d.price + (d.each or 0), profit = d.each or 0, count = d.listed,
-    tag = below and ("Deal -%d%%"):format(below) or nil }
+    tag = below and ("Сделка -%d%%"):format(below) or nil }
 end
 
 -- Booty Bay against your own auction house, both ways (Values.lua NeutralCompare).
@@ -206,7 +206,7 @@ local function neutralRows(out)
         and c.listedHere >= NEUTRAL_LISTED then
         out[#out + 1] = { key = "bb:in:" .. id, kind = "bootybay", c = c, dir = "in", id = id, name = ns.ItemName(id),
           who = "anyone", cost = c.there, brings = c.netHere, profit = c.buyProfit, count = c.listedThere,
-          tag = "Buy at BB" }
+          tag = "Купить в Бухте" }
       end
       -- Buy here, sell at Booty Bay.
       local gain = c.netThere - c.here
@@ -214,7 +214,7 @@ local function neutralRows(out)
         and c.listedThere >= NEUTRAL_LISTED then
         out[#out + 1] = { key = "bb:out:" .. id, kind = "bootybay", c = c, dir = "out", id = id, name = ns.ItemName(id),
           who = "anyone", cost = c.here, brings = c.netThere, profit = gain, count = c.listedHere,
-          tag = "Sell at BB" }
+          tag = "Продать в Бухте" }
       end
     end
   end
@@ -411,8 +411,8 @@ local function rowTip(self)
   elseif r.kind == "bootybay" then
     local c = r.c
     GameTooltip:AddLine(r.dir == "in" and "Купить в Пиратской Бухте, продать здесь" or "Купить здесь, продать в Пиратской Бухте", 1, 0.82, 0)
-    GameTooltip:AddDoubleLine("Пиратская Бухта, минимум", ("%s (%d listed)"):format(money(c.there), c.listedThere), 0.8, 0.8, 0.8, 1, 1, 1)
-    GameTooltip:AddDoubleLine("Здесь, минимум", ("%s (%d listed)"):format(money(c.here), c.listedHere), 0.8, 0.8, 0.8, 1, 1, 1)
+    GameTooltip:AddDoubleLine("Пиратская Бухта, минимум", ("%s (%d в продаже)"):format(money(c.there), c.listedThere), 0.8, 0.8, 0.8, 1, 1, 1)
+    GameTooltip:AddDoubleLine("Здесь, минимум", ("%s (%d в продаже)"):format(money(c.here), c.listedHere), 0.8, 0.8, 0.8, 1, 1, 1)
     GameTooltip:AddDoubleLine("Приносит там, где продаёте, после комиссии", money(r.brings), 0.8, 0.8, 0.8, 1, 1, 1)
     GameTooltip:AddLine("Учтены комиссии обоих аукционов и залог одного непроданного лота. Цены — с вашей последней проверки там (" .. ns.Age(c.t) .. ").", 0.6, 0.6, 0.6, true)
   else
@@ -653,15 +653,15 @@ local function craftSpec(r, spec)
     local e = l.entry
     local cost = e.boughtCost + e.vendorCost
     if e.owned > 0 and not free then cost = cost + e.owned * (plan.src(l.id).ownedValue or 0) end
-    local name = ns.ItemName(l.id) or ("item " .. l.id)
+    local name = ns.ItemName(l.id) or ("предмет " .. l.id)
     local count = l.depth == 0 and plan.need[l.id] or (e.owned + e.bought + e.vendor + e.made)
     spec[#spec + 1] = { style = "item", icon = ns:ItemIcon(l.id), indent = l.depth,
       left = ("%d %s"):format(count, name), right = cost > 0 and ns.Money(cost) or "" }
     local how = {}
-    if e.owned > 0 then how[#how + 1] = ("%d from your bags"):format(e.owned) end
-    if e.bought > 0 then how[#how + 1] = ("%d on the AH, up to %s"):format(e.bought, ns.Money(e.top)) end
-    if e.vendor > 0 then how[#how + 1] = ("%d from a vendor"):format(e.vendor) end
-    if e.made > 0 then how[#how + 1] = ("make %d"):format(e.made) end
+    if e.owned > 0 then how[#how + 1] = ("%d из сумок"):format(e.owned) end
+    if e.bought > 0 then how[#how + 1] = ("%d на аукционе, до %s"):format(e.bought, ns.Money(e.top)) end
+    if e.vendor > 0 then how[#how + 1] = ("%d у торговца"):format(e.vendor) end
+    if e.made > 0 then how[#how + 1] = ("изготовить %d"):format(e.made) end
     spec[#spec + 1] = { style = "sub", indent = l.depth, left = table.concat(how, ", ") }
   end
   stepsSpec(spec, r.s)
@@ -680,7 +680,7 @@ local function panelSpec(r)
     end
   elseif r.kind == "bootybay" then
     local c = r.c
-    spec[#spec + 1] = { style = "big", left = profitText(r.profit, "each") }
+    spec[#spec + 1] = { style = "big", left = profitText(r.profit, "за штуку") }
     spec[#spec + 1] = { style = "note", left = r.dir == "in" and "Купите в Пиратской Бухте, продайте здесь."
       or "Купите здесь, продайте в Пиратской Бухте." }
     spec[#spec + 1] = { style = "pair", left = ("Пиратская Бухта, лотов: %d"):format(c.listedThere), right = ns.Money(c.there) }
@@ -690,7 +690,7 @@ local function panelSpec(r)
       .. ": проверьте снова, когда доберётесь." }
   elseif r.kind == "flip" then
     local s = r.s
-    spec[#spec + 1] = { style = "big", left = profitText(r.profit, "each") }
+    spec[#spec + 1] = { style = "big", left = profitText(r.profit, "за штуку") }
     spec[#spec + 1] = { style = "pair", left = "Покупать до", right = ns.Money(s.maxBuy) }
     spec[#spec + 1] = { style = "pair", left = ("Лотов: %d, в среднем по"):format(s.buys[1].listed or 0), right = ns.Money(s.cost) }
     spec[#spec + 1] = { style = "pair", left = "Торговец платит", right = ns.Money(s.opt.value) }
@@ -700,9 +700,9 @@ local function panelSpec(r)
     spec[#spec + 1] = { style = "pair", left = "Затраты", right = ns.Money(r.cost) }
     spec[#spec + 1] = { style = "pair", left = "Приносит", right = ns.Money(r.brings) }
     if r.s.maxBuy and (r.s.single or r.s.group) then
-      spec[#spec + 1] = { style = "pair", left = "Buy at up to", right = ns.Money(r.s.maxBuy) }
+      spec[#spec + 1] = { style = "pair", left = "Покупать до", right = ns.Money(r.s.maxBuy) }
     end
-    spec[#spec + 1] = { style = "head", left = "Steps" }
+    spec[#spec + 1] = { style = "head", left = "Шаги" }
     for line in ns:ShuffleSteps(r.s):gmatch("[^\n]+") do spec[#spec + 1] = { style = "note", left = line } end
   end
   return spec
@@ -817,7 +817,7 @@ end
 ---------------------------------------------------------------------------
 local function askName(onName)
   StaticPopupDialogs["FOREVER_LEDGER_GOLD_SET"] = {
-    text = "Название фильтров (быстрая кнопка в «Заработке»):", button1 = SAVE or "Сохранить", button2 = CANCEL or "Cancel",
+    text = "Название фильтров (быстрая кнопка в «Заработке»):", button1 = SAVE or "Сохранить", button2 = CANCEL or "Отмена",
     hasEditBox = true,
     OnShow = function(self)
       local eb = self.editBox or self.EditBox
@@ -843,7 +843,7 @@ local function confirmDelete(i)
   if not set then return end
   StaticPopupDialogs["FOREVER_LEDGER_GOLD_SET_DELETE"] = {
     text = ("Удалить сохранённые фильтры «%s»? Отменить нельзя."):format(set.name),
-    button1 = "Удалить", button2 = CANCEL or "Cancel",
+    button1 = "Удалить", button2 = CANCEL or "Отмена",
     OnAccept = function()
       for j, s in ipairs(S().sets) do if s == set then table.remove(S().sets, j); break end end
       refresh()
@@ -1076,7 +1076,7 @@ function ns:BuildGoldMaking(parent)
   f.ownedFree = p.ownedFree
   p.sf, p.content = T:Scroll(p)
   p.lines = {}
-  p.add = T:Button(p, "Add materials to a shopping list", PANEL_W - 16, addToList, 24)
+  p.add = T:Button(p, "Материалы в список покупок", PANEL_W - 16, addToList, 24)
   p.add:SetPoint("BOTTOMLEFT", 8, 34)
   p.add:SetPrimary(true)
   p.price = T:Button(p, "Окно цены", PANEL_W - 16, function()

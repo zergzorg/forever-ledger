@@ -270,7 +270,7 @@ local function navItems()
       local users = #ns:RuleUsers(rid)
       items[#items + 1] = { rule = rid, name = saved[rid].name, note = ("%s · %d"):format(KIND_LABEL[saved[rid].kind] or "?", users) }
     end
-    if #ids == 0 then items[#items + 1] = { heading = "  none yet: New rule, or Copy a default" } end
+    if #ids == 0 then items[#items + 1] = { heading = "  пока нет: «Новое правило» или «Копировать»" } end
   end
   return items
 end
@@ -392,7 +392,7 @@ local function drawItems(gid, info)
   local builtin = info and info.kind == "builtin"
   local mine = info and info.kind == "user"
   f.itemsNote:SetText(#list == 0 and "Пока нет ни одного известного нам предмета."
-    or (#list > n and ("%d items, the first %d shown."):format(#list, n) or ("%d item%s."):format(#list, #list == 1 and "" or "s")))
+    or (#list > n and ("Предметов: %d, показаны первые %d."):format(#list, n) or ("%d %s."):format(#list, ns.Plural(#list, "предмет", "предмета", "предметов"))))
   f.restoreItems:SetShown(builtin)
   f.addBox:SetShown(builtin or mine)
   f.addLabel:SetShown(builtin or mine)
@@ -468,7 +468,7 @@ local function drawRule()
     end
     kind, fields, editable, title = saved.kind, saved.fields, true, saved.name
   end
-  f.ruleTitle:SetText(title .. "  |cff888888" .. KIND_LABEL[kind] .. " rule|r")
+  f.ruleTitle:SetText(title .. (editable and ("  |cff888888" .. KIND_LABEL[kind]:lower() .. "|r") or ""))
   for k, e in pairs(f.ruleEditors) do e:SetShown(k == kind) end
   f.ruleEditors[kind]:Load(fields, editable)
   if editable then
@@ -501,8 +501,8 @@ refresh = function()
   local info = ns:GroupInfo(state.group)
   if not info then state.group = "mat"; info = ns:GroupInfo("mat") end
   local parent = info.parent and ns:GroupInfo(info.parent)
-  local kinds = { builtin = "built in, kept up to date by Forever Ledger", profession = "made from the recipe data",
-    special = "kept up to date by Forever Ledger", user = "your group" }
+  local kinds = { builtin = "встроенная, поддерживается Forever Ledger", profession = "собрана из данных рецептов",
+    special = "поддерживается Forever Ledger", user = "ваша группа" }
   f.title:SetText(info.name)
   f.sub:SetText((parent and (parent.name .. " › " .. info.name .. " · ") or "") .. (kinds[info.kind] or ""))
   f.viewItems:SetSelected(state.view == "items")

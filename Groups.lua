@@ -114,7 +114,7 @@ do
     withBands[#withBands + 1] = g
     if g.parent == "gear" then
       for _, b in ipairs(BANDS) do
-        withBands[#withBands + 1] = { id = g.id .. ".l" .. b[1], parent = g.id, name = ("Level %d-%d"):format(b[1], b[2]) }
+        withBands[#withBands + 1] = { id = g.id .. ".l" .. b[1], parent = g.id, name = ("Уровень %d-%d"):format(b[1], b[2]) }
       end
     end
   end
@@ -298,7 +298,7 @@ function ns:GroupInfo(gid)
   end
   local prof, which = gid:match("^prof:(.+):(%a+)$")
   if prof and (which == "mats" or which == "crafts") then
-    return { id = gid, name = prof .. (which == "mats" and " materials" or " crafts"), kind = "profession", prof = prof }
+    return { id = gid, name = prof .. (which == "mats" and ": материалы" or ": изготовление"), kind = "profession", prof = prof }
   end
   if gid == "watched" then return { id = gid, name = "Отслеживаемые", kind = "special" } end
   if gid == "gray" then return { id = gid, name = "Серые предметы", kind = "special" } end
@@ -318,13 +318,13 @@ function ns:GroupTree()
   end
   walk("root", 0)
   out[#out + 1] = { id = "watched", name = "Отслеживаемые", kind = "special", depth = 0 }
-  out[#out + 1] = { id = "gray", name = "Gray items", kind = "special", depth = 0 }
+  out[#out + 1] = { id = "gray", name = "Серые предметы", kind = "special", depth = 0 }
   local profs = {}
   for p in pairs(professions().names) do profs[#profs + 1] = p end
   table.sort(profs)
   for _, p in ipairs(profs) do
-    out[#out + 1] = { id = profGroupId(p, "mats"), name = p .. " materials", kind = "profession", depth = 0 }
-    out[#out + 1] = { id = profGroupId(p, "crafts"), name = p .. " crafts", kind = "profession", depth = 0 }
+    out[#out + 1] = { id = profGroupId(p, "mats"), name = p .. ": материалы", kind = "profession", depth = 0 }
+    out[#out + 1] = { id = profGroupId(p, "crafts"), name = p .. ": изготовление", kind = "profession", depth = 0 }
   end
   local g = store()
   local function walkUser(parent, depth)

@@ -44,8 +44,8 @@ local ALL, ALLGROUPS = "all", "allgroups"
 -- The tree's rows: { id, name, depth, parent, hasKids }.
 local function treeRows()
   local rows = {
-    { id = ALL, name = "All items", depth = 0 },
-    { id = ALLGROUPS, name = "All groups", depth = 1, parent = ALL },
+    { id = ALL, name = "Все предметы", depth = 0 },
+    { id = ALLGROUPS, name = "Все группы", depth = 1, parent = ALL },
   }
   local tree = ns.GroupTree and ns:GroupTree() or {}
   for i, g in ipairs(tree) do

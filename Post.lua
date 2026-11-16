@@ -39,7 +39,7 @@ function ns.PostPrice(rule, usual, cheapest, vendorFloor)
   if cheapest and cheapest > 0 then
     price = cheapest - (rule.undercut or 0)
     out.why = (rule.undercut or 0) > 0 and ("на %s ниже минимума (%s)"):format(ns.MoneyPlain(rule.undercut), ns.MoneyPlain(cheapest))
-      or ("the same as the cheapest (%s)"):format(ns.MoneyPlain(cheapest))
+      or ("как у самого дешёвого (%s)"):format(ns.MoneyPlain(cheapest))
   elseif usual and usual > 0 and rule.start ~= "cheapest" then
     price = usual
     out.why = "обычная цена (сейчас лотов нет)"
@@ -297,8 +297,8 @@ end
 
 local function sellerText(r)
   local o = r.owners and r.owners[1]
-  if r.allMine or o == "player" then return "You", true end
-  if (r.sellers or 0) > 1 then return ("%d sellers"):format(r.sellers) end
+  if r.allMine or o == "player" then return "Вы", true end
+  if (r.sellers or 0) > 1 then return ("%d %s"):format(r.sellers, ns.Plural(r.sellers, "продавец", "продавца", "продавцов")) end
   return type(o) == "string" and o or ""
 end
 
@@ -447,18 +447,18 @@ local function postCurrent()
       same = info ~= nil and info.itemID == e.id and (not e.single or info.hyperlink == e.link)
     end
     if not same then
-      say("It changed since the game asked to confirm: click Post again.")
+      say("Цена изменилась, пока игра ждала подтверждения: нажмите «Выставить» ещё раз.")
       if refresh then refresh() end
       return
     end
     local ok, err = pcall(p.fn, unpack(p.args))
     if not ok then
-      say("Couldn't confirm: " .. tostring(err))
+      say("Не удалось подтвердить: " .. tostring(err))
       if refresh then refresh() end
       return
     end
     posted[p.key] = true
-    say(("Posted %d %s at %s each."):format(p.qty, ns.ItemName(e.id), ns.MoneyPlain(p.price)))
+    say(("Выставлено: %d %s по %s за штуку."):format(p.qty, ns.ItemName(e.id), ns.MoneyPlain(p.price)))
     cur = nextUsable(cur, 1)
     if refresh then refresh() end
     return
@@ -472,21 +472,21 @@ local function postCurrent()
   local l = liveFor(k)
   if not l or time() - l.t > 5 * LIVE_FRESH then
     lookUp(e, true)
-    say("Checking the listings first: click again in a moment.")
+    say("Сначала проверяю лоты: нажмите ещё раз через мгновение.")
     return
   end
-  if not (e.price and e.price > 0) then say("Type a price first."); return end
+  if not (e.price and e.price > 0) then say("Сначала введите цену."); return end
   if e.floor and e.price < e.floor then
-    say(("Under your floor (%s): type a higher price, or change the rule."):format(ns.MoneyPlain(e.floor)))
+    say(("Ниже вашего предела (%s): введите цену выше или измените правило."):format(ns.MoneyPlain(e.floor)))
     return
   end
-  if not e.qty or e.qty < 1 then say("Nothing to post (Keep holds them all)."); return end
+  if not e.qty or e.qty < 1 then say("Выставлять нечего: «Оставить» держит всё."); return end
   if AH.IsThrottledMessageSystemReady and not AH.IsThrottledMessageSystemReady() then
-    say("The auction house is busy: try again in a moment.")
+    say("Аукцион занят: попробуйте ещё раз через мгновение.")
     return
   end
   local loc = locationOf(e)
-  if not loc then say("Couldn't find it in your bags any more."); ns:RefreshPost(); return end
+  if not loc then say("Не нашёл его в сумках."); ns:RefreshPost(); return end
   local dur = HOURS_TO_INDEX[e.hours] or 3
   local commodity = AH.GetItemCommodityStatus and AH.GetItemCommodityStatus(loc) == 2
   local fn, confirmFn, args
@@ -496,17 +496,17 @@ local function postCurrent()
     -- One copy (its own slot): gear 1, a stack of something else as many as chosen.
     fn, confirmFn, args = AH.PostItem, AH.ConfirmPostItem, { loc, dur, e.qty, nil, e.price }
   end
-  if not fn then say("This game client can't post from here: use Blizzard's Sell tab."); return end
+  if not fn then say("Этот клиент не умеет выставлять отсюда: используйте вкладку «Продажа» Blizzard."); return end
   local ok, needsConfirm = pcall(fn, unpack(args))
-  if not ok then say("Couldn't post: " .. tostring(needsConfirm)); return end
+  if not ok then say("Не удалось выставить: " .. tostring(needsConfirm)); return end
   if needsConfirm == true and confirmFn then
     pending = { fn = confirmFn, args = args, key = k, price = e.price, qty = e.qty, hours = e.hours, bag = e.bag, slot = e.slot }
-    say("The auction house asks you to confirm this one: click Confirm post (or tick the wheel).")
+    say("Аукцион просит подтвердить этот лот: нажмите «Подтвердить» (или тикните колесом).")
     if refresh then refresh() end
     return
   end
   posted[k] = true
-  say(("Posted %d %s at %s each."):format(e.qty, ns.ItemName(e.id), ns.MoneyPlain(e.price)))
+  say(("Выставлено: %d %s по %s за штуку."):format(e.qty, ns.ItemName(e.id), ns.MoneyPlain(e.price)))
   cur = nextUsable(cur, 1)
   if refresh then refresh() end
 end
@@ -981,7 +981,7 @@ local function build(host)
       local e, d = entries[cur], self.data
       if not (e and d and not d.yours) then return end
       local under = (e.rule and e.rule.undercut) or 0
-      local p = (d.allMine or sellerText(d) == "You") and d.price or math.max(1, d.price - under)
+      local p = (d.allMine or sellerText(d) == "Вы") and d.price or math.max(1, d.price - under)
       local k = keyOf(e)
       edits[k] = edits[k] or {}
       pending = nil   -- an edit cancels a waiting confirmation
