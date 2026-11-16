@@ -19,27 +19,27 @@ local T = ns.Theme
 ---------------------------------------------------------------------------
 
 local KINDS = {
-  { key = "all", label = "Everything" },
-  { key = "craftVendor", label = "Vendor crafts", tag = "Craft, vendor" },
-  { key = "craftAH", label = "AH crafts", tag = "Craft, AH" },
-  { key = "convert", label = "Conversions", tag = "Conversion" },
-  { key = "flip", label = "Vendor flips", tag = "Vendor flip" },
-  { key = "deal", label = "Deals", tag = "Deal" },
-  { key = "disenchant", label = "Disenchant", tag = "Disenchant" },
-  { key = "bootybay", label = "Booty Bay", tag = "Booty Bay" },
+  { key = "all", label = "Всё" },
+  { key = "craftVendor", label = "Изготовление торговцу", tag = "Изготовление, торговец" },
+  { key = "craftAH", label = "Изготовление на аукцион", tag = "Изготовление, аукцион" },
+  { key = "convert", label = "Превращения", tag = "Превращение" },
+  { key = "flip", label = "Перепродажи торговцу", tag = "Перепродажа торговцу" },
+  { key = "deal", label = "Сделки", tag = "Сделка" },
+  { key = "disenchant", label = "Распыление", tag = "Распыление" },
+  { key = "bootybay", label = "Пиратская Бухта", tag = "Пиратская Бухта" },
 }
 local KIND_TAG = {}
 for _, k in ipairs(KINDS) do KIND_TAG[k.key] = k.tag end
 
 local KIND_TIP = {
-  all = "Every kind below together, except Booty Bay, which needs a trip there: pick it on its own.",
-  craftVendor = "Crafts a vendor pays more for than their materials cost.",
-  craftAH = "Crafts that sell on the auction house for more than their materials cost, after the cut.",
-  convert = "Turning one thing into another (essences, transmutes) that's worth more.",
-  flip = "Listed for less than a vendor pays: buy, then sell to a vendor. Live watch at the auction house buys these for you.",
-  deal = "Listed well below their usual price: buy and resell. A bet on the price coming back, so hover one for how sure it is.",
-  disenchant = "Gear worth more as enchanting materials than it costs.",
-  bootybay = "The same item cheaper at one auction house than it sells for at the other, after each one's cut (15% at Booty Bay). Needs a scan at Booty Bay.",
+  all = "Все виды вместе, кроме Пиратской Бухты: до неё нужно добраться, выбирайте её отдельно.",
+  craftVendor = "Изготовление, за которое торговец платит больше стоимости материалов.",
+  craftAH = "Изготовление, которое продаётся на аукционе дороже материалов после комиссии.",
+  convert = "Превращение одного в другое (эссенции, трансмутации), когда это выгоднее.",
+  flip = "Выставлено дешевле, чем платит торговец: купите и продайте торговцу. «Слежение» у аукциона покупает их за вас.",
+  deal = "Выставлено заметно ниже обычной цены: купите и перепродайте. Это ставка на возврат цены, наведите на строку — увидите, насколько она надёжна.",
+  disenchant = "Снаряжение, которое в виде материалов для наложения чар стоит дороже своей цены.",
+  bootybay = "Один и тот же предмет дешевле на одном аукционе, чем продаётся на другом, после комиссий обоих (15% в Пиратской Бухте). Нужна проверка в Пиратской Бухте.",
 }
 
 local DEAL_AGE = 3600          -- deals from prices of the last hour, as the Deals tab
@@ -305,7 +305,7 @@ end
 -- The plan's materials onto a shopping list: what's bought (AH or vendor), up to the
 -- highest price the plan paid. Made items aren't added; their materials are.
 local function planToList(p)
-  local list = ns:NewShoppingList((p.rec.n or ns.ItemName(p.rec.out) or "Craft") .. " x" .. p.n)
+  local list = ns:NewShoppingList((p.rec.n or ns.ItemName(p.rec.out) or "Изготовление") .. " x" .. p.n)
   local added = 0
   for id, e in pairs(p.plan) do
     local qty = e.bought + e.vendor
@@ -318,8 +318,8 @@ local function planToList(p)
   end
   for i, l in ipairs(ns:ShoppingLists()) do if l == list then ns:SelectShoppingList(i); break end end
   if ns.RefreshListsView then ns:RefreshListsView() end
-  ns:Print(("Added %d %s to shopping list \"%s\", each up to the highest price the plan paid (/fl lists)."):format(
-    added, added == 1 and "material" or "materials", list.name))
+  ns:Print(("В список покупок «%s» добавлено материалов: %d, каждый до самой высокой цены из плана (/fl lists)."):format(
+    list.name, added))
 end
 
 ---------------------------------------------------------------------------
@@ -336,13 +336,13 @@ local refresh
 local COL = { count = -4, countW = 60, profit = -68, brings = -138, cost = -208, who = -346, whoW = 62, kind = -432, kindW = 80 }
 local MONEY_W = 66
 local HEADERS = {
-  { key = "name", label = "Idea", tip = "What to buy or craft. Click a row for how it adds up; right-click for its price window." },
-  { key = "kind", label = "Kind", tip = "How it makes gold. Hover a row for the details." },
-  { key = "who", label = "Who", tip = "Which of your characters can do it." },
-  { key = "cost", label = "Costs", tip = "What it costs each time: one item, or one craft's materials at today's prices." },
-  { key = "brings", label = "Brings", tip = "What it brings each time, after the auction house cut where it's sold there." },
-  { key = "profit", label = "Profit each", tip = "Brings minus costs." },
-  { key = "count", label = "How many", tip = "How many times you could do it with what's listed cheaply enough now. No limit: everything comes from vendors." },
+  { key = "name", label = "Идея", tip = "Что купить или изготовить. Клик по строке — из чего складывается; правый клик — окно цены." },
+  { key = "kind", label = "Вид", tip = "Как это приносит золото. Наведите на строку — подробности." },
+  { key = "who", label = "Кто", tip = "Кто из ваших персонажей это может." },
+  { key = "cost", label = "Затраты", tip = "Сколько стоит каждый раз: один предмет или материалы на одно изготовление по сегодняшним ценам." },
+  { key = "brings", label = "Приносит", tip = "Сколько приносит каждый раз, после комиссии аукциона там, где продаётся на нём." },
+  { key = "profit", label = "Прибыль", tip = "Приносит минус затраты." },
+  { key = "count", label = "Сколько раз", tip = "Сколько раз это можно сделать с тем, что сейчас выставлено достаточно дешёво. «Без предела»: всё у торговцев." },
 }
 local SORT = {
   name = function(r) return (r.name or ""):lower() end,
@@ -410,17 +410,17 @@ local function rowTip(self)
     end
   elseif r.kind == "bootybay" then
     local c = r.c
-    GameTooltip:AddLine(r.dir == "in" and "Buy at Booty Bay, sell here" or "Buy here, sell at Booty Bay", 1, 0.82, 0)
-    GameTooltip:AddDoubleLine("Booty Bay, cheapest", ("%s (%d listed)"):format(money(c.there), c.listedThere), 0.8, 0.8, 0.8, 1, 1, 1)
-    GameTooltip:AddDoubleLine("Here, cheapest", ("%s (%d listed)"):format(money(c.here), c.listedHere), 0.8, 0.8, 0.8, 1, 1, 1)
-    GameTooltip:AddDoubleLine("Brings where you sell, after the cut", money(r.brings), 0.8, 0.8, 0.8, 1, 1, 1)
-    GameTooltip:AddLine("Each auction house's cut and one unsold listing's deposit are counted. Its prices are from your last scan there (" .. ns.Age(c.t) .. ").", 0.6, 0.6, 0.6, true)
+    GameTooltip:AddLine(r.dir == "in" and "Купить в Пиратской Бухте, продать здесь" or "Купить здесь, продать в Пиратской Бухте", 1, 0.82, 0)
+    GameTooltip:AddDoubleLine("Пиратская Бухта, минимум", ("%s (%d listed)"):format(money(c.there), c.listedThere), 0.8, 0.8, 0.8, 1, 1, 1)
+    GameTooltip:AddDoubleLine("Здесь, минимум", ("%s (%d listed)"):format(money(c.here), c.listedHere), 0.8, 0.8, 0.8, 1, 1, 1)
+    GameTooltip:AddDoubleLine("Приносит там, где продаёте, после комиссии", money(r.brings), 0.8, 0.8, 0.8, 1, 1, 1)
+    GameTooltip:AddLine("Учтены комиссии обоих аукционов и залог одного непроданного лота. Цены — с вашей последней проверки там (" .. ns.Age(c.t) .. ").", 0.6, 0.6, 0.6, true)
   else
     if r.whoLong then GameTooltip:AddLine(r.whoLong, 0.8, 0.8, 0.8, true) end
     for line in (r.kind == "flip" and flipText(r) or ns:ShuffleDetails(r.s)):gmatch("[^\n]+") do GameTooltip:AddLine(line, 0.85, 0.85, 0.85, true) end
   end
   GameTooltip:AddLine(" ")
-  GameTooltip:AddLine("Click for how it adds up. Right-click for its price window.", 0.6, 0.6, 0.6, true)
+  GameTooltip:AddLine("Клик — из чего складывается. Правый клик — окно цены.", 0.6, 0.6, 0.6, true)
   GameTooltip:Show()
 end
 
@@ -545,13 +545,13 @@ local function drawList()
     r.stripe:SetShown(i % 2 == 0)
     r.sel:SetShown(e.key == selected)
     r.icon:SetTexture(ns:ItemIcon(e.id))
-    r.name:SetText(qualityName(e.id, e.name or ns.ItemName(e.id) or "?") .. (e.unknown and " |cff888888(learn)|r" or ""))
+    r.name:SetText(qualityName(e.id, e.name or ns.ItemName(e.id) or "?") .. (e.unknown and " |cff888888(выучить)|r" or ""))
     r.kind:SetText(e.tag or KIND_TAG[e.kind] or "")
     r.who:SetText(e.who or "")
     r.cost:SetText(short(e.cost))
     r.brings:SetText(short(e.brings))
     r.profit:SetText("|cff7fd39c" .. short(e.profit) .. "|r")
-    r.count:SetText(e.count and tostring(e.count) or "|cff888888no limit|r")
+    r.count:SetText(e.count and tostring(e.count) or "|cff888888без предела|r")
     r:Show()
   end
   for i = n + 1, #f.list.rows do f.list.rows[i]:Hide() end
@@ -565,19 +565,19 @@ local function drawList()
   local parts = {}
   if workedAt then
     local last = ns.db.lastFullScan
-    parts[#parts + 1] = ("Worked out %s%s"):format(date("%H:%M", workedAt),
-      last and (", full scan %s"):format(ns.Age(last)) or "")
+    parts[#parts + 1] = ("Посчитано %s%s"):format(date("%H:%M", workedAt),
+      last and (", полная проверка %s"):format(ns.Age(last)) or "")
   end
-  if #shown > MAX_ROWS then parts[#parts + 1] = ("The best %d of %d shown"):format(MAX_ROWS, #shown) end
+  if #shown > MAX_ROWS then parts[#parts + 1] = ("Показаны лучшие %d из %d"):format(MAX_ROWS, #shown) end
   if noPrice > 0 and not g.mine then
-    parts[#parts + 1] = ("%d left out: a material has no price"):format(noPrice)
+    parts[#parts + 1] = ("Не учтено: %d — у материала нет цены"):format(noPrice)
   end
   f.status:SetText(table.concat(parts, ". ") .. (#parts > 0 and "." or ""))
   f.empty:SetShown(#shown == 0)
   if #shown == 0 then
     f.empty:SetText(not next(ns.db.prices[ns.MarketKey()] or {}) and
-      "No prices yet: run a Full scan at the auction house, then come back."
-      or "Nothing here with these filters. Try Everything, a lower Least profit, or clear the search.")
+      "Цен пока нет: сделайте полную проверку на аукционе и вернитесь."
+      or "С этими фильтрами здесь ничего нет. Попробуйте «Всё», меньшую минимальную прибыль или очистите поиск.")
   end
 end
 
@@ -597,7 +597,7 @@ local GREEN, RED = "|cff7fd39c", "|cffee8597"
 
 local function profitText(c, unit)
   if not c then return "" end
-  if c < 0 then return RED .. ns.Money(-c) .. " lost " .. unit .. "|r" end
+  if c < 0 then return RED .. ns.Money(-c) .. " потеряно " .. unit .. "|r" end
   return GREEN .. "+" .. ns.Money(c) .. " " .. unit .. "|r"
 end
 
@@ -606,7 +606,7 @@ local function stepsSpec(spec, s)
   local n = 0
   for _ in steps:gmatch("[^\n]+") do n = n + 1 end
   if n <= 2 then return end   -- craft then sell, or buy then sell: the row's Kind says it
-  spec[#spec + 1] = { style = "head", left = "Steps" }
+  spec[#spec + 1] = { style = "head", left = "Шаги" }
   for line in steps:gmatch("[^\n]+") do spec[#spec + 1] = { style = "note", left = line } end
 end
 
@@ -623,30 +623,30 @@ local function craftSpec(r, spec)
   local plan = f.panel.planFor
   f.panel.plan = plan
   if not (plan and plan.total) then
-    spec[#spec + 1] = { style = "note", left = RED .. "A material can't be had at today's prices: none listed, and no vendor or recipe.|r" }
+    spec[#spec + 1] = { style = "note", left = RED .. "Материал нельзя достать по сегодняшним ценам: нет ни лотов, ни торговца, ни рецепта.|r" }
     return
   end
   local each = plan.total / plan.n
   local profit = plan.brings and (plan.brings - each)
-  spec[#spec + 1] = { style = "big", left = profitText(profit, "a craft") }
+  spec[#spec + 1] = { style = "big", left = profitText(profit, "за изготовление") }
   local bits = {}
-  if profit and each > 0 then bits[#bits + 1] = ("%d%% on what it costs"):format(math.floor(profit / each * 100 + 0.5)) end
+  if profit and each > 0 then bits[#bits + 1] = ("к затратам: %d%%"):format(math.floor(profit / each * 100 + 0.5)) end
   if r.kind == "craftAH" and ns.SellSpeed then
     local sp = ns:SellSpeed(r.id)
     if sp and sp.perDay then
-      bits[#bits + 1] = sp.key == "none" and "no sales seen yet"
-        or ("sells: %s, about %d a day"):format(sp.label, math.floor(sp.perDay + 0.5))
+      bits[#bits + 1] = sp.key == "none" and "продаж пока не видно"
+        or ("продаётся: %s, примерно %d в день"):format(sp.label, math.floor(sp.perDay + 0.5))
     end
   end
   if #bits > 0 then spec[#spec + 1] = { style = "note", left = table.concat(bits, ", ") } end
-  spec[#spec + 1] = { style = "head", left = ("For %d %s"):format(plan.n, plan.n == 1 and "craft" or "crafts") }
-  spec[#spec + 1] = { style = "pair", left = "Materials, a craft", right = ns.Money(each) }
+  spec[#spec + 1] = { style = "head", left = ("На %d %s"):format(plan.n, ns.Plural(plan.n, "изготовление", "изготовления", "изготовлений")) }
+  spec[#spec + 1] = { style = "pair", left = "Материалы на одно изготовление", right = ns.Money(each) }
   if plan.brings then
-    spec[#spec + 1] = { style = "pair", left = r.kind == "craftAH" and "Brings, after the cut" or "A vendor pays",
+    spec[#spec + 1] = { style = "pair", left = r.kind == "craftAH" and "Приносит после комиссии" or "Торговец платит",
       right = ns.Money(plan.brings) }
   end
-  spec[#spec + 1] = { style = "pair", left = "All materials", right = ns.Money(plan.total) }
-  spec[#spec + 1] = { style = "head", left = "Materials" }
+  spec[#spec + 1] = { style = "pair", left = "Все материалы", right = ns.Money(plan.total) }
+  spec[#spec + 1] = { style = "head", left = "Материалы" }
   local lines = ns.GoldPlanLines(plan.need, plan.order, plan.plan,
     function(id) return plan.src(id).recipe end, money)
   for _, l in ipairs(lines) do
@@ -672,7 +672,7 @@ local function panelSpec(r)
   if r.kind == "craftVendor" or r.kind == "craftAH" then
     craftSpec(r, spec)
   elseif r.kind == "deal" then
-    spec[#spec + 1] = { style = "big", left = profitText(r.profit, "each") }
+    spec[#spec + 1] = { style = "big", left = profitText(r.profit, "за штуку") }
     for _, l in ipairs(ns:DealExplain(r.d)) do
       if l.head then spec[#spec + 1] = { style = "head", left = l.head }
       elseif l.note then spec[#spec + 1] = { style = "note", left = l.note }
@@ -681,24 +681,24 @@ local function panelSpec(r)
   elseif r.kind == "bootybay" then
     local c = r.c
     spec[#spec + 1] = { style = "big", left = profitText(r.profit, "each") }
-    spec[#spec + 1] = { style = "note", left = r.dir == "in" and "Buy it at Booty Bay, sell it here."
-      or "Buy it here, sell it at Booty Bay." }
-    spec[#spec + 1] = { style = "pair", left = ("Booty Bay, %d listed"):format(c.listedThere), right = ns.Money(c.there) }
-    spec[#spec + 1] = { style = "pair", left = ("Here, %d listed"):format(c.listedHere), right = ns.Money(c.here) }
-    spec[#spec + 1] = { style = "pair", left = "Brings, after the cut", right = ns.Money(r.brings) }
-    spec[#spec + 1] = { style = "note", left = "Booty Bay takes 15%. Its prices are from your scan there " .. ns.Age(c.t)
-      .. ": scan again when you get there." }
+    spec[#spec + 1] = { style = "note", left = r.dir == "in" and "Купите в Пиратской Бухте, продайте здесь."
+      or "Купите здесь, продайте в Пиратской Бухте." }
+    spec[#spec + 1] = { style = "pair", left = ("Пиратская Бухта, лотов: %d"):format(c.listedThere), right = ns.Money(c.there) }
+    spec[#spec + 1] = { style = "pair", left = ("Здесь, лотов: %d"):format(c.listedHere), right = ns.Money(c.here) }
+    spec[#spec + 1] = { style = "pair", left = "Приносит после комиссии", right = ns.Money(r.brings) }
+    spec[#spec + 1] = { style = "note", left = "Пиратская Бухта берёт 15%. Цены — с вашей проверки там " .. ns.Age(c.t)
+      .. ": проверьте снова, когда доберётесь." }
   elseif r.kind == "flip" then
     local s = r.s
     spec[#spec + 1] = { style = "big", left = profitText(r.profit, "each") }
-    spec[#spec + 1] = { style = "pair", left = "Buy at up to", right = ns.Money(s.maxBuy) }
-    spec[#spec + 1] = { style = "pair", left = ("%d listed, each on average"):format(s.buys[1].listed or 0), right = ns.Money(s.cost) }
-    spec[#spec + 1] = { style = "pair", left = "A vendor pays", right = ns.Money(s.opt.value) }
-    spec[#spec + 1] = { style = "note", left = "Live watch at the auction house (Buy tab) buys these for you, one click each." }
+    spec[#spec + 1] = { style = "pair", left = "Покупать до", right = ns.Money(s.maxBuy) }
+    spec[#spec + 1] = { style = "pair", left = ("Лотов: %d, в среднем по"):format(s.buys[1].listed or 0), right = ns.Money(s.cost) }
+    spec[#spec + 1] = { style = "pair", left = "Торговец платит", right = ns.Money(s.opt.value) }
+    spec[#spec + 1] = { style = "note", left = "«Слежение» у аукциона (вкладка «Покупка») покупает их за вас, по клику на каждый." }
   else
-    spec[#spec + 1] = { style = "big", left = profitText(r.profit, r.s.single and "each" or "a time") }
-    spec[#spec + 1] = { style = "pair", left = "Costs", right = ns.Money(r.cost) }
-    spec[#spec + 1] = { style = "pair", left = "Brings", right = ns.Money(r.brings) }
+    spec[#spec + 1] = { style = "big", left = profitText(r.profit, r.s.single and "за штуку" or "за раз") }
+    spec[#spec + 1] = { style = "pair", left = "Затраты", right = ns.Money(r.cost) }
+    spec[#spec + 1] = { style = "pair", left = "Приносит", right = ns.Money(r.brings) }
     if r.s.maxBuy and (r.s.single or r.s.group) then
       spec[#spec + 1] = { style = "pair", left = "Buy at up to", right = ns.Money(r.s.maxBuy) }
     end
@@ -771,8 +771,8 @@ local function drawPanel()
   local r = selectedRow()
   local spec
   if not r then
-    p.title:SetText("How it adds up")
-    spec = { { style = "note", left = "Click an idea on the left: what it costs, what it brings and, for a craft, the cheapest way to get its materials for that many crafts." } }
+    p.title:SetText("Из чего складывается")
+    spec = { { style = "note", left = "Выберите идею слева: сколько стоит, сколько приносит и, для изготовления, самый дешёвый способ достать материалы на столько изготовлений." } }
     p.count:Hide(); p.countLabel:Hide(); p.ownedFree:Hide()
     p.add:Hide(); p.price:Hide()
   else
@@ -782,7 +782,7 @@ local function drawPanel()
     if isCraft then p.count:SetValue(planN[r.key] or planCount(r)) end
     spec = panelSpec(r)
     p.add:SetShown(r.kind ~= "bootybay" and r.kind ~= "flip")
-    p.add:SetText(isCraft and "Add materials to a shopping list" or "Add to a shopping list")
+    p.add:SetText(isCraft and "Материалы в список покупок" or "В список покупок")
     p.price:Show()
   end
   local top = p.count:IsShown() and 74 or 34
@@ -798,14 +798,14 @@ local function addToList()
   if not r then return end
   if r.kind == "craftVendor" or r.kind == "craftAH" then
     local plan = f.panel.plan
-    if not (plan and plan.total) then ns:Print("Nothing to add: a material can't be had at today's prices."); return end
+    if not (plan and plan.total) then ns:Print("Добавлять нечего: материал нельзя достать по сегодняшним ценам."); return end
     planToList(plan)
   elseif r.kind == "deal" then
-    local list = ns:NewShoppingList(ns.ItemName(r.id) or "Deal")
+    local list = ns:NewShoppingList(ns.ItemName(r.id) or "Сделка")
     ns:AddToShoppingList(list, r.id, r.d.limit or r.d.price, r.d.listed or 1)
     for i, l in ipairs(ns:ShoppingLists()) do if l == list then ns:SelectShoppingList(i); break end end
     if ns.RefreshListsView then ns:RefreshListsView() end
-    ns:Print(("Added %s to shopping list \"%s\", up to %s (/fl lists)."):format(ns.ItemName(r.id) or "?", list.name, money(r.d.limit or r.d.price)))
+    ns:Print(("В список покупок «%s» добавлено: %s, до %s (/fl lists)."):format(list.name, ns.ItemName(r.id) or "?", money(r.d.limit or r.d.price)))
   else
     local list, err = ns:ShuffleToShoppingList(r.s, nil, math.max(1, math.min(r.count or 1, 20)))
     if not list then ns:Print(err) end
@@ -817,7 +817,7 @@ end
 ---------------------------------------------------------------------------
 local function askName(onName)
   StaticPopupDialogs["FOREVER_LEDGER_GOLD_SET"] = {
-    text = "Name these filters (a quick button on Gold making):", button1 = SAVE or "Save", button2 = CANCEL or "Cancel",
+    text = "Название фильтров (быстрая кнопка в «Заработке»):", button1 = SAVE or "Сохранить", button2 = CANCEL or "Cancel",
     hasEditBox = true,
     OnShow = function(self)
       local eb = self.editBox or self.EditBox
@@ -842,8 +842,8 @@ local function confirmDelete(i)
   local set = S().sets[i]
   if not set then return end
   StaticPopupDialogs["FOREVER_LEDGER_GOLD_SET_DELETE"] = {
-    text = ("Delete the saved filters \"%s\"? This can't be undone."):format(set.name),
-    button1 = "Delete", button2 = CANCEL or "Cancel",
+    text = ("Удалить сохранённые фильтры «%s»? Отменить нельзя."):format(set.name),
+    button1 = "Удалить", button2 = CANCEL or "Cancel",
     OnAccept = function()
       for j, s in ipairs(S().sets) do if s == set then table.remove(S().sets, j); break end end
       refresh()
@@ -867,7 +867,7 @@ end
 ---------------------------------------------------------------------------
 local function leastOptions()
   local opts = {}
-  for _, c in ipairs(LEAST) do opts[#opts + 1] = { value = c, label = c == 0 and "Any" or ns.MoneyPlain(c) } end
+  for _, c in ipairs(LEAST) do opts[#opts + 1] = { value = c, label = c == 0 and "Любая" or ns.MoneyPlain(c) } end
   return opts
 end
 
@@ -896,7 +896,7 @@ function ns:BuildGoldMaking(parent)
   -- Row 2: least profit, only known recipes, search, refresh.
   local lt = T:Text(f, 12, T.dim)
   lt:SetPoint("TOPLEFT", 2, -34)
-  lt:SetText("Least profit")
+  lt:SetText("Мин. прибыль")
   f.least = T:Dropdown(f, 80, function(v) S().least = v; refresh() end)
   f.least:SetPoint("LEFT", lt, "RIGHT", 8, 0)
   f.least:SetOptions(leastOptions())
@@ -906,21 +906,21 @@ function ns:BuildGoldMaking(parent)
   f.prof = T:Dropdown(f, 130, function(v) S().prof = v; refresh() end)
   f.prof:SetPoint("LEFT", f.least, "RIGHT", 10, 0)
   f.mine:SetPoint("LEFT", f.prof, "RIGHT", 14, 0)
-  f.mine.label:SetText("Only my recipes")
+  f.mine.label:SetText("Только мои рецепты")
   f.mine:HookScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
-    GameTooltip:AddLine("Only my recipes", 1, 1, 1)
-    GameTooltip:AddLine("On: only recipes one of your characters knows. Off: also every profession's crafts that sell to a vendor for more than they cost, from recipes none of your characters know yet (marked learn). Hover one for where its recipe data comes from.", nil, nil, nil, true)
+    GameTooltip:AddLine("Только мои рецепты", 1, 1, 1)
+    GameTooltip:AddLine("Вкл: только рецепты, которые знает кто-то из ваших персонажей. Выкл: ещё изготовления всех профессий, которые продаются торговцу дороже материалов, из рецептов, которых у вас пока нет (помечены «выучить»). Наведите — увидите, откуда данные рецепта.", nil, nil, nil, true)
     GameTooltip:Show()
   end)
   f.mine:HookScript("OnLeave", function() GameTooltip:Hide() end)
 
-  f.refreshBtn = T:Button(f, "Refresh", 80, function() work(); refresh() end, 22)
+  f.refreshBtn = T:Button(f, "Обновить", 80, function() work(); refresh() end, 22)
   f.refreshBtn:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -30)
   f.refreshBtn:HookScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
-    GameTooltip:AddLine("Work it out again", 1, 1, 1)
-    GameTooltip:AddLine("From the prices you have now. It's worked out by itself when you open this tab, if it's more than 2 minutes old.", nil, nil, nil, true)
+    GameTooltip:AddLine("Пересчитать", 1, 1, 1)
+    GameTooltip:AddLine("По текущим ценам. Пересчитывается само при открытии вкладки, если прошло больше 2 минут.", nil, nil, nil, true)
     GameTooltip:Show()
   end)
   f.refreshBtn:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -930,13 +930,13 @@ function ns:BuildGoldMaking(parent)
   f.search:SetScript("OnEscapePressed", function(self) self:SetText(""); self:ClearFocus() end)
   local hint = T:Text(f.search, 11, T.dim)
   hint:SetPoint("LEFT", 6, 0)
-  hint:SetText("Search names")
+  hint:SetText("Поиск по названию")
   f.search:HookScript("OnTextChanged", function(self) hint:SetShown(self:GetText() == "") end)
 
   -- Row 3: saved filter sets.
   f.setsLabel = T:Text(f, 12, T.dim)
   f.setsLabel:SetPoint("TOPLEFT", 2, -62)
-  f.setsLabel:SetText("Saved filters:")
+  f.setsLabel:SetText("Сохранённые фильтры:")
   f.sets = {}
   for i = 1, MAX_SETS do
     local b = T:Button(f, "", 80, nil, 20)
@@ -952,11 +952,11 @@ function ns:BuildGoldMaking(parent)
       if not set then return end
       GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
       GameTooltip:AddLine(set.name, 1, 1, 1)
-      local kindLabel = "Everything"
+      local kindLabel = "Всё"
       for _, k in ipairs(KINDS) do if k.key == set.kind then kindLabel = k.label end end
-      GameTooltip:AddLine(("%s%s, least profit %s%s%s"):format(kindLabel, (set.prof and set.prof ~= "all") and (", " .. set.prof) or "", (set.least or 0) > 0 and ns.MoneyPlain(set.least) or "any",
-        set.mine == false and ", every recipe" or "", (set.search or "") ~= "" and (", \"" .. set.search .. "\"") or ""), nil, nil, nil, true)
-      GameTooltip:AddLine("Click to use. Right-click to delete.", 0.6, 0.6, 0.6)
+      GameTooltip:AddLine(("%s%s, минимальная прибыль: %s%s%s"):format(kindLabel, (set.prof and set.prof ~= "all") and (", " .. set.prof) or "", (set.least or 0) > 0 and ns.MoneyPlain(set.least) or "любая",
+        set.mine == false and ", все рецепты" or "", (set.search or "") ~= "" and (", \"" .. set.search .. "\"") or ""), nil, nil, nil, true)
+      GameTooltip:AddLine("Клик — применить. Правый клик — удалить.", 0.6, 0.6, 0.6)
       GameTooltip:Show()
     end)
     b:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -964,8 +964,8 @@ function ns:BuildGoldMaking(parent)
   end
   f.setsHint = T:Text(f, 11, T.dim)
   f.setsHint:SetPoint("LEFT", f.setsLabel, "RIGHT", 8, 0)
-  f.setsHint:SetText("none yet: pick filters above, then Save these filters.")
-  f.saveSet = T:Button(f, "Save these filters", 130, function()
+  f.setsHint:SetText("пока нет: выберите фильтры выше и нажмите «Сохранить фильтры».")
+  f.saveSet = T:Button(f, "Сохранить фильтры", 130, function()
     askName(function(name)
       local g = S()
       if #g.sets >= MAX_SETS then return end
@@ -1012,7 +1012,7 @@ function ns:BuildGoldMaking(parent)
       GameTooltip:SetOwner(self, "ANCHOR_TOP")
       GameTooltip:AddLine(h.label, 1, 1, 1)
       GameTooltip:AddLine(h.tip, nil, nil, nil, true)
-      GameTooltip:AddLine("Click to sort by it, again to reverse.", 0.6, 0.6, 0.6)
+      GameTooltip:AddLine("Клик — сортировать по нему, ещё раз — в обратном порядке.", 0.6, 0.6, 0.6)
       GameTooltip:Show()
     end)
     b:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -1045,15 +1045,15 @@ function ns:BuildGoldMaking(parent)
   p.title:SetWordWrap(false)
   p.countLabel = T:Text(p, 11, T.dim)
   p.countLabel:SetPoint("TOPLEFT", 8, -32)
-  p.countLabel:SetText("Crafts")
+  p.countLabel:SetText("Изготовлений")
   -- The explanation the panel used to start with, on a hover (Frank: the panel was busy).
   local countHover = CreateFrame("Frame", nil, p)
   countHover:SetAllPoints(p.countLabel)
   countHover:EnableMouse(true)
   countHover:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_LEFT")
-    GameTooltip:AddLine("How many crafts", 1, 1, 1)
-    GameTooltip:AddLine("The materials are worked out for this many crafts, the cheapest way for that many: each one from your bags, the next listing on the auction house, a vendor, or made from its own materials, whichever is cheapest next, and nothing counted twice. It starts at what's listed cheaply enough and, for an auction house craft, about a day's sales.", nil, nil, nil, true)
+    GameTooltip:AddLine("Сколько изготовлений", 1, 1, 1)
+    GameTooltip:AddLine("Материалы считаются на столько изготовлений, самым дешёвым способом: каждая единица — из сумок, из следующего лота на аукционе, у торговца или изготовлением из своих материалов, что дешевле следующим, и ничего не считается дважды. Начинается с того, что выставлено достаточно дёшево, а для изготовления на аукцион — примерно с дневных продаж.", nil, nil, nil, true)
     GameTooltip:Show()
   end)
   countHover:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -1065,11 +1065,11 @@ function ns:BuildGoldMaking(parent)
   p.count:SetPoint("LEFT", p.countLabel, "RIGHT", 8, 0)
   p.ownedFree = T:Check(p, function() drawPanel() end)
   p.ownedFree:SetPoint("TOPLEFT", 8, -52)
-  p.ownedFree.label:SetText("Count my bags as paid for")
+  p.ownedFree.label:SetText("Считать сумки бесплатными")
   p.ownedFree:HookScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_LEFT")
-    GameTooltip:AddLine("Count my bags as paid for", 1, 1, 1)
-    GameTooltip:AddLine("Off: materials in your bags are used first, at what they'd sell for (they aren't free: you could sell them). On: they cost nothing here.", nil, nil, nil, true)
+    GameTooltip:AddLine("Считать сумки бесплатными", 1, 1, 1)
+    GameTooltip:AddLine("Выкл: материалы из сумок идут первыми, по цене, за которую их можно продать (они не бесплатны). Вкл: здесь они ничего не стоят.", nil, nil, nil, true)
     GameTooltip:Show()
   end)
   p.ownedFree:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -1079,7 +1079,7 @@ function ns:BuildGoldMaking(parent)
   p.add = T:Button(p, "Add materials to a shopping list", PANEL_W - 16, addToList, 24)
   p.add:SetPoint("BOTTOMLEFT", 8, 34)
   p.add:SetPrimary(true)
-  p.price = T:Button(p, "Price window", PANEL_W - 16, function()
+  p.price = T:Button(p, "Окно цены", PANEL_W - 16, function()
     local r = selectedRow()
     if r and ns.ShowPriceWindow then ns:ShowPriceWindow(r.id) end
   end, 22)
@@ -1105,7 +1105,7 @@ refresh = function()
   end
   if g.prof ~= "all" and not seen[g.prof] then profs[#profs + 1] = g.prof end
   table.sort(profs)
-  local opts = { { value = "all", label = "All professions" } }
+  local opts = { { value = "all", label = "Все профессии" } }
   for _, p in ipairs(profs) do opts[#opts + 1] = { value = p, label = p } end
   f.prof:SetOptions(opts)
   f.prof:SetValue(g.prof)

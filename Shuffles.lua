@@ -291,7 +291,6 @@ function ns:FindAllVendorCrafts()
   local foreverMakes = {}
   local function makesKey(prof, out) return out and (prof .. ":" .. out) or nil end
   for prof, book in pairs(ns.db.recipeBook or {}) do
-    seenProf[ns.ProfKey(prof)] = true
     local canon = ns.ProfKey(prof)
     for rid, r in pairs(book) do
       recipes[#recipes + 1] = { prof = canon, rid = rid, n = r.n, out = r.out, oq = r.oq or 1, r = r.r }

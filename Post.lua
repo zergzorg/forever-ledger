@@ -30,7 +30,7 @@ local INDEX_HOURS = { 2, 8, 24 }
 -- after the cut, or nil. Returns { price, floor, why, skip }.
 function ns.PostPrice(rule, usual, cheapest, vendorFloor)
   local out = {}
-  if not rule then out.why = "No post rule for it (Off): type a price."; return out end
+  if not rule then out.why = "Для него нет правила выставления («выкл»): введите цену."; return out end
   local floor = 0
   if usual and usual > 0 and rule.floorPct then floor = math.floor(usual * rule.floorPct / 100) end
   if vendorFloor and vendorFloor > floor then floor = vendorFloor end
@@ -38,22 +38,22 @@ function ns.PostPrice(rule, usual, cheapest, vendorFloor)
   local price
   if cheapest and cheapest > 0 then
     price = cheapest - (rule.undercut or 0)
-    out.why = (rule.undercut or 0) > 0 and ("%s under the cheapest (%s)"):format(ns.MoneyPlain(rule.undercut), ns.MoneyPlain(cheapest))
+    out.why = (rule.undercut or 0) > 0 and ("на %s ниже минимума (%s)"):format(ns.MoneyPlain(rule.undercut), ns.MoneyPlain(cheapest))
       or ("the same as the cheapest (%s)"):format(ns.MoneyPlain(cheapest))
   elseif usual and usual > 0 and rule.start ~= "cheapest" then
     price = usual
-    out.why = "the usual price (none listed now)"
+    out.why = "обычная цена (сейчас лотов нет)"
   else
-    out.why = "No price yet: scan, or type one."
+    out.why = "Цены пока нет: проверьте аукцион или введите её."
     return out
   end
   if out.floor and price < out.floor then
     if rule.belowFloor == "floor" then
       price = out.floor
-      out.why = ("your floor (the cheapest, %s, is under it)"):format(ns.MoneyPlain(cheapest or 0))
+      out.why = ("ваш порог (минимум %s ниже него)"):format(ns.MoneyPlain(cheapest or 0))
     else
       out.skip = true
-      out.why = ("Not posted: the cheapest (%s) is under your floor (%s)."):format(ns.MoneyPlain(cheapest or 0), ns.MoneyPlain(out.floor))
+      out.why = ("Не выставлено: минимум (%s) ниже вашего порога (%s)."):format(ns.MoneyPlain(cheapest or 0), ns.MoneyPlain(out.floor))
     end
   end
   out.price = math.max(1, math.floor(price))
@@ -130,9 +130,9 @@ local function keyOf(e)
   return tostring(e.id)
 end
 
-local MARK = { ah = "Post", middle = "Post", keep = "Keep", vendor = "Vendor", de = "Disenchant" }
-local MARK_COLOR = { Post = { 0.62, 0.91, 0.86 }, Keep = { 0.73, 0.74, 0.78 }, Vendor = { 0.94, 0.83, 0.54 },
-  Disenchant = { 0.82, 0.66, 0.96 }, Skipped = { 0.55, 0.55, 0.55 }, Posted = { 0.5, 0.83, 0.61 } }
+local MARK = { ah = "Выставить", middle = "Выставить", keep = "Оставить", vendor = "Торговец", de = "Распылить" }
+local MARK_COLOR = { ["Выставить"] = { 0.62, 0.91, 0.86 }, ["Оставить"] = { 0.73, 0.74, 0.78 }, ["Торговец"] = { 0.94, 0.83, 0.54 },
+  ["Распылить"] = { 0.82, 0.66, 0.96 }, ["Пропущено"] = { 0.55, 0.55, 0.55 }, ["Выставлено"] = { 0.5, 0.83, 0.61 } }
 
 local function groupFor(id)
   for _, gid in ipairs(ns.ItemGroups and ns:ItemGroups(id) or {}) do
@@ -142,7 +142,7 @@ local function groupFor(id)
       return gid, parent and (parent.name .. " · " .. info.name) or info.name
     end
   end
-  return "misc", "Miscellaneous"
+  return "misc", "Разное"
 end
 
 local orderOf = {}
@@ -180,11 +180,11 @@ local function readBags()
 end
 
 local function verdictMark(e)
-  if not (ns.SellVerdict and ns.SellFacts) then return "Post" end
+  if not (ns.SellVerdict and ns.SellFacts) then return "Выставить" end
   local ok, v = pcall(function() return ns.SellVerdict(ns:SellFacts(e.id, false, true)) end)
-  if not ok or not v then return "Post" end
-  if v.deFirst or v.kind == "de" then return "Disenchant" end
-  return MARK[v.kind] or "Post"
+  if not ok or not v then return "Выставить" end
+  if v.deFirst or v.kind == "de" then return "Распылить" end
+  return MARK[v.kind] or "Выставить"
 end
 
 -- Works out each entry's price and quantity from its rule (and what you typed).
@@ -192,7 +192,7 @@ local function price(e)
   -- (Its own lines: "ns.RuleFor and ns:RuleFor(...)" would keep only the first value.)
   local rule, from
   if ns.RuleFor then rule, from = ns:RuleFor(e.id, "post") else rule = ns.RULE_DEFAULTS and ns.RULE_DEFAULTS.post end
-  e.rule, e.ruleFrom = rule, from or "Default"
+  e.rule, e.ruleFrom = rule, from or "По умолчанию"
   e.usual = usualOf(e.id)
   e.cheapest, e.rec = cheapestOf(e.id, e.gear and e.link)
   -- The listings now, once looked up (below): the cheapest that isn't yours.
@@ -221,7 +221,7 @@ function ns:RefreshPost()
   local wantAll = frame and frame.showAll
   local out = {}
   for _, e in ipairs(list) do
-    if wantAll or e.mark == "Post" then out[#out + 1] = e end
+    if wantAll or e.mark == "Выставить" then out[#out + 1] = e end
   end
   table.sort(out, function(a, b)
     local oa, ob = orderOf[a.group] or 999, orderOf[b.group] or 999
@@ -572,7 +572,7 @@ local function row(i)
     local e = entries[self.index]
     if e.link then GameTooltip:SetHyperlink(e.link) else GameTooltip:SetItemByID(e.id) end
     GameTooltip:AddLine(" ")
-    GameTooltip:AddLine("Click to post this one next. Middle-click to skip it this visit (again to bring it back).", 0.7, 0.7, 0.7, true)
+    GameTooltip:AddLine("Клик — выставить этот следующим. Средний клик — пропустить в этот визит (ещё раз — вернуть).", 0.7, 0.7, 0.7, true)
     GameTooltip:Show()
   end)
   r:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -609,10 +609,10 @@ local function drawList()
       r.heading:Hide()
       for _, part in ipairs({ r.icon, r.name, r.price, r.mark }) do part:Show() end
       r.icon:SetTexture(ns:ItemIcon(e.id))
-      local label = (posted[k] and "Posted") or (skipped[k] and "Skipped") or e.mark
+      local label = (posted[k] and "Выставлено") or (skipped[k] and "Пропущено") or e.mark
       r.name:SetText(ns.ItemName(e.id) .. (e.count > 1 and (" x" .. e.count) or ""))
       r.price:SetText(e.price and ns.MoneyPlain(e.price) or "|cff888888-|r")
-      local c = MARK_COLOR[label] or MARK_COLOR.Post
+      local c = MARK_COLOR[label] or MARK_COLOR["Выставить"]
       r.mark:SetText(label:upper())
       r.mark:SetTextColor(c[1], c[2], c[3])
       local dim = posted[k] or skipped[k]
@@ -655,12 +655,12 @@ local function drawListings(e)
   local looking = asking and asking.key == k
   local rows, now = listingRows(e)
   if now then
-    lt.title:SetText("Listed now")
-    lt.info:SetText(("%d available · checked %s"):format(l.total or 0, time() - l.t < 60 and "just now" or ns.Age(l.t)))
+    lt.title:SetText("Сейчас на аукционе")
+    lt.info:SetText(("%d в продаже · проверено %s"):format(l.total or 0, time() - l.t < 60 and "только что" or ns.Age(l.t)))
   else
     local when = e.rec and e.rec.t
-    lt.title:SetText(when and ("At the last scan (%s)"):format(ns.Age and ns.Age(when) or "") or "Listings")
-    lt.info:SetText(looking and "|cffffd100Looking it up...|r" or (l and l.failed) and "|cffff8080Couldn't check now|r" or "")
+    lt.title:SetText(when and ("На последней проверке (%s)"):format(ns.Age and ns.Age(when) or "") or "Лоты")
+    lt.info:SetText(looking and "|cffffd100Ищу на аукционе...|r" or (l and l.failed) and "|cffff8080Не удалось проверить сейчас|r" or "")
   end
   -- Your price, in its place among them.
   local shown = {}
@@ -683,11 +683,11 @@ local function drawListings(e)
       r.price:SetText(ns.Money(d.price))
       r.qty:SetText(tostring(d.qty or ""))
       if d.yours then
-        r.seller:SetText("|cff9fe8dcYours, if you post now|r")
+        r.seller:SetText("|cff9fe8dcВаш, если выставите сейчас|r")
         r.bg:SetColorTexture(T.accent[1], T.accent[2], T.accent[3], 0.22)
       else
         local who, mine = sellerText(d)
-        r.seller:SetText(mine and "|cff9fe8dcYou|r" or (d.refused and (who .. " |cff888888(can't be bought)|r")) or who)
+        r.seller:SetText(mine and "|cff9fe8dcВы|r" or (d.refused and (who .. " |cff888888(нельзя купить)|r")) or who)
         r.bg:SetColorTexture(1, 1, 1, i % 2 == 0 and 0.03 or 0)
       end
       r:Show()
@@ -696,10 +696,10 @@ local function drawListings(e)
     end
   end
   local more = #shown - fit
-  lt.more:SetText(more > 0 and ("and %d more"):format(more) or "")
+  lt.more:SetText(more > 0 and ("и ещё %d"):format(more) or "")
   lt.empty:SetShown(#rows == 0)
-  lt.empty:SetText(looking and "Looking it up..." or now and "None listed now: yours would be the only one."
-    or "Nothing saved for it yet.")
+  lt.empty:SetText(looking and "Ищу на аукционе..." or now and "Сейчас лотов нет: ваш будет единственным."
+    or "Сохранённых цен для него пока нет.")
 end
 
 local function drawItem()
@@ -710,8 +710,8 @@ local function drawItem()
   if not e then return end
   f.icon:SetTexture(ns:ItemIcon(e.id))
   f.name:SetText(ns.ItemName(e.id))
-  local bits = { ("%d in your bags"):format(e.count) }
-  if e.usual then bits[#bits + 1] = "usual " .. ns.Money(e.usual) end
+  local bits = { ("%d в сумках"):format(e.count) }
+  if e.usual then bits[#bits + 1] = "обычная " .. ns.Money(e.usual) end
   f.sub:SetText(table.concat(bits, " · "))
   if not f.qty:HasFocus() then f.qty:SetText(tostring(e.qty or 0)) end
   f.price:SetValue(e.price)
@@ -726,17 +726,17 @@ local function drawItem()
   local k = keyOf(e)
   local l = liveFor(k)
   local why = e.why or ""
-  if e.price and e.suggested and e.price ~= e.suggested then why = "your price (suggested " .. ns.MoneyPlain(e.suggested) .. ")"
-  elseif not e.live and e.cheapest then why = why .. ", at the last scan" end
-  f.why:SetText(("%s%s. |cff9fe8dcRule from: %s.|r"):format(why:sub(1, 1):upper(), why:sub(2), e.ruleFrom or "Default"))
-  f.post:SetText(pending and "Confirm post" or not l and "Checking..." or "Post")
+  if e.price and e.suggested and e.price ~= e.suggested then why = "ваша цена (предложено " .. ns.MoneyPlain(e.suggested) .. ")"
+  elseif not e.live and e.cheapest then why = why .. ", на последней проверке" end
+  f.why:SetText(("%s%s. |cff9fe8dcПравило: %s.|r"):format(why:sub(1, 1):upper(), why:sub(2), e.ruleFrom or "по умолчанию"))
+  f.post:SetText(pending and "Подтвердить" or not l and "Проверяю..." or "Выставить")
   f.post:SetEnabled(pending ~= nil or (l ~= nil and not posted[k] and not skipped[k] and e.price ~= nil and (e.qty or 0) > 0))
   local left = 0
   for _, x in ipairs(entries) do
     local xk = keyOf(x)
     if not posted[xk] and not skipped[xk] then left = left + 1 end
   end
-  f.posFrom:SetText(("%d of %d · %d left"):format(cur, #entries, left))
+  f.posFrom:SetText(("%d из %d · осталось %d"):format(cur, #entries, left))
   drawListings(e)
   -- Look it up (no-op while the last lookup is fresh).
   lookUp(e)
@@ -788,22 +788,22 @@ local function build(host)
   frame.emptyList = T:Text(listBox, 12, T.dim)
   frame.emptyList:SetPoint("CENTER")
   frame.emptyList:SetWidth(LEFT_W - 30)
-  frame.emptyList:SetText("Nothing in your bags to post. Show: Everything lists all you could.")
+  frame.emptyList:SetText("В сумках нечего выставлять. «Показать: всё» перечислит всё, что можно.")
 
   -- Above the list: what's shown, how many left, Scroll to post.
-  frame.showBtn = T:Button(frame, "Show: Worth posting", 150, function(self)
+  frame.showBtn = T:Button(frame, "Показать: стоящее", 150, function(self)
     frame.showAll = not frame.showAll
-    self:SetText(frame.showAll and "Show: Everything" or "Show: Worth posting")
+    self:SetText(frame.showAll and "Показать: всё" or "Показать: стоящее")
     ns:RefreshPost()
   end, 22)
   frame.showBtn:SetPoint("TOPLEFT", 8, -10)   -- (OnShow: right of the portrait if it's there)
   frame.scrollSwitch = T:Check(frame, function(b) setScrollPost(b:GetChecked()) end, "switch")
   frame.scrollSwitch:SetPoint("LEFT", frame.showBtn, "RIGHT", 14, 0)
-  frame.scrollSwitch.label:SetText("Scroll to post")
+  frame.scrollSwitch.label:SetText("Прокрутка — выставить")
   frame.scrollSwitch:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
-    GameTooltip:AddLine("Scroll to post", 1, 1, 1)
-    GameTooltip:AddLine("While it's on, each mouse wheel tick over your bag list posts the highlighted item at the price shown, then moves to the next. Off, or Esc: the wheel just scrolls. It starts off every visit. Middle-click a row to skip it.", nil, nil, nil, true)
+    GameTooltip:AddLine("Прокрутка — выставить", 1, 1, 1)
+    GameTooltip:AddLine("Пока включено, каждый тик колеса над списком сумок выставляет выделенный предмет по показанной цене и переходит к следующему. Выкл или Esc: колесо просто прокручивает. При каждом визите выключено. Средний клик по строке — пропустить её.", nil, nil, nil, true)
     GameTooltip:Show()
   end)
   frame.scrollSwitch:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -833,7 +833,7 @@ local function build(host)
     fs:SetText(text)
     return fs
   end
-  local qtyL = label("How many", f.icon)
+  local qtyL = label("Сколько", f.icon)
   f.qty = T:EditBox(f, 60)
   f.qty:SetPoint("TOPLEFT", qtyL, "BOTTOMLEFT", 0, -3)
   f.qty:SetNumeric(true)
@@ -848,7 +848,7 @@ local function build(host)
     e.qty = n
     drawItem()
   end)
-  f.max = T:Button(f, "Max", 40, function()
+  f.max = T:Button(f, "Макс", 40, function()
     local e = entries[cur]
     if not e then return end
     edits[keyOf(e)] = edits[keyOf(e)] or {}
@@ -862,7 +862,7 @@ local function build(host)
 
   local priceL = T:Text(f, 10, T.dim)
   priceL:SetPoint("LEFT", qtyL, "LEFT", 130, 0)
-  priceL:SetText("Price each")
+  priceL:SetText("Цена за штуку")
   f.price = T:MoneyBox(f, function(v)
     local e = entries[cur]
     if not e or not v then return end
@@ -877,7 +877,7 @@ local function build(host)
 
   local hoursL = T:Text(f, 10, T.dim)
   hoursL:SetPoint("LEFT", priceL, "LEFT", 120, 0)
-  hoursL:SetText("How long")
+  hoursL:SetText("На сколько")
   f.hours = T:Choice(f, { { value = 2, label = "2h" }, { value = 8, label = "8h" }, { value = 24, label = "24h" } }, function(v)
     local e = entries[cur]
     if not e then return end
@@ -890,17 +890,17 @@ local function build(host)
   f.hours:SetPoint("TOPLEFT", hoursL, "BOTTOMLEFT", 0, -3)
 
   -- Deposit, total price and what you get, side by side under the boxes.
-  local depL = label("Deposit", f.qty, 0)
+  local depL = label("Залог", f.qty, 0)
   f.deposit = T:Text(f, 13)
   f.deposit:SetPoint("TOPLEFT", depL, "BOTTOMLEFT", 0, -3)
   local totalL = T:Text(f, 10, T.dim)
   totalL:SetPoint("LEFT", depL, "LEFT", 130, 0)
-  totalL:SetText("Total price")
+  totalL:SetText("Всего")
   f.total = T:Text(f, 13)
   f.total:SetPoint("TOPLEFT", totalL, "BOTTOMLEFT", 0, -3)
   local getL = T:Text(f, 10, T.dim)
   getL:SetPoint("LEFT", totalL, "LEFT", 120, 0)
-  getL:SetText("You get after the cut")
+  getL:SetText("Вам после комиссии")
   f.get = T:Text(f, 14, { 0.88, 0.72, 0.35 })
   f.get:SetPoint("TOPLEFT", getL, "BOTTOMLEFT", 0, -3)
   f.why = T:Text(f, 11, T.dim)
@@ -908,9 +908,9 @@ local function build(host)
   f.why:SetPoint("RIGHT", f, "RIGHT", 0, 0)
   f.why:SetJustifyH("LEFT")
 
-  f.prev = T:Button(f, "Previous", 80, function() cur = nextUsable(cur, -1); pending = nil; refresh() end)
+  f.prev = T:Button(f, "Назад", 80, function() cur = nextUsable(cur, -1); pending = nil; refresh() end)
   f.prev:SetPoint("TOPLEFT", f.why, "BOTTOMLEFT", 0, -10)
-  f.skip = T:Button(f, "Skip", 70, function()
+  f.skip = T:Button(f, "Пропустить", 70, function()
     local e = entries[cur]
     if e then skipped[keyOf(e)] = true end
     pending = nil
@@ -918,7 +918,7 @@ local function build(host)
     refresh()
   end)
   f.skip:SetPoint("LEFT", f.prev, "RIGHT", 6, 0)
-  f.post = T:Button(f, "Post", 110, postCurrent, 28)
+  f.post = T:Button(f, "Выставить", 110, postCurrent, 28)
   f.post:SetPoint("TOPRIGHT", f.why, "BOTTOMRIGHT", 0, -8)
   f.posFrom = T:Text(f, 11, T.dim)
   f.posFrom:SetPoint("RIGHT", f.post, "LEFT", -10, 0)
@@ -935,7 +935,7 @@ local function build(host)
   f.lt = lt
   lt.title = T:Text(lt, 12)
   lt.title:SetPoint("TOPLEFT", 8, -8)
-  lt.refresh = T:Button(lt, "Refresh", 70, function()
+  lt.refresh = T:Button(lt, "Обновить", 70, function()
     local e = entries[cur]
     if e then lookUp(e, true) end
   end, 20)
@@ -964,7 +964,7 @@ local function build(host)
   head:SetPoint("TOPLEFT", 4, -28)
   head:SetPoint("TOPRIGHT", -4, -28)
   local hp, hq, hs = cells(head, 10, T.dim)
-  hp:SetText("Price each"); hq:SetText("Available"); hs:SetText("Seller")
+  hp:SetText("Цена"); hq:SetText("В продаже"); hs:SetText("Продавец")
   lt.rows = {}
   function lt.makeRow(i)
     local r = CreateFrame("Button", nil, lt)
@@ -994,8 +994,8 @@ local function build(host)
       GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
       local e = entries[cur]
       local under = (e and e.rule and e.rule.undercut) or 0
-      GameTooltip:AddLine(under > 0 and ("Click to price yours %s under this one."):format(ns.MoneyPlain(under))
-        or "Click to price yours the same as this one.", 1, 1, 1, true)
+      GameTooltip:AddLine(under > 0 and ("Клик — поставить вашу цену на %s ниже этой."):format(ns.MoneyPlain(under))
+        or "Клик — поставить такую же цену, как эта.", 1, 1, 1, true)
       GameTooltip:Show()
     end)
     r:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -1009,7 +1009,7 @@ local function build(host)
 
   frame.none = T:Text(frame, 12, T.dim)
   frame.none:SetPoint("TOPLEFT", listBox, "TOPRIGHT", 14, -10)
-  frame.none:SetText("Pick something on the left.")
+  frame.none:SetText("Выберите предмет слева.")
 
   frame:SetScript("OnShow", function()
     -- Right of the window's portrait, unless our tabs hid it (AHTabs.lua).

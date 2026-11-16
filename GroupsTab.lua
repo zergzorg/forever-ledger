@@ -17,7 +17,7 @@ local T = ns.Theme
 local f                     -- the tab
 local state = { mode = "groups", group = "mat", view = "items", rule = nil, open = { mat = true } }
 local NAV_W, ROW_H = 230, 18
-local KIND_LABEL = { post = "Post", buy = "Buy", vendor = "Vendor", craft = "Craft" }
+local KIND_LABEL = { post = "Выставление", buy = "Покупка", vendor = "Торговец", craft = "Изготовление" }
 
 local function copy(t) local c = {} for k, v in pairs(t or {}) do c[k] = v end return c end
 
@@ -60,23 +60,23 @@ end
 ---------------------------------------------------------------------------
 local FIELDS = {
   post = {
-    { key = "start", label = "Start from", kind = "choice", options = { { value = "usual", label = "the usual price" }, { value = "cheapest", label = "the cheapest now" } } },
-    { key = "undercut", label = "Undercut the cheapest by", kind = "money" },
-    { key = "floorPct", label = "Never below", kind = "number", suffix = "% of usual", min = 0, max = 200, step = 5 },
-    { key = "belowFloor", label = "If the cheapest is lower", kind = "choice", options = { { value = "skip", label = "don't post" }, { value = "floor", label = "post at the floor" } } },
-    { key = "keep", label = "Keep in your bags", kind = "number", min = 0, max = 1000, step = 1 },
-    { key = "hours", label = "How long", kind = "choice", options = { { value = 2, label = "2 hours" }, { value = 8, label = "8 hours" }, { value = 24, label = "24 hours" } } },
+    { key = "start", label = "Начать с", kind = "choice", options = { { value = "usual", label = "обычной цены" }, { value = "cheapest", label = "текущего минимума" } } },
+    { key = "undercut", label = "Перебить минимум на", kind = "money" },
+    { key = "floorPct", label = "Не ниже", kind = "number", suffix = "% обычной", min = 0, max = 200, step = 5 },
+    { key = "belowFloor", label = "Если минимум ниже", kind = "choice", options = { { value = "skip", label = "не выставлять" }, { value = "floor", label = "выставить по порогу" } } },
+    { key = "keep", label = "Оставить в сумках", kind = "number", min = 0, max = 1000, step = 1 },
+    { key = "hours", label = "На сколько", kind = "choice", options = { { value = 2, label = "2 часа" }, { value = 8, label = "8 часов" }, { value = 24, label = "24 часа" } } },
   },
   buy = {
-    { key = "underPct", label = "Buy when under", kind = "number", suffix = "% of usual", min = 5, max = 150, step = 5 },
-    { key = "maxQty", label = "At most at a time", kind = "number", min = 1, max = 5000, step = 10 },
+    { key = "underPct", label = "Покупать, если ниже", kind = "number", suffix = "% обычной", min = 5, max = 150, step = 5 },
+    { key = "maxQty", label = "Не больше за раз", kind = "number", min = 1, max = 5000, step = 10 },
   },
   vendor = {
-    { key = "protectRecipes", label = "Never suggest selling what a recipe of yours uses", kind = "check" },
+    { key = "protectRecipes", label = "Не предлагать продавать то, что нужно вашим рецептам", kind = "check" },
   },
   craft = {
-    { key = "stock", label = "Keep in stock", kind = "number", min = 0, max = 1000, step = 1 },
-    { key = "minProfit", label = "At least this profit", kind = "money" },
+    { key = "stock", label = "Держать в запасе", kind = "number", min = 0, max = 1000, step = 1 },
+    { key = "minProfit", label = "Прибыль не меньше", kind = "money" },
   },
 }
 
@@ -167,7 +167,7 @@ local function rebuildSets()
     local stop = math.min(i + 200, #ids)
     for k = i + 1, stop do out[ids[k]] = ns:ItemGroupSet(ids[k]) end
     i = stop
-    if f and f.itemsNote then f.itemsNote:SetText(("Sorting %d of %d items into groups..."):format(i, #ids)) end
+    if f and f.itemsNote then f.itemsNote:SetText(("Раскладываю %d из %d предметов по группам..."):format(i, #ids)) end
     if i < #ids then C_Timer.After(0, step) return end
     sets, setsDirty, working = out, false, false
     if refresh then refresh() end
@@ -240,7 +240,7 @@ local function navItems()
       parentOf[g.id] = info and info.parent
     end
     local lastKind
-    local headings = { builtin = "Built in", special = "Special", profession = "By profession (automatic)", user = "Your groups" }
+    local headings = { builtin = "Встроенные", special = "Особые", profession = "По профессии (автоматически)", user = "Ваши группы" }
     for i, g in ipairs(tree) do
       if g.kind ~= lastKind then
         items[#items + 1] = { heading = headings[g.kind] or "" }
@@ -257,11 +257,11 @@ local function navItems()
       end
     end
   else
-    items[#items + 1] = { heading = "Forever Ledger's defaults" }
+    items[#items + 1] = { heading = "Наборы Forever Ledger по умолчанию" }
     for _, kind in ipairs(ns.RULE_KINDS) do
-      items[#items + 1] = { rule = "default:" .. kind, name = "Default " .. KIND_LABEL[kind]:lower(), note = "can't change" }
+      items[#items + 1] = { rule = "default:" .. kind, name = "По умолчанию: " .. KIND_LABEL[kind]:lower(), note = "не меняется" }
     end
-    items[#items + 1] = { heading = "Your rules" }
+    items[#items + 1] = { heading = "Ваши правила" }
     local saved = (ns.db.groups or {}).saved or {}
     local ids = {}
     for rid in pairs(saved) do ids[#ids + 1] = rid end
@@ -351,7 +351,7 @@ local function itemRow(i)
     GameTooltip:SetOwner(self, "ANCHOR_LEFT")
     GameTooltip:SetItemByID(self.id)
     GameTooltip:AddLine(" ")
-    GameTooltip:AddLine("Click to choose it, then Remove from group takes it out.", 0.7, 0.7, 0.7, true)
+    GameTooltip:AddLine("Клик — выбрать, затем «Убрать из группы» уберёт его.", 0.7, 0.7, 0.7, true)
     GameTooltip:Show()
   end)
   r:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -376,7 +376,7 @@ local function drawItems(gid, info)
     r.stripe:SetShown(i % 2 == 0)
     r.sel:SetShown(state.item == id)
     r.icon:SetTexture(ns:ItemIcon(id))
-    r.name:SetText(ns.ItemName(id) .. (added[id] and " |cff9fe8dc(added by you)|r" or ""))
+    r.name:SetText(ns.ItemName(id) .. (added[id] and " |cff9fe8dc(добавлено вами)|r" or ""))
     local inBags = ns.ItemCount and ns.ItemCount(id, true) or 0
     r.bags:SetText(inBags > 0 and tostring(inBags) or "")
     local usual = ns.UsualPrice and ns:UsualPrice(id)
@@ -391,15 +391,15 @@ local function drawItems(gid, info)
   if working then return end
   local builtin = info and info.kind == "builtin"
   local mine = info and info.kind == "user"
-  f.itemsNote:SetText(#list == 0 and "No items we know of are in it yet."
+  f.itemsNote:SetText(#list == 0 and "Пока нет ни одного известного нам предмета."
     or (#list > n and ("%d items, the first %d shown."):format(#list, n) or ("%d item%s."):format(#list, #list == 1 and "" or "s")))
   f.restoreItems:SetShown(builtin)
   f.addBox:SetShown(builtin or mine)
   f.addLabel:SetShown(builtin or mine)
   f.remove:SetShown(builtin or mine)
   f.remove:SetEnabled(state.item ~= nil)
-  f.itemsHint:SetText((info and info.kind == "profession") and "Made from the recipe data: it can't be changed by hand."
-    or (info and info.kind == "special") and "Watched: star items to add them. Gray items: every poor-quality item." or "")
+  f.itemsHint:SetText((info and info.kind == "profession") and "Собрана из данных рецептов: вручную её не изменить."
+    or (info and info.kind == "special") and "«Отслеживаемые»: добавьте предметы звёздочкой. «Серые предметы»: все предметы низкого качества." or "")
 end
 
 ---------------------------------------------------------------------------
@@ -409,14 +409,14 @@ local function followOptions(gid, kind)
   local info = ns:GroupInfo(gid)
   local parent = info and info.parent and ns:GroupInfo(info.parent)
   local opts = {
-    { value = "parent", label = parent and ("Same as " .. parent.name) or "Same as above (default)" },
-    { value = "default", label = "Forever Ledger's default" },
-    { value = "off", label = "Off" },
-    { value = "changed", label = "Changed here" },
+    { value = "parent", label = parent and ("Как в «" .. parent.name .. "»") or "Как выше (по умолчанию)" },
+    { value = "default", label = "По умолчанию Forever Ledger" },
+    { value = "off", label = "Выкл" },
+    { value = "changed", label = "Изменено здесь" },
   }
   local saved = (ns.db.groups or {}).saved or {}
   for rid, s in pairs(saved) do
-    if s.kind == kind then opts[#opts + 1] = { value = "rule:" .. rid, label = "Your rule: " .. s.name } end
+    if s.kind == kind then opts[#opts + 1] = { value = "rule:" .. rid, label = "Ваше правило: " .. s.name } end
   end
   return opts
 end
@@ -441,10 +441,10 @@ local function drawRules(gid)
     local fromName = from and ns:GroupInfo(from) and ns:GroupInfo(from).name
     local saved = rid and ((ns.db.groups or {}).saved or {})[rid]
     card.from:SetText(
-      (how == "off" and ("Off" .. (from ~= gid and fromName and (" (from " .. fromName .. ")") or ""))) or
-      (how == "rule" and ("Your rule " .. (saved and saved.name or "?") .. (from ~= gid and fromName and (" (from " .. fromName .. ")") or ""))) or
-      (how == "changed" and (from == gid and "Changed here" or ("Changed on " .. (fromName or "?")))) or
-      (from and from ~= gid and ("Default (set on " .. (fromName or "?") .. ")")) or "Forever Ledger's default")
+      (how == "off" and ("Выкл" .. (from ~= gid and fromName and (" (из «" .. fromName .. "»)") or ""))) or
+      (how == "rule" and ("Ваше правило " .. (saved and saved.name or "?") .. (from ~= gid and fromName and (" (из «" .. fromName .. "»)") or ""))) or
+      (how == "changed" and (from == gid and "Изменено здесь" or ("Изменено в «" .. (fromName or "?") .. "»"))) or
+      (from and from ~= gid and ("По умолчанию (задано в «" .. (fromName or "?") .. "»)")) or "По умолчанию Forever Ledger")
   end
 end
 
@@ -456,11 +456,11 @@ local function drawRule()
   local kind, fields, editable, title
   if r and r:match("^default:") then
     kind = r:match("^default:(.+)$")
-    fields, editable, title = ns.RULE_DEFAULTS[kind], false, "Default " .. KIND_LABEL[kind]:lower()
+    fields, editable, title = ns.RULE_DEFAULTS[kind], false, "По умолчанию: " .. KIND_LABEL[kind]:lower()
   else
     local saved = ((ns.db.groups or {}).saved or {})[r or ""]
     if not saved then
-      f.ruleTitle:SetText("Pick a rule on the left")
+      f.ruleTitle:SetText("Выберите правило слева")
       for _, e in pairs(f.ruleEditors) do e:Hide() end
       f.ruleUsers:SetText("")
       f.ruleCopy:Hide(); f.ruleRename:Hide(); f.ruleDelete:Hide()
@@ -478,10 +478,10 @@ local function drawRule()
       local info = ns:GroupInfo(gid)
       names[#names + 1] = info and info.name or gid
     end
-    f.ruleUsers:SetText(#names == 0 and "No group uses it yet: pick it on a group's Rules."
-      or ("Used by %d group%s: %s. A change here reaches all of them."):format(#names, #names == 1 and "" or "s", table.concat(names, ", ")))
+    f.ruleUsers:SetText(#names == 0 and "Ни одна группа его пока не использует: выберите его в «Правилах» группы."
+      or ("Используется: %d %s — %s. Изменение здесь затронет всех."):format(#names, ns.Plural(#names, "группа", "группы", "групп"), table.concat(names, ", ")))
   else
-    f.ruleUsers:SetText("Forever Ledger's defaults can't be changed: we tune them in updates, and groups on Default always get the newest. Copy one to make your own.")
+    f.ruleUsers:SetText("Наборы Forever Ledger по умолчанию не меняются: мы правим их в обновлениях, и группы «По умолчанию» всегда получают свежие. Скопируйте набор, чтобы сделать свой.")
   end
   f.ruleCopy:Show()
   f.ruleRename:SetShown(editable)
@@ -535,40 +535,40 @@ function ns:BuildGroups(parent)
   f:SetAllPoints()
 
   -- Left: Groups | Rules.
-  f.modeGroups = T:Tab(f, "Groups", function() state.mode = "groups"; refresh() end)
+  f.modeGroups = T:Tab(f, "Группы", function() state.mode = "groups"; refresh() end)
   f.modeGroups:SetPoint("TOPLEFT", 0, 0)
-  f.modeRules = T:Tab(f, "Rules", function() state.mode = "rules"; refresh() end)
+  f.modeRules = T:Tab(f, "Правила", function() state.mode = "rules"; refresh() end)
   f.modeRules:SetPoint("LEFT", f.modeGroups, "RIGHT", 4, 0)
   f.navSf, f.nav = T:Scroll(f)
   f.navSf:SetPoint("TOPLEFT", 0, -30)
   f.navSf:SetPoint("BOTTOMLEFT", 0, 34)
   f.navSf:SetWidth(NAV_W)
   f.navRows = {}
-  f.newGroup = T:Button(f, "New group", 110, function()
-    askName("Name for the new group:", "", function(name)
+  f.newGroup = T:Button(f, "Новая группа", 110, function()
+    askName("Название новой группы:", "", function(name)
       local gid = ns:NewGroup(name)
       if gid then state.group, state.view = gid, "items"; groupsChanged(); refresh() end
     end)
   end, 22)
   f.newGroup:SetPoint("BOTTOMLEFT", 0, 4)
-  f.restoreAll = T:Button(f, "Restore built-in...", 116, function()
+  f.restoreAll = T:Button(f, "Вернуть встроенные...", 116, function()
     local added, removed, rules = ns:BuiltinChanges()
-    if added + removed + rules == 0 then ns:Print("The built-in groups are as Forever Ledger made them already."); return end
-    confirm(("Restore the built-in groups to their defaults?\n\n%d item%s you added taken out, %d you took out put back, %d rule%s you changed back to Default.\n\nYour own groups and saved rules stay. This can't be undone."):format(
-      added, added == 1 and "" or "s", removed, rules, rules == 1 and "" or "s"), function()
+    if added + removed + rules == 0 then ns:Print("Встроенные группы уже такие, какими их сделал Forever Ledger."); return end
+    confirm(("Вернуть встроенные группы к наборам по умолчанию?\n\nУйдёт добавленных вами: %d. Вернётся убранных: %d. Правил, которые вы меняли, вернётся к «По умолчанию»: %d.\n\nВаши группы и сохранённые правила останутся. Отменить нельзя."):format(
+      added, removed, rules), function()
       ns:RestoreBuiltinGroups(); groupsChanged(); refresh()
     end)
   end, 22)
   f.restoreAll:SetPoint("LEFT", f.newGroup, "RIGHT", 4, 0)
   f.newRule = T:Dropdown(f, NAV_W - 4, function(kind)
-    askName(("Name for the new %s rule:"):format(KIND_LABEL[kind]:lower()), "", function(name)
+    askName(("Название нового правила: %s"):format(KIND_LABEL[kind]:lower()), "", function(name)
       local rid = ns:SaveRule(name, kind, ns.RULE_DEFAULTS[kind])
       if rid then state.rule = rid; refresh() end
     end)
   end)
-  f.newRule:SetOptions({ { value = "post", label = "New rule: post" }, { value = "buy", label = "New rule: buy" },
-    { value = "vendor", label = "New rule: vendor" }, { value = "craft", label = "New rule: craft" } })
-  f.newRule:SetText("New rule...")
+  f.newRule:SetOptions({ { value = "post", label = "Новое правило: выставление" }, { value = "buy", label = "Новое правило: покупка" },
+    { value = "vendor", label = "Новое правило: торговец" }, { value = "craft", label = "Новое правило: изготовление" } })
+  f.newRule:SetText("Новое правило...")
   f.newRule:SetPoint("BOTTOMLEFT", 0, 4)
 
   -- Right: a group.
@@ -583,21 +583,21 @@ function ns:BuildGroups(parent)
   f.sub:SetPoint("RIGHT", gp, "RIGHT", -170, 0)
   f.sub:SetJustifyH("LEFT")
   f.sub:SetWordWrap(false)
-  f.renameGroup = T:Button(gp, "Rename", 70, function()
+  f.renameGroup = T:Button(gp, "Переименовать", 70, function()
     -- The group asked about, not whatever is picked when you answer (Codex review,
     -- November 15: the popups don't stop you picking another group meanwhile).
     local gid = state.group
     local info = ns:GroupInfo(gid)
-    askName("New name for the group:", info and info.name, function(name)
+    askName("Новое название группы:", info and info.name, function(name)
       if ns:GroupInfo(gid) then ns:RenameGroup(gid, name) end
       refresh()
     end)
   end, 22)
   f.renameGroup:SetPoint("TOPRIGHT", -84, 0)
-  f.deleteGroup = T:Button(gp, "Delete...", 80, function()
+  f.deleteGroup = T:Button(gp, "Удалить...", 80, function()
     local gid = state.group
     local info = ns:GroupInfo(gid)
-    confirm(("Delete your group %s? Its items stay in their other groups; groups under it move up. This can't be undone."):format(info and info.name or "?"), function()
+    confirm(("Удалить вашу группу «%s»? Её предметы останутся в других группах; вложенные группы поднимутся выше. Отменить нельзя."):format(info and info.name or "?"), function()
       if not ns:GroupInfo(gid) then return end
       ns:DeleteGroup(gid)
       if state.group == gid then state.group = "mat" end
@@ -605,9 +605,9 @@ function ns:BuildGroups(parent)
     end)
   end, 22)
   f.deleteGroup:SetPoint("TOPRIGHT", 0, 0)
-  f.viewItems = T:Tab(gp, "Items", function() state.view = "items"; refresh() end)
+  f.viewItems = T:Tab(gp, "Предметы", function() state.view = "items"; refresh() end)
   f.viewItems:SetPoint("TOPLEFT", 0, -26)
-  f.viewRules = T:Tab(gp, "Rules", function() state.view = "rules"; refresh() end)
+  f.viewRules = T:Tab(gp, "Правила", function() state.view = "rules"; refresh() end)
   f.viewRules:SetPoint("LEFT", f.viewItems, "RIGHT", 4, 0)
 
   -- Items.
@@ -617,19 +617,19 @@ function ns:BuildGroups(parent)
   f.itemsPane = ip
   f.addLabel = T:Text(ip, 11, T.dim)
   f.addLabel:SetPoint("TOPLEFT", 0, -5)
-  f.addLabel:SetText("Add an item:")
+  f.addLabel:SetText("Добавить предмет:")
   f.addBox = T:EditBox(ip, 170, "LEFT")
   f.addBox:SetPoint("LEFT", f.addLabel, "RIGHT", 6, 0)
   f.addBox:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
-    GameTooltip:AddLine("Add an item", 1, 1, 1)
-    GameTooltip:AddLine("Type its name or ID and press Enter, or click in the box and Shift-click the item.", nil, nil, nil, true)
+    GameTooltip:AddLine("Добавить предмет", 1, 1, 1)
+    GameTooltip:AddLine("Введите название или номер и нажмите Enter, либо кликните в поле и Shift+кликните предмет.", nil, nil, nil, true)
     GameTooltip:Show()
   end)
   f.addBox:SetScript("OnLeave", function() GameTooltip:Hide() end)
   f.addBox:SetScript("OnEnterPressed", function(self)
     local id = resolveItem(self:GetText())
-    if not id then ns:Print("Item not found: type its exact name or ID, or Shift-click it while the box is active."); return end
+    if not id then ns:Print("Предмет не найден: введите точное название или номер либо Shift+кликните его, когда поле активно."); return end
     if ns:AddToGroup(state.group, id) then groupsChanged() end
     self:SetText("")
     self:ClearFocus()
@@ -640,7 +640,7 @@ function ns:BuildGroups(parent)
       if f.addBox:IsVisible() and f.addBox:HasFocus() and link then f.addBox:SetText(link) end
     end)
   end
-  f.remove = T:Button(ip, "Remove from group", 140, function()
+  f.remove = T:Button(ip, "Убрать из группы", 140, function()
     if state.item and ns:RemoveFromGroup(state.group, state.item) then
       state.item = nil
       groupsChanged()
@@ -648,12 +648,12 @@ function ns:BuildGroups(parent)
     end
   end, 22)
   f.remove:SetPoint("TOPRIGHT", 0, 0)
-  f.restoreItems = T:Button(ip, "Restore items...", 110, function()
+  f.restoreItems = T:Button(ip, "Вернуть предметы...", 110, function()
     local gid = state.group
     local added, removed = ns:BuiltinChanges(gid)
-    if added + removed == 0 then ns:Print("This group's items are as Forever Ledger made them already."); return end
+    if added + removed == 0 then ns:Print("Предметы этой группы уже такие, какими их сделал Forever Ledger."); return end
     local info = ns:GroupInfo(gid)
-    confirm(("Put %s's items back as Forever Ledger made them? %d added by you go, %d you took out come back. Its rules stay. This can't be undone."):format(
+    confirm(("Вернуть предметы группы «%s» так, как их сделал Forever Ledger? Уйдёт добавленных вами: %d, вернётся убранных: %d. Правила останутся. Отменить нельзя."):format(
       info and info.name or "?", added, removed), function()
       ns:RestoreGroupItems(gid); groupsChanged(); refresh()
     end)
@@ -665,7 +665,7 @@ function ns:BuildGroups(parent)
   header:SetPoint("TOPLEFT", 0, -30)
   header:SetPoint("TOPRIGHT", 0, -30)
   header:SetHeight(14)
-  for _, c in ipairs({ { "Item", 24, "LEFT" }, { "In bags", -170 }, { "Usual", -80 }, { "Listed", -14 } }) do
+  for _, c in ipairs({ { "Предмет", 24, "LEFT" }, { "В сумках", -170 }, { "Обычная", -80 }, { "Лотов", -14 } }) do
     local fs = T:Text(header, 10, T.dim)
     if c[3] == "LEFT" then fs:SetPoint("LEFT", c[2], 0) else fs:SetPoint("RIGHT", header, "RIGHT", c[2], 0) end
     fs:SetText(c[1])
@@ -707,8 +707,8 @@ function ns:BuildGroups(parent)
     card.follow:SetPoint("TOPRIGHT", -8, -6)
     card.follow:HookScript("OnEnter", function(self)
       GameTooltip:SetOwner(self, "ANCHOR_TOP")
-      GameTooltip:AddLine(KIND_LABEL[kind] .. " rule", 1, 1, 1)
-      GameTooltip:AddLine("Same as above follows the group it's in; Default is Forever Ledger's; Changed here is this group's own; or one of your saved rules. When an item is in several groups, your own group wins, then a profession group, then a built-in one.", nil, nil, nil, true)
+      GameTooltip:AddLine("Правило: " .. KIND_LABEL[kind]:lower(), 1, 1, 1)
+      GameTooltip:AddLine("«Как выше» повторяет группу, в которой находится; «По умолчанию» — набор Forever Ledger; «Изменено здесь» — своё для этой группы; или одно из ваших сохранённых правил. Если предмет в нескольких группах, побеждает ваша группа, затем группа профессии, затем встроенная.", nil, nil, nil, true)
       GameTooltip:Show()
     end)
     card.follow:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -744,31 +744,31 @@ function ns:BuildGroups(parent)
   f.ruleUsers:SetPoint("TOPLEFT", 0, -230)
   f.ruleUsers:SetPoint("RIGHT", sp, "RIGHT", 0, 0)
   f.ruleUsers:SetJustifyH("LEFT")
-  f.ruleCopy = T:Button(sp, "Copy", 70, function()
+  f.ruleCopy = T:Button(sp, "Копировать", 70, function()
     local r = state.rule
     local kind, fields, name
     if r:match("^default:") then
-      kind = r:match("^default:(.+)$"); fields = ns.RULE_DEFAULTS[kind]; name = "My " .. KIND_LABEL[kind]:lower() .. " rule"
+      kind = r:match("^default:(.+)$"); fields = ns.RULE_DEFAULTS[kind]; name = "Моё правило: " .. KIND_LABEL[kind]:lower()
     else
-      local s = ns.db.groups.saved[r]; kind, fields, name = s.kind, s.fields, s.name .. " (copy)"
+      local s = ns.db.groups.saved[r]; kind, fields, name = s.kind, s.fields, s.name .. " (копия)"
     end
-    askName("Name for the copy:", name, function(n)
+    askName("Название копии:", name, function(n)
       local rid = ns:SaveRule(n, kind, fields)
       if rid then state.rule = rid; refresh() end
     end)
   end, 22)
   f.ruleCopy:SetPoint("TOPRIGHT", -170, 0)
-  f.ruleRename = T:Button(sp, "Rename", 70, function()
+  f.ruleRename = T:Button(sp, "Переименовать", 70, function()
     local s = ns.db.groups.saved[state.rule]
-    askName("New name for the rule:", s and s.name, function(n) if s then s.name = n; refresh() end end)
+    askName("Новое название правила:", s and s.name, function(n) if s then s.name = n; refresh() end end)
   end, 22)
   f.ruleRename:SetPoint("LEFT", f.ruleCopy, "RIGHT", 6, 0)
-  f.ruleDelete = T:Button(sp, "Delete...", 80, function()
+  f.ruleDelete = T:Button(sp, "Удалить...", 80, function()
     local rid = state.rule
     local s = ns.db.groups.saved[rid]
     local users = #ns:RuleUsers(rid)
-    confirm(("Delete your rule %s? %d group%s using it go back to Same as above. This can't be undone."):format(
-      s and s.name or "?", users, users == 1 and "" or "s"), function()
+    confirm(("Удалить ваше правило «%s»? %d %s вернутся к «Как выше». Отменить нельзя."):format(
+      s and s.name or "?", users, ns.Plural(users, "группа", "группы", "групп")), function()
       if not ns.db.groups.saved[rid] then return end
       ns:DeleteRule(rid)
       if state.rule == rid then state.rule = nil end

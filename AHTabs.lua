@@ -18,9 +18,9 @@ local _, ns = ...
 ---------------------------------------------------------------------------
 
 local TABS = {
-  { key = "buy", label = "Buy", title = "Forever Ledger: Buy" },
-  { key = "post", label = "Post", title = "Forever Ledger: Post" },
-  { key = "auctions", label = "My auctions", title = "Forever Ledger: My auctions" },
+  { key = "buy", label = "Покупка", title = "Forever Ledger: покупка" },
+  { key = "post", label = "Выставить", title = "Forever Ledger: выставление" },
+  { key = "auctions", label = "Мои лоты", title = "Forever Ledger: мои лоты" },
 }
 
 local host            -- our content area inside the auction house window
@@ -224,7 +224,7 @@ end
 function ns:MarkAHTab(n)
   local b = buttons.buy
   if not b then return end
-  if n and n > 0 then b:SetText(("Buy (%d)"):format(n)) else b:SetText("Buy") end
+  if n and n > 0 then b:SetText(("Покупка (%d)"):format(n)) else b:SetText("Покупка") end
   if PanelTemplates_TabResize then PanelTemplates_TabResize(b, 20, nil, 70) end
 end
 

@@ -1826,11 +1826,11 @@ local function laneRow(L, i)
     if not e then return end
     GameTooltip:SetOwner(self, "ANCHOR_LEFT")
     if ns:IsWatched(e.id) then
-      GameTooltip:AddLine("Watched", 1, 0.82, 0)
-      GameTooltip:AddLine("Live watch looks for it every time it reads the auction house. Click to stop watching it.", 1, 1, 1, true)
+      GameTooltip:AddLine("Отслеживается", 1, 0.82, 0)
+      GameTooltip:AddLine("Слежение ищет его при каждом чтении аукциона. Клик — перестать следить.", 1, 1, 1, true)
     else
-      GameTooltip:AddLine("Watch this item", 1, 1, 1)
-      GameTooltip:AddLine("Live watch then looks for it every time it reads the auction house, and it's bought here at or under your price (set it on the item's price window).", nil, nil, nil, true)
+      GameTooltip:AddLine("Следить за предметом", 1, 1, 1)
+      GameTooltip:AddLine("Слежение будет искать его при каждом чтении аукциона, а очередь покупок берёт его по вашей цене или дешевле (задаётся в окне цены предмета).", nil, nil, nil, true)
     end
     GameTooltip:Show()
   end)
@@ -1886,17 +1886,17 @@ local function laneRow(L, i)
       local when = rec and rec.t and (" (" .. ns.Age(rec.t) .. ")") or ""
       local held = ""
       if e.listedN and e.buyN < e.listedN then
-        if e.reason == "list" and e.want and e.buyN >= e.want then held = (" The list wants %d more."):format(e.want)
-        else held = (" That's what %s%s covers."):format(money(spendable()), spendable() < GetMoney() and " left to spend" or "") end
+        if e.reason == "list" and e.want and e.buyN >= e.want then held = (" Списку нужно ещё %d."):format(e.want)
+        else held = (" Это покрывает %s%s."):format(money(spendable()), spendable() < GetMoney() and " осталось потратить" or "") end
       end
       if e.buyOne then
-        GameTooltip:AddLine(("Buy %d (one copy a click) for %s%s. %d listed at or under %s at the last look%s."):format(
-          e.buyN, e.buyEstimate and "about " or "", money(e.buyCost or 0), e.listedN or 0, limitText(e), when), 1, 1, 1, true)
+        GameTooltip:AddLine(("Купить %d (по одной за клик) за %s%s. Лотов по %s или дешевле на последней проверке: %d%s."):format(
+          e.buyN, e.buyEstimate and "около " or "", money(e.buyCost or 0), limitText(e), e.listedN or 0, when), 1, 1, 1, true)
       else
-        GameTooltip:AddLine(("Buy %d for %s. %d listed at or under %s at the last look%s.%s"):format(
-          e.buyN, money(e.buyCost or 0), e.listedN or 0, limitText(e), when, held), 1, 1, 1, true)
+        GameTooltip:AddLine(("Купить %d за %s. Лотов по %s или дешевле на последней проверке: %d%s.%s"):format(
+          e.buyN, money(e.buyCost or 0), limitText(e), e.listedN or 0, when, held), 1, 1, 1, true)
       end
-      GameTooltip:AddLine("The auction house is checked again when you buy, so the count can change.", 0.7, 0.7, 0.7, true)
+      GameTooltip:AddLine("При покупке аукцион проверяется снова, поэтому количество может измениться.", 0.7, 0.7, 0.7, true)
     end
     local e = self.entry
     if e.reason == "flip" and e.affordN and e.n and e.affordN < e.n and e.affordN > 0 then
@@ -2031,7 +2031,7 @@ local function buildLane(v, d)
   header:SetHeight(14)
   -- The same places as the rows' columns (COL), from the right; rows end 10 short of it.
   for _, c in ipairs({ { "Предмет", 34, "LEFT" }, { d.key == "lists" and "Список" or "Почему", COL.why - 10, "WHY" },
-                       { "До", COL.limit - 10 }, { "Цена", COL.cheap - 10 }, { "Итого", COL.total - 10 },
+                       { "До", COL.limit - 10 }, { "Купить", COL.cheap - 10 }, { "Итого", COL.total - 10 },
                        { d.key == "lists" and "Сейчас" or "Прибыль", COL.profit - 10 } }) do
     local fs = T:Text(header, 10, T.dim)
     if c[3] == "LEFT" then fs:SetPoint("LEFT", c[2], 0)

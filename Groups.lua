@@ -52,55 +52,55 @@ ns.RULE_DEFAULTS = {
 -- The built-in tree, in display order. match = { classID, subclassID or nil for any }.
 -- list = a hand list (checked before the item types, so a gem isn't "Other materials").
 local BUILTIN = {
-  { id = "mat", name = "Materials" },
-  { id = "mat.cloth", parent = "mat", name = "Cloth", match = { { 7, 5 } } },
-  { id = "mat.leather", parent = "mat", name = "Leather and hides", match = { { 7, 6 } } },
-  { id = "mat.metal", parent = "mat", name = "Ore, bars and stone", match = { { 7, 7 } } },
-  { id = "mat.herb", parent = "mat", name = "Herbs", match = { { 7, 9 } } },
-  { id = "mat.cooking", parent = "mat", name = "Meat, fish and eggs", match = { { 7, 8 } } },
-  { id = "mat.elemental", parent = "mat", name = "Elemental", match = { { 7, 10 } } },
-  { id = "mat.enchanting", parent = "mat", name = "Enchanting", match = { { 7, 12 } } },
-  { id = "mat.gems", parent = "mat", name = "Gems and pearls",
+  { id = "mat", name = "Материалы" },
+  { id = "mat.cloth", parent = "mat", name = "Ткань", match = { { 7, 5 } } },
+  { id = "mat.leather", parent = "mat", name = "Кожа и шкуры", match = { { 7, 6 } } },
+  { id = "mat.metal", parent = "mat", name = "Руда, слитки и камень", match = { { 7, 7 } } },
+  { id = "mat.herb", parent = "mat", name = "Травы", match = { { 7, 9 } } },
+  { id = "mat.cooking", parent = "mat", name = "Мясо, рыба и яйца", match = { { 7, 8 } } },
+  { id = "mat.elemental", parent = "mat", name = "Первоэлементы", match = { { 7, 10 } } },
+  { id = "mat.enchanting", parent = "mat", name = "Наложение чар", match = { { 7, 12 } } },
+  { id = "mat.gems", parent = "mat", name = "Самоцветы и жемчуг",
     list = { 774, 818, 1206, 1210, 1529, 1705, 3864, 5498, 5500, 7909, 7910, 7971, 11754, 12361, 12363, 12364, 12799, 12800, 13926 } },
-  { id = "mat.parts", parent = "mat", name = "Parts", match = { { 7, 1 }, { 7, 2 }, { 7, 3 } } },
-  { id = "mat.other", parent = "mat", name = "Other materials", match = { { 7 }, { 5 } } },
-  { id = "con", name = "Consumables" },
-  { id = "con.potion", parent = "con", name = "Potions", match = { { 0, 1 } } },
-  { id = "con.elixir", parent = "con", name = "Elixirs and flasks", match = { { 0, 2 }, { 0, 3 } } },
-  { id = "con.food", parent = "con", name = "Food and drink", match = { { 0, 5 } } },
-  { id = "con.bandage", parent = "con", name = "Bandages", match = { { 0, 7 } } },
-  { id = "con.scroll", parent = "con", name = "Scrolls", match = { { 0, 4 } } },
-  { id = "con.enhance", parent = "con", name = "Armor kits and enhancements", match = { { 0, 6 } } },
-  { id = "con.ammo", parent = "con", name = "Ammo", match = { { 6 } } },
-  { id = "con.other", parent = "con", name = "Other consumables", match = { { 0 } } },
-  { id = "rec", name = "Recipes and patterns" },
-  { id = "rec.alchemy", parent = "rec", name = "Alchemy", match = { { 9, 6 } } },
-  { id = "rec.blacksmithing", parent = "rec", name = "Blacksmithing", match = { { 9, 4 } } },
-  { id = "rec.cooking", parent = "rec", name = "Cooking", match = { { 9, 5 } } },
-  { id = "rec.enchanting", parent = "rec", name = "Enchanting", match = { { 9, 8 } } },
-  { id = "rec.engineering", parent = "rec", name = "Engineering", match = { { 9, 3 } } },
-  { id = "rec.firstaid", parent = "rec", name = "First Aid", match = { { 9, 7 } } },
-  { id = "rec.fishing", parent = "rec", name = "Fishing", match = { { 9, 9 } } },
-  { id = "rec.leatherworking", parent = "rec", name = "Leatherworking", match = { { 9, 1 } } },
-  { id = "rec.tailoring", parent = "rec", name = "Tailoring", match = { { 9, 2 } } },
-  { id = "rec.other", parent = "rec", name = "Other recipes", match = { { 9 } } },
-  { id = "gear", name = "Gear" },
-  { id = "gear.weapon", parent = "gear", name = "Weapons", match = { { 2 } } },
-  { id = "gear.cloth", parent = "gear", name = "Cloth armor", match = { { 4, 1 } } },
-  { id = "gear.leather", parent = "gear", name = "Leather armor", match = { { 4, 2 } } },
-  { id = "gear.mail", parent = "gear", name = "Mail armor", match = { { 4, 3 } } },
-  { id = "gear.plate", parent = "gear", name = "Plate armor", match = { { 4, 4 } } },
-  { id = "gear.shield", parent = "gear", name = "Shields", match = { { 4, 6 } } },
-  { id = "gear.jewelry", parent = "gear", name = "Rings, necks and trinkets", match = { { 4, 0 } } },
-  { id = "gear.other", parent = "gear", name = "Other gear", match = { { 4 } } },
-  { id = "bags", name = "Bags and quivers", match = { { 1 }, { 11 } } },
-  { id = "crates", name = "Crates and writs" },
-  { id = "turnins", name = "Quest and Darkmoon turn-ins" },
-  { id = "fishing", name = "Fishing", list = { 6256, 6365, 6367, 12225, 19970, 6529, 6530, 6532, 6533, 7307 } },
-  { id = "lockbox", name = "Lockboxes",
+  { id = "mat.parts", parent = "mat", name = "Детали", match = { { 7, 1 }, { 7, 2 }, { 7, 3 } } },
+  { id = "mat.other", parent = "mat", name = "Прочие материалы", match = { { 7 }, { 5 } } },
+  { id = "con", name = "Расходники" },
+  { id = "con.potion", parent = "con", name = "Зелья", match = { { 0, 1 } } },
+  { id = "con.elixir", parent = "con", name = "Эликсиры и флаконы", match = { { 0, 2 }, { 0, 3 } } },
+  { id = "con.food", parent = "con", name = "Еда и питьё", match = { { 0, 5 } } },
+  { id = "con.bandage", parent = "con", name = "Бинты", match = { { 0, 7 } } },
+  { id = "con.scroll", parent = "con", name = "Свитки", match = { { 0, 4 } } },
+  { id = "con.enhance", parent = "con", name = "Наборы для брони и улучшения", match = { { 0, 6 } } },
+  { id = "con.ammo", parent = "con", name = "Боеприпасы", match = { { 6 } } },
+  { id = "con.other", parent = "con", name = "Прочие расходники", match = { { 0 } } },
+  { id = "rec", name = "Рецепты и выкройки" },
+  { id = "rec.alchemy", parent = "rec", name = "Алхимия", match = { { 9, 6 } } },
+  { id = "rec.blacksmithing", parent = "rec", name = "Кузнечное дело", match = { { 9, 4 } } },
+  { id = "rec.cooking", parent = "rec", name = "Кулинария", match = { { 9, 5 } } },
+  { id = "rec.enchanting", parent = "rec", name = "Наложение чар", match = { { 9, 8 } } },
+  { id = "rec.engineering", parent = "rec", name = "Инженерное дело", match = { { 9, 3 } } },
+  { id = "rec.firstaid", parent = "rec", name = "Первая помощь", match = { { 9, 7 } } },
+  { id = "rec.fishing", parent = "rec", name = "Рыбная ловля", match = { { 9, 9 } } },
+  { id = "rec.leatherworking", parent = "rec", name = "Кожевничество", match = { { 9, 1 } } },
+  { id = "rec.tailoring", parent = "rec", name = "Портняжное дело", match = { { 9, 2 } } },
+  { id = "rec.other", parent = "rec", name = "Прочие рецепты", match = { { 9 } } },
+  { id = "gear", name = "Снаряжение" },
+  { id = "gear.weapon", parent = "gear", name = "Оружие", match = { { 2 } } },
+  { id = "gear.cloth", parent = "gear", name = "Тканевая броня", match = { { 4, 1 } } },
+  { id = "gear.leather", parent = "gear", name = "Кожаная броня", match = { { 4, 2 } } },
+  { id = "gear.mail", parent = "gear", name = "Кольчужная броня", match = { { 4, 3 } } },
+  { id = "gear.plate", parent = "gear", name = "Латная броня", match = { { 4, 4 } } },
+  { id = "gear.shield", parent = "gear", name = "Щиты", match = { { 4, 6 } } },
+  { id = "gear.jewelry", parent = "gear", name = "Кольца, шеи и аксессуары", match = { { 4, 0 } } },
+  { id = "gear.other", parent = "gear", name = "Прочее снаряжение", match = { { 4 } } },
+  { id = "bags", name = "Сумки и колчаны", match = { { 1 }, { 11 } } },
+  { id = "crates", name = "Ящики и грамоты" },
+  { id = "turnins", name = "Сдача заданий и Ярмарки Новолуния" },
+  { id = "fishing", name = "Рыбная ловля", list = { 6256, 6365, 6367, 12225, 19970, 6529, 6530, 6532, 6533, 7307 } },
+  { id = "lockbox", name = "Запертые сундуки",
     list = { 4632, 4633, 4634, 4636, 4637, 4638, 5758, 5759, 5760, 16882, 16883, 16884, 16885 } },
-  { id = "pets", name = "Pets and mounts", match = { { 15, 2 }, { 15, 5 } } },
-  { id = "misc", name = "Miscellaneous" },
+  { id = "pets", name = "Питомцы и транспорт", match = { { 15, 2 }, { 15, 5 } } },
+  { id = "misc", name = "Разное" },
 }
 -- Fishing poles are weapons in the game's data (2/20): the hand list puts them in Fishing.
 
@@ -300,8 +300,8 @@ function ns:GroupInfo(gid)
   if prof and (which == "mats" or which == "crafts") then
     return { id = gid, name = prof .. (which == "mats" and " materials" or " crafts"), kind = "profession", prof = prof }
   end
-  if gid == "watched" then return { id = gid, name = "Watched", kind = "special" } end
-  if gid == "gray" then return { id = gid, name = "Gray items", kind = "special" } end
+  if gid == "watched" then return { id = gid, name = "Отслеживаемые", kind = "special" } end
+  if gid == "gray" then return { id = gid, name = "Серые предметы", kind = "special" } end
   local u = store().user[gid]
   if u then return { id = gid, name = u.name, kind = "user", parent = u.parent } end
 end
@@ -317,7 +317,7 @@ function ns:GroupTree()
     end
   end
   walk("root", 0)
-  out[#out + 1] = { id = "watched", name = "Watched", kind = "special", depth = 0 }
+  out[#out + 1] = { id = "watched", name = "Отслеживаемые", kind = "special", depth = 0 }
   out[#out + 1] = { id = "gray", name = "Gray items", kind = "special", depth = 0 }
   local profs = {}
   for p in pairs(professions().names) do profs[#profs + 1] = p end
@@ -600,14 +600,14 @@ end
 
 local function describe(how, from, rid)
   local name = from and ns:GroupInfo(from) and ns:GroupInfo(from).name
-  if how == "default" and not from then return "Default" end
+  if how == "default" and not from then return "По умолчанию" end
   if how == "rule" then
     local saved = store().saved[rid]
-    return ("Your rule %s (%s)"):format(saved and saved.name or "?", name or "?")
+    return ("Ваше правило %s (%s)"):format(saved and saved.name or "?", name or "?")
   end
-  if how == "changed" then return ("%s, changed here"):format(name or "?") end
-  if how == "off" then return ("Off (%s)"):format(name or "?") end
-  return ("Default (%s)"):format(name or "?")
+  if how == "changed" then return ("%s, изменено здесь"):format(name or "?") end
+  if how == "off" then return ("Выкл (%s)"):format(name or "?") end
+  return ("По умолчанию (%s)"):format(name or "?")
 end
 
 -- The rule of one kind for an item: fields (nil when off), where it came from in words
@@ -618,7 +618,7 @@ function ns:RuleFor(id, kind)
     local f, how, from, rid, set = resolve(gid, kind)
     if set then return f, describe(how, from, rid), from end
   end
-  return copy(ns.RULE_DEFAULTS[kind]), "Default", nil
+  return copy(ns.RULE_DEFAULTS[kind]), "По умолчанию", nil
 end
 
 -- Saved rules: your own, shared by any groups that pick them.

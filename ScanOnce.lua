@@ -129,7 +129,7 @@ local function build()
       }
     end
     i = stop
-    if frame then frame.status:SetText(("Working out %d of %d items..."):format(i, #ids)) end
+    if frame then frame.status:SetText(("Считаю %d из %d предметов..."):format(i, #ids)) end
     if i < #ids then C_Timer.After(0, step) return end
     results, building = out, false
     refresh()
@@ -227,7 +227,7 @@ local function treeRow(i)
     if not covered(self.row, byIdNow) then return end
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
     GameTooltip:AddLine(self.row.name, 1, 1, 1)
-    GameTooltip:AddLine("Already in: a group above it is ticked. Untick that one to pick parts of it.", nil, nil, nil, true)
+    GameTooltip:AddLine("Уже включено: группа выше отмечена. Снимите отметку с неё, чтобы выбрать части.", nil, nil, nil, true)
     GameTooltip:Show()
   end)
   r:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -313,8 +313,8 @@ local function resultRow(i)
   r.star:SetScript("OnEnter", function(self)
     local e = self:GetParent().entry
     GameTooltip:SetOwner(self, "ANCHOR_LEFT")
-    GameTooltip:AddLine(ns:IsWatched(e.id) and "Watched: click to stop watching it" or "Watch this item", 1, 1, 1)
-    GameTooltip:AddLine("Live watch looks for watched items every time it reads the auction house, and the Buy queue buys them at or under your price (set it on the item's price window).", nil, nil, nil, true)
+    GameTooltip:AddLine(ns:IsWatched(e.id) and "Отслеживается: клик — перестать" or "Следить за предметом", 1, 1, 1)
+    GameTooltip:AddLine("Слежение ищет отслеживаемые предметы при каждом чтении аукциона, а очередь покупок берёт их по вашей цене или дешевле (задаётся в окне цены предмета).", nil, nil, nil, true)
     GameTooltip:Show()
   end)
   r.star:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -343,7 +343,7 @@ local function resultRow(i)
     GameTooltip:SetOwner(self, "ANCHOR_LEFT")
     GameTooltip:SetItemByID(self.entry.id)
     GameTooltip:AddLine(" ")
-    GameTooltip:AddLine("Click for its price window: listings now, price history, watch it at your price.", 0.7, 0.7, 0.7, true)
+    GameTooltip:AddLine("Клик — окно цены: лоты сейчас, история цен, следить по вашей цене.", 0.7, 0.7, 0.7, true)
     GameTooltip:Show()
   end)
   r:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -388,15 +388,15 @@ local function drawList()
   if building then
     status = nil
   elseif not when then
-    status = "Press Scan to read the auction house, then tick groups on the left to narrow it down."
+    status = "Нажмите «Проверить», чтобы прочитать аукцион, затем отметьте группы слева, чтобы сузить список."
   else
-    status = ("Prices from %s: %d item%s%s."):format(when, #shown, #shown == 1 and "" or "s",
-      #shown > MAX_ROWS and (", the first %d shown (tick groups or search to narrow it)"):format(MAX_ROWS) or "")
+    status = ("Цены на %s: %d %s%s."):format(when, #shown, ns.Plural(#shown, "предмет", "предмета", "предметов"),
+      #shown > MAX_ROWS and (", показаны первые %d (отметьте группы или уточните поиск)"):format(MAX_ROWS) or "")
   end
   if status then frame.status:SetText(status) end
   frame.empty:SetShown(not building and #shown == 0)
-  frame.empty:SetText(not when and "Nothing scanned yet: press Scan."
-    or "Nothing here: tick other groups, or clear the search.")
+  frame.empty:SetText(not when and "Ещё ничего не проверено: нажмите «Проверить»."
+    or "Здесь ничего нет: отметьте другие группы или очистите поиск.")
 end
 
 refresh = function()
@@ -414,14 +414,14 @@ end
 -- they are; otherwise one reading of the list (Sweep.lua), then the list is worked out.
 local function scan()
   if not ns:IsAHOpen() then
-    frame.status:SetText("Open the auction house first.")
+    frame.status:SetText("Сначала откройте аукцион.")
     return
   end
   if ns:IsFlipWatching() or not (ns.SweepAvailable and ns:SweepAvailable()) then
     build()
     return
   end
-  frame.status:SetText("Reading the auction house list...")
+  frame.status:SetText("Читаю список аукциона...")
   frame.scanBtn:Disable()
   local started = ns:StartSweep(function()
     frame.scanBtn:Enable()
@@ -440,12 +440,12 @@ local function buildFrame(side)
   frame:EnableMouse(true)
   T:Fill(frame, T.bg)
 
-  frame.scanBtn = T:Button(frame, "Scan", 90, scan)
+  frame.scanBtn = T:Button(frame, "Проверить", 90, scan)
   frame.scanBtn:SetPoint("TOPLEFT", 10, -8)
   frame.scanBtn:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
-    GameTooltip:AddLine("Scan once", 1, 1, 1)
-    GameTooltip:AddLine("Reads the whole auction house list once (about 20 seconds), then shows everything in the groups you tick. The list stays as it was scanned until you scan again. With Live watch on, its prices are fresh already, so the list is just worked out again.", nil, nil, nil, true)
+    GameTooltip:AddLine("Разовый поиск", 1, 1, 1)
+    GameTooltip:AddLine("Один раз читает весь список аукциона (примерно 20 секунд), затем показывает всё в отмеченных группах. Список остаётся таким, каким его прочитали, пока вы не проверите снова. При включённом слежении цены уже свежие, поэтому список просто пересчитывается.", nil, nil, nil, true)
     GameTooltip:Show()
   end)
   frame.scanBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -460,7 +460,7 @@ local function buildFrame(side)
   frame.search:SetScript("OnEscapePressed", function(self) self:SetText(""); self:ClearFocus() end)
   local hint = T:Text(frame.search, 11, T.dim)
   hint:SetPoint("LEFT", 6, 0)
-  hint:SetText("Search names")
+  hint:SetText("Поиск по названию")
   frame.search:HookScript("OnTextChanged", function(self) hint:SetShown(self:GetText() == "") end)
 
   -- Left: the groups.
@@ -471,7 +471,7 @@ local function buildFrame(side)
   T:Border(left)
   local lt = T:Text(left, 10, T.dim)
   lt:SetPoint("TOPLEFT", 6, -5)
-  lt:SetText("Groups to show")
+  lt:SetText("Показывать группы")
   frame.tree = { rows = {} }
   frame.tree.sf, frame.tree.content = T:Scroll(left)
   frame.tree.sf:SetPoint("TOPLEFT", 2, -20)
@@ -486,8 +486,8 @@ local function buildFrame(side)
   header:SetPoint("TOPLEFT", 4, -3)
   header:SetPoint("TOPRIGHT", -4, -3)
   header:SetHeight(14)
-  for _, c in ipairs({ { "Item", 32, "LEFT" }, { "Why", COL.why - 10, "WHY" }, { "Cheapest", COL.cheap - 10 },
-                       { "Usual", COL.usual - 10 }, { "% of usual", COL.pct - 10 }, { "Listed", COL.listed - 10 } }) do
+  for _, c in ipairs({ { "Предмет", 32, "LEFT" }, { "Почему", COL.why - 10, "WHY" }, { "Минимум", COL.cheap - 10 },
+                       { "Обычная", COL.usual - 10 }, { "% обычной", COL.pct - 10 }, { "Лотов", COL.listed - 10 } }) do
     local fs = T:Text(header, 10, T.dim)
     if c[3] == "LEFT" then fs:SetPoint("LEFT", c[2], 0)
     elseif c[3] == "WHY" then fs:SetPoint("LEFT", header, "RIGHT", c[2], 0)
