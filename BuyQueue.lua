@@ -1890,11 +1890,11 @@ local function laneRow(L, i)
         else held = (" Это покрывает %s%s."):format(money(spendable()), spendable() < GetMoney() and " осталось потратить" or "") end
       end
       if e.buyOne then
-        GameTooltip:AddLine(("Купить %d (по одной за клик) за %s%s. Лотов по %s или дешевле на последней проверке: %d%s."):format(
-          e.buyN, e.buyEstimate and "около " or "", money(e.buyCost or 0), limitText(e), e.listedN or 0, when), 1, 1, 1, true)
+        GameTooltip:AddLine(("Купить %d (по одной за клик) за %s%s. %d лотов по %s или дешевле на последней проверке%s."):format(
+          e.buyN, e.buyEstimate and "около " or "", money(e.buyCost or 0), e.listedN or 0, limitText(e), when), 1, 1, 1, true)
       else
-        GameTooltip:AddLine(("Купить %d за %s. Лотов по %s или дешевле на последней проверке: %d%s.%s"):format(
-          e.buyN, money(e.buyCost or 0), limitText(e), e.listedN or 0, when, held), 1, 1, 1, true)
+        GameTooltip:AddLine(("Купить %d за %s. %d лотов по %s или дешевле на последней проверке%s.%s"):format(
+          e.buyN, money(e.buyCost or 0), e.listedN or 0, limitText(e), when, held), 1, 1, 1, true)
       end
       GameTooltip:AddLine("При покупке аукцион проверяется снова, поэтому количество может измениться.", 0.7, 0.7, 0.7, true)
     end
