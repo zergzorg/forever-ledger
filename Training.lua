@@ -1,4 +1,5 @@
 local _, ns = ...
+local print = ns.LocalizedPrint
 
 ---------------------------------------------------------------------------
 -- Trainers and the riding fund (owner, October 5). The training advice built on this (spell

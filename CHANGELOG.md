@@ -43,6 +43,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 - ~ **Simpler**: the Leveling tab, the training advice and dungeon runs are gone. The riding fund stays.
 
 ### Added
+- Shared locale support with Simplified Chinese display translations and language-specific fonts. Diagnostic reports and debug logs remain in English.
 - Tooltips: items the Darkmoon Faire takes for Prize Tickets get a coral red line, "Darkmoon Faire: 5 for 1 ticket (Yebb Neblegear)": the animal parts and the Blacksmithing, Engineering and Leatherworking turn-ins (Classic's list). Settings, Tooltips, Darkmoon Faire turn-ins.
 
 ### Changed

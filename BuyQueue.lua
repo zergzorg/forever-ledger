@@ -1826,11 +1826,11 @@ local function laneRow(L, i)
     if not e then return end
     GameTooltip:SetOwner(self, "ANCHOR_LEFT")
     if ns:IsWatched(e.id) then
-      GameTooltip:AddLine("Отслеживается", 1, 0.82, 0)
-      GameTooltip:AddLine("Слежение ищет его при каждом чтении аукциона. Клик — перестать следить.", 1, 1, 1, true)
+      ns:TooltipAddLine("Отслеживается", 1, 0.82, 0)
+      ns:TooltipAddLine("Слежение ищет его при каждом чтении аукциона. Клик — перестать следить.", 1, 1, 1, true)
     else
-      GameTooltip:AddLine("Следить за предметом", 1, 1, 1)
-      GameTooltip:AddLine("Слежение будет искать его при каждом чтении аукциона, а очередь покупок берёт его по вашей цене или дешевле (задаётся в окне цены предмета).", nil, nil, nil, true)
+      ns:TooltipAddLine("Следить за предметом", 1, 1, 1)
+      ns:TooltipAddLine("Слежение будет искать его при каждом чтении аукциона, а очередь покупок берёт его по вашей цене или дешевле (задаётся в окне цены предмета).", nil, nil, nil, true)
     end
     GameTooltip:Show()
   end)
@@ -1870,13 +1870,13 @@ local function laneRow(L, i)
   r:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_LEFT")
     GameTooltip:SetItemByID(self.entry.id)
-    GameTooltip:AddLine(" ")
-    GameTooltip:AddLine(reasonLine(self.entry), T.accent[1], T.accent[2], T.accent[3], true)
+    ns:TooltipAddLine(" ")
+    ns:TooltipAddLine(reasonLine(self.entry), T.accent[1], T.accent[2], T.accent[3], true)
     if self.entry.waiting then
-      GameTooltip:AddLine("Ожидание: на последнем поиске по вашей цене ничего не было. Поднимите «До» в списке или позже нажмите там «Искать всё».", 1, 0.82, 0, true)
+      ns:TooltipAddLine("Ожидание: на последнем поиске по вашей цене ничего не было. Поднимите «До» в списке или позже нажмите там «Искать всё».", 1, 0.82, 0, true)
     end
     if self.entry.stale then
-      GameTooltip:AddLine(("Последний раз видно %d мин назад, возможно, уже нет. Покупка (или слежение) проверит снова."):format(
+      ns:TooltipAddLine(ns.LocalizeText("Последний раз видно %d мин назад, возможно, уже нет. Покупка (или слежение) проверит снова."):format(
         math.floor(self.entry.age / 60)), 0.8, 0.8, 0.8, true)
     end
     local e = self.entry
@@ -1900,7 +1900,7 @@ local function laneRow(L, i)
     end
     local e = self.entry
     if e.reason == "flip" and e.affordN and e.n and e.affordN < e.n and e.affordN > 0 then
-      GameTooltip:AddLine(("Вам хватает на %d из %d дешёвых при %s%s, поэтому прибыль показана для них. Все %d дали бы %s."):format(
+      ns:TooltipAddLine(ns.LocalizeText("Вам хватает на %d из %d дешёвых при %s%s, поэтому прибыль показана для них. Все %d дали бы %s."):format(
         e.affordN, e.n, money(spendable()), spendable() < GetMoney() and " осталось потратить" or "", e.n, money(e.profit or 0)), 1, 0.82, 0, true)
     end
     local poor = cantAfford(self.entry)
@@ -1909,9 +1909,9 @@ local function laneRow(L, i)
       local text = (by == "gold" and ("Пока не хватает золота: минимум %s, у вас %s. Пропускается, пока не накопите."):format(money(poor), money(GetMoney())))
         or (by == "limit" and ("Выше лимита: минимум %s, а от «Потратить не более» на визит осталось %s."):format(money(poor), money(visitLeft())))
         or ("Выше лимита: минимум %s, а покупка опустит вас ниже %s, которые вы сохраняете (Настройки, Аукцион)."):format(money(poor), money(ns.db.settings.keepGold or 0))
-      GameTooltip:AddLine(text, 0.93, 0.52, 0.59, true)
+      ns:TooltipAddLine(text, 0.93, 0.52, 0.59, true)
     end
-    GameTooltip:AddLine("Клик — купить это следующим. Правый клик — пропустить до перезагрузки.", 0.7, 0.7, 0.7, true)
+    ns:TooltipAddLine("Клик — купить это следующим. Правый клик — пропустить до перезагрузки.", 0.7, 0.7, 0.7, true)
     GameTooltip:Show()
   end)
   r:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -2087,11 +2087,11 @@ local function buildQueueView(parent)
     b:HookScript("OnEnter", function(self)
       GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
       if self.value == "flips" then
-        GameTooltip:AddLine("Перепродажи торговцу", 1, 1, 1)
-        GameTooltip:AddLine("Лоты дешевле цены торговца, найденные проверками. Купите и продайте торговцу.", nil, nil, nil, true)
+        ns:TooltipAddLine("Перепродажи торговцу", 1, 1, 1)
+        ns:TooltipAddLine("Лоты дешевле цены торговца, найденные проверками. Купите и продайте торговцу.", nil, nil, nil, true)
       else
-        GameTooltip:AddLine("Списки покупок", 1, 1, 1)
-        GameTooltip:AddLine("Предметы из ваших списков с отметкой «Покупать из этого списка в очереди», по вашей цене или дешевле.", nil, nil, nil, true)
+        ns:TooltipAddLine("Списки покупок", 1, 1, 1)
+        ns:TooltipAddLine("Предметы из ваших списков с отметкой «Покупать из этого списка в очереди», по вашей цене или дешевле.", nil, nil, nil, true)
       end
       GameTooltip:Show()
     end)
@@ -2106,8 +2106,8 @@ local function buildQueueView(parent)
   wheel:SetHitRectInsets(0, -(wheel.label:GetStringWidth() + 8), 0, 0)
   wheel:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-    GameTooltip:AddLine("Покупка колесом", 1, 1, 1)
-    GameTooltip:AddLine("Каждый щелчок колеса, вверх или вниз, покупает следующий предмет: в любом месте над «Перепродажами торговцу» (список прокручивается полосой справа) или над верхней полосой «Списков покупок». Стопка материалов подтверждается в том же тике (если в Настройках, Аукцион не отмечено «Подтверждать стопки вторым щелчком»). Работает и при пустом списке, так что новые перепродажи можно купить сразу. Выкл.: покупает только кнопка «Купить».", nil, nil, nil, true)
+    ns:TooltipAddLine("Покупка колесом", 1, 1, 1)
+    ns:TooltipAddLine("Каждый щелчок колеса, вверх или вниз, покупает следующий предмет: в любом месте над «Перепродажами торговцу» (список прокручивается полосой справа) или над верхней полосой «Списков покупок». Стопка материалов подтверждается в том же тике (если в Настройках, Аукцион не отмечено «Подтверждать стопки вторым щелчком»). Работает и при пустом списке, так что новые перепродажи можно купить сразу. Выкл.: покупает только кнопка «Купить».", nil, nil, nil, true)
     GameTooltip:Show()
   end)
   wheel:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -2118,8 +2118,8 @@ local function buildQueueView(parent)
   v.watched:SetPoint("LEFT", v.viewChoice, "RIGHT", 10, 0)
   v.watched:HookScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
-    GameTooltip:AddLine("Отслеживаемые предметы", 1, 1, 1)
-    GameTooltip:AddLine("Предметы, которые всегда нужно проверять, с максимальной ценой. Слежение ищет их примерно раз в 20 секунд, и они покупаются здесь первыми. Добавьте здесь или кнопкой «Следить» в окне цены.", nil, nil, nil, true)
+    ns:TooltipAddLine("Отслеживаемые предметы", 1, 1, 1)
+    ns:TooltipAddLine("Предметы, которые всегда нужно проверять, с максимальной ценой. Слежение ищет их примерно раз в 20 секунд, и они покупаются здесь первыми. Добавьте здесь или кнопкой «Следить» в окне цены.", nil, nil, nil, true)
     GameTooltip:Show()
   end)
   v.watched:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -2136,8 +2136,8 @@ local function buildQueueView(parent)
   local function tip(b, title, text)
     b:HookScript("OnEnter", function(self)
       GameTooltip:SetOwner(self, "ANCHOR_TOP")
-      GameTooltip:AddLine(title, 1, 1, 1)
-      GameTooltip:AddLine(text, nil, nil, nil, true)
+      ns:TooltipAddLine(title, 1, 1, 1)
+      ns:TooltipAddLine(text, nil, nil, nil, true)
       GameTooltip:Show()
     end)
     b:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -2150,11 +2150,11 @@ local function buildQueueView(parent)
   v.watchBtn:HookScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
     if view() == "lists" then
-      GameTooltip:AddLine("Искать мои списки", 1, 1, 1)
-      GameTooltip:AddLine("Проверяет на аукционе всё из списков с отметкой «Покупать из этого списка в очереди» (и недостающие материалы) по одному. Что по вашей цене или дешевле, появится здесь.", nil, nil, nil, true)
+      ns:TooltipAddLine("Искать мои списки", 1, 1, 1)
+      ns:TooltipAddLine("Проверяет на аукционе всё из списков с отметкой «Покупать из этого списка в очереди» (и недостающие материалы) по одному. Что по вашей цене или дешевле, появится здесь.", nil, nil, nil, true)
     else
-      GameTooltip:AddLine("Слежение за перепродажами", 1, 1, 1)
-      GameTooltip:AddLine("Ищет перепродажи, пока аукцион открыт: полная проверка, когда игра разрешает (примерно каждые 15 минут), а между ними весь список аукциона читается примерно раз в 20 секунд. Новые перепродажи звенят и попадают в очередь сразу, как только приходит их часть списка. Повторный клик — остановить.", nil, nil, nil, true)
+      ns:TooltipAddLine("Слежение за перепродажами", 1, 1, 1)
+      ns:TooltipAddLine("Ищет перепродажи, пока аукцион открыт: полная проверка, когда игра разрешает (примерно каждые 15 минут), а между ними весь список аукциона читается примерно раз в 20 секунд. Новые перепродажи звенят и попадают в очередь сразу, как только приходит их часть списка. Повторный клик — остановить.", nil, nil, nil, true)
     end
     GameTooltip:Show()
   end)
@@ -2181,11 +2181,11 @@ local function buildQueueView(parent)
   v.totalsHit:SetScript("OnEnter", function(self)
     if Q.bought == 0 then return end
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
-    GameTooltip:AddLine("Куплено за визит", 1, 1, 1)
-    GameTooltip:AddDoubleLine("Потрачено", money(Q.spent), 0.7, 0.7, 0.7, 1, 1, 1)
+    ns:TooltipAddLine("Куплено за визит", 1, 1, 1)
+    ns:TooltipAddDoubleLine("Потрачено", money(Q.spent), 0.7, 0.7, 0.7, 1, 1, 1)
     if Q.vendorValue then
-      GameTooltip:AddDoubleLine("Торговец платит", money(Q.vendorValue), 0.7, 0.7, 0.7, 1, 1, 1)
-      GameTooltip:AddLine("Прибыль: сколько торговец платит за купленное минус затраты. То, что торговец не покупает, не учитывается.", 0.8, 0.8, 0.8, true)
+      ns:TooltipAddDoubleLine("Торговец платит", money(Q.vendorValue), 0.7, 0.7, 0.7, 1, 1, 1)
+      ns:TooltipAddLine("Прибыль: сколько торговец платит за купленное минус затраты. То, что торговец не покупает, не учитывается.", 0.8, 0.8, 0.8, true)
     end
     GameTooltip:Show()
   end)
@@ -2231,13 +2231,13 @@ local function buildQueueView(parent)
   v.limitLeft:SetJustifyH("RIGHT")
   local function limitTip(self)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
-    GameTooltip:AddLine("Потратить не более за визит", 1, 1, 1)
-    GameTooltip:AddLine("Сколько очередь покупок может потратить, пока аукцион открыт. Сбрасывается при каждом открытии. «Без предела» — тратить свободно. Введите 50 для 50g или 2g 50s.", nil, nil, nil, true)
+    ns:TooltipAddLine("Потратить не более за визит", 1, 1, 1)
+    ns:TooltipAddLine("Сколько очередь покупок может потратить, пока аукцион открыт. Сбрасывается при каждом открытии. «Без предела» — тратить свободно. Введите 50 для 50g или 2g 50s.", nil, nil, nil, true)
     if S().limit then
-      GameTooltip:AddLine(("Потрачено %s из %s."):format(money(Q.spent), money(S().limit)), 0.2, 0.85, 0.75, true)
+      ns:TooltipAddLine(ns.LocalizeText("Потрачено %s из %s."):format(money(Q.spent), money(S().limit)), 0.2, 0.85, 0.75, true)
     end
     local keep = ns.db.settings.keepGold or 0
-    GameTooltip:AddLine(keep > 0 and ("Также всегда оставляет вам %s (Настройки, Аукцион)."):format(money(keep))
+    ns:TooltipAddLine(keep > 0 and ns.LocalizeText("Также всегда оставляет вам %s (Настройки, Аукцион)."):format(money(keep))
       or "Чтобы всегда оставлять золото на ремонт или транспорт: Настройки, Аукцион.", 0.7, 0.7, 0.7, true)
     GameTooltip:Show()
   end
@@ -2319,7 +2319,7 @@ local function fillLane(L)
     L.pulsing = nil
     L:SetScript("OnUpdate", nil)
   end
-  L.title:SetText(("%s  |cff888888к покупке: %d|r%s"):format(d.title, ready,
+  L.title:SetText(ns.LocalizeText("%s  |cff888888к покупке: %d|r%s"):format(d.title, ready,
     wheel and ("   |cff" .. (lit and hex(c) or "888888") .. (d.key == "flips" and "прокрутите в любом месте, чтобы купить|r" or "прокрутите здесь, чтобы купить|r"))
       or "   |cff888888нажмите «Купить» или отметьте «Покупка колесом»|r"))
   local a, b, label
@@ -2385,7 +2385,7 @@ local function fillLane(L)
       end
     end
     if poor then r.profit:SetText("|cffee8597" .. heldWord(poor) .. "|r")
-    elseif e.stale then r.profit:SetText(("|cff888888видно %d мин назад|r"):format(math.floor(e.age / 60))) end
+    elseif e.stale then r.profit:SetText(ns.LocalizeText("|cff888888видно %d мин назад|r"):format(math.floor(e.age / 60))) end
     r:Show()
   end
   for i = #list + 1, #L.rows do L.rows[i]:Hide() end
@@ -2408,8 +2408,8 @@ refreshQueue = function()
   -- The scan status (a scan's progress, the watch's countdown) when there is one.
   v.status:SetText(ns.statusText or "")
   local profit = Q.vendorValue and (Q.vendorValue - Q.vendorCost)
-  v.totals:SetText(Q.bought > 0 and ("Куплено %d за %s%s"):format(Q.bought, money(Q.spent),
-      profit and (", прибыль %s"):format(profit >= 0 and ("|cff7fd39c" .. money(profit) .. "|r") or ("|cffee8597-" .. money(-profit) .. "|r")) or "")
+  v.totals:SetText(Q.bought > 0 and ns.LocalizeText("Куплено %d за %s%s"):format(Q.bought, money(Q.spent),
+      profit and ns.LocalizeText(", прибыль %s"):format(profit >= 0 and ("|cff7fd39c" .. money(profit) .. "|r") or ("|cffee8597-" .. money(-profit) .. "|r")) or "")
     or ("к покупке: %d"):format(total))
   Q.toBuy = total
   if view() == "flips" then
@@ -2426,7 +2426,7 @@ refreshQueue = function()
     v.limitLeft:SetText(left < 1 and "|cffee8597лимит достигнут|r"
       or ("|cff%s%s осталось|r"):format(share < 0.2 and "ffd100" or "33d9bf", ns.MoneyPlain(left)))
   elseif keep > 0 then
-    v.limitLeft:SetText(("|cff888888сохраняем %s|r"):format(ns.MoneyPlain(keep)))
+    v.limitLeft:SetText(ns.LocalizeText("|cff888888сохраняем %s|r"):format(ns.MoneyPlain(keep)))
   else
     v.limitLeft:SetText("")
   end
@@ -2471,7 +2471,7 @@ function ns:UpdatePanelScanButtons()
   if v.watched then
     v.watched:SetShown(not lists)
     local n = ns.WatchedCount and ns:WatchedCount() or 0
-    v.watched:SetText(n > 0 and ("Слежение (%d)"):format(n) or "Слежение")
+    v.watched:SetText(n > 0 and ns.LocalizeText("Слежение (%d)"):format(n) or "Слежение")
     if lists and ns.ToggleWatchedView then ns:ToggleWatchedView(nil, false) end
   end
 end
@@ -2738,13 +2738,13 @@ local function buildListsView(parent)
     -- The two choices apart, each under its own heading (owner's test, October 3: one
     -- block of text hid the second option).
     local A = T.accent
-    GameTooltip:AddLine("Покупать из этого списка в очереди", 1, 1, 1)
-    GameTooltip:AddLine(" ")
-    GameTooltip:AddLine("Отмечено", A[1], A[2], A[3])
-    GameTooltip:AddLine("Задайте «Нужно» и «До» для каждого предмета, и очередь покупок купит их.", 0.9, 0.9, 0.9, true)
-    GameTooltip:AddLine(" ")
-    GameTooltip:AddLine("Не отмечено", A[1], A[2], A[3])
-    GameTooltip:AddLine("Список показывает, что есть на аукционе; «Искать всё» проверяет всё сразу. Покупаете вы сами.", 0.9, 0.9, 0.9, true)
+    ns:TooltipAddLine("Покупать из этого списка в очереди", 1, 1, 1)
+    ns:TooltipAddLine(" ")
+    ns:TooltipAddLine("Отмечено", A[1], A[2], A[3])
+    ns:TooltipAddLine("Задайте «Нужно» и «До» для каждого предмета, и очередь покупок купит их.", 0.9, 0.9, 0.9, true)
+    ns:TooltipAddLine(" ")
+    ns:TooltipAddLine("Не отмечено", A[1], A[2], A[3])
+    ns:TooltipAddLine("Список показывает, что есть на аукционе; «Искать всё» проверяет всё сразу. Покупаете вы сами.", 0.9, 0.9, 0.9, true)
     GameTooltip:Show()
   end)
   v.on:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -2763,8 +2763,8 @@ local function buildListsView(parent)
   v.allowanceSuffix:SetPoint("LEFT", v.allowance, "RIGHT", 6, 0)
   v.allowance:HookScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
-    GameTooltip:AddLine("Допуск к обычной цене", 1, 1, 1)
-    GameTooltip:AddLine("Для предметов, добавленных вручную. Каждый список начинает с 10%; выберите 0, 5, 10, 25 или другой процент. Применяется при включении покупки или «Купить снова». Введённые цены и лимиты цепочек не меняются.", nil, nil, nil, true)
+    ns:TooltipAddLine("Допуск к обычной цене", 1, 1, 1)
+    ns:TooltipAddLine("Для предметов, добавленных вручную. Каждый список начинает с 10%; выберите 0, 5, 10, 25 или другой процент. Применяется при включении покупки или «Купить снова». Введённые цены и лимиты цепочек не меняются.", nil, nil, nil, true)
     GameTooltip:Show()
   end)
   v.allowance:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -2779,8 +2779,8 @@ local function buildListsView(parent)
   v.any:SetHitRectInsets(0, -(v.any.label:GetStringWidth() + 8), 0, 0)
   v.any:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
-    GameTooltip:AddLine("Любая цена", 1, 1, 1)
-    GameTooltip:AddLine("Для списков, где нужны просто предметы, например к рейду: цены игнорируются, и очередь покупает самые дешёвые, пока не наберёт нужное количество (1, если число не задано). Она никогда не платит больше трёх обычных цен, чтобы шуточный лот не прошёл. Введите «любая» в цене одного предмета — только для него.", nil, nil, nil, true)
+    ns:TooltipAddLine("Любая цена", 1, 1, 1)
+    ns:TooltipAddLine("Для списков, где нужны просто предметы, например к рейду: цены игнорируются, и очередь покупает самые дешёвые, пока не наберёт нужное количество (1, если число не задано). Она никогда не платит больше трёх обычных цен, чтобы шуточный лот не прошёл. Введите «любая» в цене одного предмета — только для него.", nil, nil, nil, true)
     GameTooltip:Show()
   end)
   v.any:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -2898,11 +2898,11 @@ local function buildListsView(parent)
   haveTip:EnableMouse(true)
   haveTip:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
-    GameTooltip:AddLine("Есть", 1, 1, 1)
+    ns:TooltipAddLine("Есть", 1, 1, 1)
     if not ns:IsSearchList(currentList()) then
-      GameTooltip:AddLine("Куплено для этого списка, в скобках — что есть: 3 (20) — куплено 3, есть 20.", 0.9, 0.9, 0.9, true)
+      ns:TooltipAddLine("Куплено для этого списка, в скобках — что есть: 3 (20) — куплено 3, есть 20.", 0.9, 0.9, 0.9, true)
     end
-    GameTooltip:AddLine("Учитываются сумки и банк этого персонажа, покупки ещё на почте и ваши персонажи этого правила и фракции. Наведите на число, чтобы увидеть где.", 0.7, 0.7, 0.7, true)
+    ns:TooltipAddLine("Учитываются сумки и банк этого персонажа, покупки ещё на почте и ваши персонажи этого правила и фракции. Наведите на число, чтобы увидеть где.", 0.7, 0.7, 0.7, true)
     GameTooltip:Show()
   end)
   haveTip:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -2964,8 +2964,8 @@ local function buildListsView(parent)
   v.again = again
   again:HookScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
-    GameTooltip:AddLine("Купить снова", 1, 1, 1)
-    GameTooltip:AddLine("Предмет закрыт, когда «Нужно» набрано, и остаётся закрытым, чтобы очередь не покупала лишнее. Нажмите, чтобы начать список заново (перед рейдом): купленное обнулится, и очередь снова купит всё по «Нужно». Сначала проверьте «Есть», если что-то осталось.", nil, nil, nil, true)
+    ns:TooltipAddLine("Купить снова", 1, 1, 1)
+    ns:TooltipAddLine("Предмет закрыт, когда «Нужно» набрано, и остаётся закрытым, чтобы очередь не покупала лишнее. Нажмите, чтобы начать список заново (перед рейдом): купленное обнулится, и очередь снова купит всё по «Нужно». Сначала проверьте «Есть», если что-то осталось.", nil, nil, nil, true)
     GameTooltip:Show()
   end)
   again:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -3042,8 +3042,8 @@ local function listRow(i)
     local found = r.kind == "item" and r.entry.found
     local want = r.kind == "item" and r.entry.suffix and ns:VersionLabel(r.entry.suffix)
     if found and found.versions and #found.versions > 0 then
-      GameTooltip:AddLine(" ")
-      GameTooltip:AddLine(("На аукционе по последнему «Искать всё» (%s):"):format(ns.Age(found.t)), T.accent[1], T.accent[2], T.accent[3])
+      ns:TooltipAddLine(" ")
+      ns:TooltipAddLine(ns.LocalizeText("На аукционе по последнему «Искать всё» (%s):"):format(ns.Age(found.t)), T.accent[1], T.accent[2], T.accent[3])
       -- A list that wants one version: that one first, in green (or "лотов нет"),
       -- then the others greyed and fewer of them (owner's test, October 3).
       local mine, others = {}, {}
@@ -3052,52 +3052,52 @@ local function listRow(i)
         else others[#others + 1] = ver end
       end
       local function line(ver, r1, g1, b1)
-        GameTooltip:AddDoubleLine(ver.name or "версия ещё загружается", ("лотов: %d, от %s"):format(ver.qty or 0,
+        ns:TooltipAddDoubleLine(ver.name or "версия ещё загружается", ns.LocalizeText("лотов: %d, от %s"):format(ver.qty or 0,
           ver.min and ns.Money(ver.min) or "?"), r1, g1, b1, r1, g1, b1)
       end
       if want then
-        if #mine == 0 then GameTooltip:AddLine(("%s: лотов нет"):format(ns:ListEntryName(r.entry)), 0.93, 0.52, 0.59) end
+        if #mine == 0 then ns:TooltipAddLine(ns.LocalizeText("%s: лотов нет"):format(ns:ListEntryName(r.entry)), 0.93, 0.52, 0.59) end
         for _, ver in ipairs(mine) do line(ver, 0.5, 0.83, 0.61) end
-        if #others > 0 then GameTooltip:AddLine("Другие версии:", 0.6, 0.6, 0.6) end
+        if #others > 0 then ns:TooltipAddLine("Другие версии:", 0.6, 0.6, 0.6) end
       end
       local limit = want and 6 or 12
       for k, ver in ipairs(others) do
-        if k > limit then GameTooltip:AddLine(("и ещё %d"):format(#others - limit), 0.6, 0.6, 0.6); break end
+        if k > limit then ns:TooltipAddLine(ns.LocalizeText("и ещё %d"):format(#others - limit), 0.6, 0.6, 0.6); break end
         if want then line(ver, 0.6, 0.6, 0.6) else line(ver, 0.9, 0.9, 0.9) end
       end
     elseif found then
-      GameTooltip:AddLine(" ")
-      GameTooltip:AddLine(("По последнему «Искать всё» лотов нет (%s)."):format(ns.Age(found.t)), 0.7, 0.7, 0.7)
+      ns:TooltipAddLine(" ")
+      ns:TooltipAddLine(ns.LocalizeText("По последнему «Искать всё» лотов нет (%s)."):format(ns.Age(found.t)), 0.7, 0.7, 0.7)
     end
     if want then
-      GameTooltip:AddLine(("В списке только версия «%s»; «Лотов» и «Минимум» считают только её."):format(want), 0.7, 0.7, 0.7, true)
+      ns:TooltipAddLine(ns.LocalizeText("В списке только версия «%s»; «Лотов» и «Минимум» считают только её."):format(want), 0.7, 0.7, 0.7, true)
     end
     -- Buy lists: buying the ones you're short of against crafting them.
     local list = currentList()
     local cob = r.kind == "item" and list and not ns:IsSearchList(list) and ns.CraftOrBuy and ns:CraftOrBuy(list, r.entry)
     if cob then
-      GameTooltip:AddLine(" ")
-      GameTooltip:AddLine(("Изготовить или купить: осталось получить %d:"):format(cob.short), T.accent[1], T.accent[2], T.accent[3])
-      GameTooltip:AddDoubleLine("Купить", cob.buy and ("около " .. ns.Money(cob.buy)) or "лотов нет", 0.9, 0.9, 0.9, 1, 1, 1)
-      GameTooltip:AddDoubleLine(("Изготовить (%d %s)"):format(cob.crafts, "шт."),
+      ns:TooltipAddLine(" ")
+      ns:TooltipAddLine(ns.LocalizeText("Изготовить или купить: осталось получить %d:"):format(cob.short), T.accent[1], T.accent[2], T.accent[3])
+      ns:TooltipAddDoubleLine("Купить", cob.buy and ("около " .. ns.Money(cob.buy)) or "лотов нет", 0.9, 0.9, 0.9, 1, 1, 1)
+      ns:TooltipAddDoubleLine(ns.LocalizeText("Изготовить (%d %s)"):format(cob.crafts, "шт."),
         cob.craft and (cob.craft == 0 and "все материалы есть" or ("около " .. ns.Money(cob.craft) .. " на материалы"))
         or "материалы без цены", 0.9, 0.9, 0.9, 1, 1, 1)
       if cob.buy and cob.craft and cob.buy ~= cob.craft then
         local craftWins = cob.craft < cob.buy
-        GameTooltip:AddLine(("%s дешевле на %s.%s"):format(craftWins and "Изготовление" or "Покупка",
+        ns:TooltipAddLine(ns.LocalizeText("%s дешевле на %s.%s"):format(craftWins and "Изготовление" or "Покупка",
           ns.Money(math.abs(cob.buy - cob.craft)),
           (craftWins ~= (r.entry.mode == "craft")) and (" Переключите на «" .. (craftWins and "Изготовление" or "Купить") .. "» кнопкой.") or ""),
           0.5, 0.83, 0.61, true)
       end
     end
-    GameTooltip:AddLine("Клик — найти на аукционе.", 0.6, 0.6, 0.6)
+    ns:TooltipAddLine("Клик — найти на аукционе.", 0.6, 0.6, 0.6)
     if r.kind == "item" and r.entry.mode == "craft" then
       local recipe = ns:RecipeFor(id)
-      GameTooltip:AddLine(" ")
-      GameTooltip:AddLine(recipe and ("Изготавливается из %s%s."):format(recipe.prof or "профессия", recipe.who and (" (" .. recipe.who .. ")") or "")
+      ns:TooltipAddLine(" ")
+      ns:TooltipAddLine(recipe and ns.LocalizeText("Изготавливается из %s%s."):format(recipe.prof or "профессия", recipe.who and (" (" .. recipe.who .. ")") or "")
         or "Рецепт пока неизвестен.", T.accent[1], T.accent[2], T.accent[3], true)
       if recipe and recipe.classic then
-        GameTooltip:AddLine(("Рецепт оригинального Classic (навык %d, создаёт %g): в Forever может отличаться. Откройте окно профессии у персонажа, который его знает, чтобы использовать этот рецепт."):format(
+        ns:TooltipAddLine(ns.LocalizeText("Рецепт оригинального Classic (навык %d, создаёт %g): в Forever может отличаться. Откройте окно профессии у персонажа, который его знает, чтобы использовать этот рецепт."):format(
           recipe.skill or 0, recipe.oq or 1), 0.7, 0.7, 0.7, true)
       end
     end
@@ -3123,8 +3123,8 @@ local function listRow(i)
   r.mode:SetPoint("LEFT", C.get, 0)
   r.mode:HookScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
-    GameTooltip:AddLine("Купить или изготовить", 1, 1, 1)
-    GameTooltip:AddLine("Купить: взять на аукционе по вашей цене. Изготовить: сделать самому; недостающие материалы перечислены ниже.", nil, nil, nil, true)
+    ns:TooltipAddLine("Купить или изготовить", 1, 1, 1)
+    ns:TooltipAddLine("Купить: взять на аукционе по вашей цене. Изготовить: сделать самому; недостающие материалы перечислены ниже.", nil, nil, nil, true)
     GameTooltip:Show()
   end)
   r.mode:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -3165,7 +3165,7 @@ local function listRow(i)
     if not list then return end
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
     local value = self.value or 0
-    GameTooltip:AddLine("До: " .. (value == -1 and "любая" or value == 0 and "выкл" or ns.Money(value)), 1, 1, 1)
+    ns:TooltipAddLine("До: " .. (value == -1 and "любая" or value == 0 and "выкл" or ns.Money(value)), 1, 1, 1)
     local text
     if r.kind == "item" then text = ns:ListPriceSourceText(list, r.entry)
     elseif r.kind == "mat" then
@@ -3174,10 +3174,10 @@ local function listRow(i)
     end
     -- Who set it, as its own gold line (owner, October 6: "Задано вами" blended in).
     local mine = (r.kind == "item" and r.entry.src == "you") or (r.kind == "mat" and list.matMax and list.matMax[r.mat.id] ~= nil)
-    GameTooltip:AddLine(mine and "Задано вами" or "Автоматически", 1, 0.82, 0)
-    if text then GameTooltip:AddLine((text:gsub("^Задано вами%. ", "")), 0.8, 0.8, 0.8, true) end
-    if not mine then GameTooltip:AddLine("Введите цену, чтобы задать свою.", 0.6, 0.6, 0.6, true)
-    elseif r.kind == "mat" then GameTooltip:AddLine("Правый клик: вернуть автоматическую цену.", 0.6, 0.6, 0.6, true) end
+    ns:TooltipAddLine(mine and "Задано вами" or "Автоматически", 1, 0.82, 0)
+    if text then ns:TooltipAddLine((text:gsub("^Задано вами%. ", "")), 0.8, 0.8, 0.8, true) end
+    if not mine then ns:TooltipAddLine("Введите цену, чтобы задать свою.", 0.6, 0.6, 0.6, true)
+    elseif r.kind == "mat" then ns:TooltipAddLine("Правый клик: вернуть автоматическую цену.", 0.6, 0.6, 0.6, true) end
     GameTooltip:Show()
   end)
   r.max:SetWidth(66)
@@ -3223,11 +3223,11 @@ local function listRow(i)
   end)
   r.qty:HookScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
-    GameTooltip:AddLine("Нужно", 1, 1, 1)
-    GameTooltip:AddLine("Сколько купить. Пусто — один. Введите «любая», чтобы покупать всегда по «До» или дешевле; он никогда не считается готовым.", 0.85, 0.85, 0.85, true)
+    ns:TooltipAddLine("Нужно", 1, 1, 1)
+    ns:TooltipAddLine("Сколько купить. Пусто — один. Введите «любая», чтобы покупать всегда по «До» или дешевле; он никогда не считается готовым.", 0.85, 0.85, 0.85, true)
     -- In red (owner, October 22: any bought as many as he could afford).
-    GameTooltip:AddLine(" ")
-    GameTooltip:AddLine("Осторожно: «любая» покупает все лоты по «До» или дешевле, сколько сможете. При слишком высоком «До» можно потратить всё золото.", 1, 0.3, 0.3, true)
+    ns:TooltipAddLine(" ")
+    ns:TooltipAddLine("Осторожно: «любая» покупает все лоты по «До» или дешевле, сколько сможете. При слишком высоком «До» можно потратить всё золото.", 1, 0.3, 0.3, true)
     GameTooltip:Show()
   end)
   r.qty:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -3253,29 +3253,29 @@ local function listRow(i)
     local mail = ns:InTheMail(id)
     local A = T.accent
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-    GameTooltip:AddLine(ns.ItemName(id), 1, 1, 1)
+    ns:TooltipAddLine(ns.ItemName(id), 1, 1, 1)
     local list = currentList()
     if list and not ns:IsSearchList(list) then
       local bought = (r.kind == "item" and (r.entry.bought or 0)) or (r.kind == "mat" and r.mat.bought) or 0
-      GameTooltip:AddDoubleLine("Куплено для списка", tostring(bought), A[1], A[2], A[3], 1, 1, 1)
-      GameTooltip:AddLine(" ")
+      ns:TooltipAddDoubleLine("Куплено для списка", tostring(bought), A[1], A[2], A[3], 1, 1, 1)
+      ns:TooltipAddLine(" ")
     end
-    GameTooltip:AddLine("У вас", A[1], A[2], A[3])
-    GameTooltip:AddDoubleLine("  Сумки", tostring(bags), 0.8, 0.8, 0.8, 1, 1, 1)
-    GameTooltip:AddDoubleLine("  Банк", tostring(bank), 0.8, 0.8, 0.8, 1, 1, 1)
-    if mail > 0 then GameTooltip:AddDoubleLine("  На почте", tostring(mail), 0.8, 0.8, 0.8, 1, 1, 1) end
+    ns:TooltipAddLine("У вас", A[1], A[2], A[3])
+    ns:TooltipAddDoubleLine("  Сумки", tostring(bags), 0.8, 0.8, 0.8, 1, 1, 1)
+    ns:TooltipAddDoubleLine("  Банк", tostring(bank), 0.8, 0.8, 0.8, 1, 1, 1)
+    if mail > 0 then ns:TooltipAddDoubleLine("  На почте", tostring(mail), 0.8, 0.8, 0.8, 1, 1, 1) end
     local names = {}
     for name in pairs(byAlt) do names[#names + 1] = name end
     table.sort(names)
-    for _, name in ipairs(names) do GameTooltip:AddDoubleLine("  " .. name, tostring(byAlt[name]), 0.8, 0.8, 0.8, 1, 1, 1) end
-    GameTooltip:AddDoubleLine("  Всего", tostring(bags + bank + mail + alts), 1, 1, 1, 1, 1, 1)
-    GameTooltip:AddLine(" ")
+    for _, name in ipairs(names) do ns:TooltipAddDoubleLine("  " .. name, tostring(byAlt[name]), 0.8, 0.8, 0.8, 1, 1, 1) end
+    ns:TooltipAddDoubleLine("  Всего", tostring(bags + bank + mail + alts), 1, 1, 1, 1, 1, 1)
+    ns:TooltipAddLine(" ")
     if list and list.countHave then
-      GameTooltip:AddLine("В списках ящиков имеющееся идёт в «Нужно».", 0.6, 0.6, 0.6, true)
+      ns:TooltipAddLine("В списках ящиков имеющееся идёт в «Нужно».", 0.6, 0.6, 0.6, true)
     elseif list and not ns:IsSearchList(list) then
-      GameTooltip:AddLine("«Нужно» — сколько купить, независимо от имеющегося.", 0.6, 0.6, 0.6, true)
+      ns:TooltipAddLine("«Нужно» — сколько купить, независимо от имеющегося.", 0.6, 0.6, 0.6, true)
     end
-    GameTooltip:AddLine(alts == 0 and "Другие персонажи: на этом правиле и фракции ни у кого нет."
+    ns:TooltipAddLine(alts == 0 and "Другие персонажи: на этом правиле и фракции ни у кого нет."
       or "Другие персонажи: на этом правиле и фракции, по последнему входу.", 0.6, 0.6, 0.6, true)
     GameTooltip:Show()
   end)
@@ -3627,7 +3627,7 @@ refreshLists = function()
   -- The list's progress beside its name (search lists: how many are up).
   if list and #list.items > 0 then
     if search then
-      v.title:SetText(("%s  %s%d выставлено|r"):format(list.name, done > 0 and "|cff7fd39c" or "|cff888888", done))
+      v.title:SetText(ns.LocalizeText("%s  %s%d выставлено|r"):format(list.name, done > 0 and "|cff7fd39c" or "|cff888888", done))
     else
       v.title:SetText(("%s  %s%d/%d|r"):format(list.name,
         done == #list.items and "|cff7fd39c" or "|cffffd100", done, #list.items))
@@ -3646,7 +3646,7 @@ refreshLists = function()
     elseif #list.items == 0 then
       v.info:SetText("Добавьте предметы выше: shift-клик, перетаскивание или название (например, «Soldier's Armor of the Monkey» для одной версии).")
     else
-      v.info:SetText(("%d из %d выставлено на последней проверке. Клик по предмету — посмотреть на аукционе."):format(done, #list.items))
+      v.info:SetText(ns.LocalizeText("%d из %d выставлено на последней проверке. Клик по предмету — посмотреть на аукционе."):format(done, #list.items))
     end
     return
   end
@@ -3668,9 +3668,9 @@ refreshLists = function()
     v.info:SetText(buyMode and "|cff7fd39cГотово: всё из списка куплено. «Купить снова» начнёт заново.|r"
       or "|cff7fd39cГотово: у вас есть всё из этого списка.|r")
   elseif craftsReady > 0 and matsShort == 0 and done + craftsReady == #list.items then
-    v.info:SetText(("|cff7fd39cУ вас есть все материалы:|r изготовить %d, и готово."):format(craftsReady))
+    v.info:SetText(ns.LocalizeText("|cff7fd39cУ вас есть все материалы:|r изготовить %d, и готово."):format(craftsReady))
   elseif not ns:IsAHOpen() then
-    v.info:SetText(estimateText(list) .. ("%d из %d предметов готово%s. Откройте аукцион для поиска и покупки."):format(done, #list.items,
+    v.info:SetText(estimateText(list) .. ns.LocalizeText("%d из %d предметов готово%s. Откройте аукцион для поиска и покупки."):format(done, #list.items,
       matsShort > 0 and (", не хватает %d %s"):format(matsShort, ns.Plural(matsShort, "материала", "материалов", "материалов")) or ""))
   else
     -- Items at "off" aren't bought; say so, and how to change it.
@@ -3679,10 +3679,10 @@ refreshLists = function()
       if e.mode ~= "craft" and not ns:ListVendorPrice(e.id) and not ns:ItemLimit(list, e) then noPrice = noPrice + 1 end
     end
     if noPrice > 0 then
-      v.info:SetText(("У %d %s «До» выкл, поэтому очередь их пропускает: введите цену, чтобы купить."):format(noPrice,
+      v.info:SetText(ns.LocalizeText("У %d %s «До» выкл, поэтому очередь их пропускает: введите цену, чтобы купить."):format(noPrice,
         ns.Plural(noPrice, "предмета", "предметов", "предметов")))
     else
-      v.info:SetText(estimateText(list) .. ("%d из %d готово. %d по вашей цене%s: в очереди покупок."):format(done, #list.items, cheap,
+      v.info:SetText(estimateText(list) .. ns.LocalizeText("%d из %d готово. %d по вашей цене%s: в очереди покупок."):format(done, #list.items, cheap,
         toBuy > 0 and (", не хватает %d %s"):format(toBuy, ns.Plural(toBuy, "материала", "материалов", "материалов")) or ""))
     end
   end

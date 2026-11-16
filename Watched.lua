@@ -149,8 +149,8 @@ local C = { name = 22, max = 178, now = 340, vendor = 410, x = 416 }
 local function tip(frame, title, text, anchor)
   frame:HookScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, anchor or "ANCHOR_TOP")
-    GameTooltip:AddLine(title, 1, 1, 1)
-    GameTooltip:AddLine(text, nil, nil, nil, true)
+    ns:TooltipAddLine(title, 1, 1, 1)
+    ns:TooltipAddLine(text, nil, nil, nil, true)
     GameTooltip:Show()
   end)
   frame:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -184,8 +184,8 @@ local function addFromBox(v)
     return
   end
   ns:WatchItem(id, max)
-  ns:Print(("Следим за %s, %s. Слежение ищет его при каждом чтении аукциона."):format(ns.ItemName(id) or "предмет",
-    max > 0 and ("до " .. ns.Money(max)) or "по цене торговца"))
+  ns:Print(ns.LocalizeText("Следим за %s, %s. Слежение ищет его при каждом чтении аукциона."):format(ns.ItemName(id) or "предмет",
+    max > 0 and (ns.LocalizeText("до ") .. ns.Money(max)) or ns.LocalizeText("по цене торговца")))
   v.add:SetText(""); v.max:SetText("")
   v.pendingID = nil
   v.add:ClearFocus(); v.max:ClearFocus()
@@ -213,19 +213,19 @@ local function row(v, i)
     GameTooltip:SetOwner(self, "ANCHOR_LEFT")
     GameTooltip:SetItemByID(r.id)
     local limit, how, sell = ns:WatchLimit(r.id)
-    GameTooltip:AddLine(" ")
+    ns:TooltipAddLine(" ")
     if how == "you" then
-      GameTooltip:AddLine(("Покупать по %s или дешевле, ваша цена."):format(ns.Money(limit)), T.accent[1], T.accent[2], T.accent[3], true)
+      ns:TooltipAddLine(ns.LocalizeText("Покупать по %s или дешевле, ваша цена."):format(ns.Money(limit)), T.accent[1], T.accent[2], T.accent[3], true)
     elseif how == "vendor" then
-      GameTooltip:AddLine(("Покупать по %s или дешевле: торговец платит %s минус ваш запас на перепродажу."):format(ns.Money(limit), ns.Money(sell)),
+      ns:TooltipAddLine(ns.LocalizeText("Покупать по %s или дешевле: торговец платит %s минус ваш запас на перепродажу."):format(ns.Money(limit), ns.Money(sell)),
         T.accent[1], T.accent[2], T.accent[3], true)
     else
-      GameTooltip:AddLine("Пока не покупается: торговцы его не покупают. Введите максимум в «До».", 1, 0.82, 0, true)
+      ns:TooltipAddLine("Пока не покупается: торговцы его не покупают. Введите максимум в «До».", 1, 0.82, 0, true)
     end
     if ns.IsGearItem and ns:IsGearItem(r.id) then
-      GameTooltip:AddLine("Снаряжение: любая версия характеристик по цене или дешевле.", 0.7, 0.7, 0.7, true)
+      ns:TooltipAddLine("Снаряжение: любая версия характеристик по цене или дешевле.", 0.7, 0.7, 0.7, true)
     end
-    GameTooltip:AddLine("Клик — найти на аукционе.", 0.6, 0.6, 0.6)
+    ns:TooltipAddLine("Клик — найти на аукционе.", 0.6, 0.6, 0.6)
     GameTooltip:Show()
   end)
   r.hit:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -238,8 +238,8 @@ local function row(v, i)
   r.max.compact = true
   r.max:HookScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
-    GameTooltip:AddLine("До", 1, 1, 1)
-    GameTooltip:AddLine("Максимум, который платит очередь. «торговец»: только когда торговец даёт больше (перепродажа торговцу). Ваша цена ниже всё равно покупает такие предметы.", nil, nil, nil, true)
+    ns:TooltipAddLine("До", 1, 1, 1)
+    ns:TooltipAddLine("Максимум, который платит очередь. «торговец»: только когда торговец даёт больше (перепродажа торговцу). Ваша цена ниже всё равно покупает такие предметы.", nil, nil, nil, true)
     GameTooltip:Show()
   end)
   r.max:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -287,7 +287,7 @@ local function refresh()
   v.content:SetHeight(math.max(#list * ROW_H, ROW_H))
   v.sf.UpdateScrollBar()
   v.empty:SetShown(#list == 0)
-  v.count:SetText(#list == 0 and "" or ("Наблюдаем: %d %s. Зелёное — сейчас по «До» или дешевле."):format(#list, ns.Plural(#list, "предмет", "предмета", "предметов")))
+  v.count:SetText(#list == 0 and "" or ns.LocalizeText("Наблюдаем: %d %s. Зелёное — сейчас по «До» или дешевле."):format(#list, ns.Plural(#list, "предмет", "предмета", "предметов")))
 end
 
 function ns:RefreshWatchedView() refresh() end
@@ -417,7 +417,7 @@ local function onModifiedClick(link)
   end
   if not ns:IsWatched(id) then
     ns:WatchItem(id, nil)
-    ns:Print(("Следим за %s по цене торговца. Введите цену в «До», чтобы покупать дороже."):format(link))
+    ns:Print(ns.LocalizeText("Следим за %s по цене торговца. Введите цену в «До», чтобы покупать дороже."):format(link))
   end
 end
 if HandleModifiedItemClick then hooksecurefunc("HandleModifiedItemClick", onModifiedClick) end

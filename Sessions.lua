@@ -198,9 +198,9 @@ local function buildTracker()
     local st = ns:SessionTotals()
     if not st then return end
     GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
-    GameTooltip:AddLine("Сессия", 1, 1, 1)
-    GameTooltip:AddDoubleLine("Приход", ns.Money(st.earned), 0.8, 0.8, 0.8, 1, 1, 1)
-    GameTooltip:AddDoubleLine("Расход", ns.Money(st.spent), 0.8, 0.8, 0.8, 1, 1, 1)
+    ns:TooltipAddLine("Сессия", 1, 1, 1)
+    ns:TooltipAddDoubleLine("Приход", ns.Money(st.earned), 0.8, 0.8, 0.8, 1, 1, 1)
+    ns:TooltipAddDoubleLine("Расход", ns.Money(st.spent), 0.8, 0.8, 0.8, 1, 1, 1)
     -- Where it came from and went (owner's test, October 3: "+1g 84s, I don't think
     -- that's right"): auction sales, vendor, mail, loot..., biggest first.
     local by = {}
@@ -208,16 +208,16 @@ local function buildTracker()
     table.sort(by, function(a, b) return math.abs(a[2]) > math.abs(b[2]) end)
     for _, x in ipairs(by) do
       local label = (ns.MONEY_LABELS and ns.MONEY_LABELS[x[1]]) or x[1]
-      GameTooltip:AddDoubleLine("  " .. label, (x[2] < 0 and "|cffee8597-|r" or "|cff7fd39c+|r") .. ns.Money(math.abs(x[2])),
+      ns:TooltipAddDoubleLine("  " .. label, (x[2] < 0 and "|cffee8597-|r" or "|cff7fd39c+|r") .. ns.Money(math.abs(x[2])),
         0.7, 0.7, 0.7, 1, 1, 1)
     end
-    GameTooltip:AddDoubleLine("Добыто, примерно на", ns.Money(st.loot), 0.8, 0.8, 0.8, 1, 1, 1)
+    ns:TooltipAddDoubleLine("Добыто, примерно на", ns.Money(st.loot), 0.8, 0.8, 0.8, 1, 1, 1)
     for k = 1, math.min(5, #st.items) do
       local it = st.items[k]
-      GameTooltip:AddDoubleLine(("  %d x %s"):format(it.n, ns.ItemName(it.id) or "?"), ns.Money(it.value), 0.7, 0.7, 0.7, 1, 1, 1)
+      ns:TooltipAddDoubleLine(("  %d x %s"):format(it.n, ns.ItemName(it.id) or "?"), ns.Money(it.value), 0.7, 0.7, 0.7, 1, 1, 1)
     end
-    GameTooltip:AddLine("Добыча считается по лучшей из цен аукциона (за вычетом комиссии) и торговца; в настройках можно считать только по торговцу.", 0.6, 0.6, 0.6, true)
-    GameTooltip:AddLine(ns.db.settings.sessionSmall and "Перетащите, чтобы переместить. Правый клик — полный вид, там же «Стоп»."
+    ns:TooltipAddLine("Добыча считается по лучшей из цен аукциона (за вычетом комиссии) и торговца; в настройках можно считать только по торговцу.", 0.6, 0.6, 0.6, true)
+    ns:TooltipAddLine(ns.db.settings.sessionSmall and "Перетащите, чтобы переместить. Правый клик — полный вид, там же «Стоп»."
       or "Перетащите, чтобы переместить. Правый клик — свернуть в одну строку.", 0.6, 0.6, 0.6, true)
     GameTooltip:Show()
   end)

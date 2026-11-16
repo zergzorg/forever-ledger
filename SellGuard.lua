@@ -55,7 +55,7 @@ local function evaluate(g)
     return
   end
   -- Two short lines, centred under Post (owner, October 3: "centered and clean").
-  g.text:SetText(("|cffff7070Торговец платит: %s%s|r"):format(ns.Money(vendor), qty > 1 and (" за %d"):format(qty) or ""))
+  g.text:SetText(ns.LocalizeText("|cffff7070Торговец платит: %s%s|r"):format(ns.Money(vendor), qty > 1 and ns.LocalizeText(" за %d"):format(qty) or ""))
   g.text2:SetText(("Аукцион: %s после комиссии %d%%"):format(ns.Money(net), math.floor(ns:AHCut() * 100 + 0.5)))
   local lock = ns.db.settings.sellGuard ~= false and not unlocked[g.key]
   g.anyway:SetShown(lock)
@@ -221,8 +221,8 @@ local function helper(frame, name)
   for _, b in ipairs({ h.under_b, h.usual_b }) do
     b:HookScript("OnEnter", function(self)
       GameTooltip:SetOwner(self, "ANCHOR_TOP")
-      GameTooltip:AddLine(self == h.under_b and "Чуть ниже минимума" or "Ваша обычная цена", 1, 1, 1)
-      GameTooltip:AddLine(self == h.under_b and "Заполняет поле цены на 1 медь ниже самого дешёвого лота из последней проверки. «Выставить» нажимаете вы."
+      ns:TooltipAddLine(self == h.under_b and "Чуть ниже минимума" or "Ваша обычная цена", 1, 1, 1)
+      ns:TooltipAddLine(self == h.under_b and "Заполняет поле цены на 1 медь ниже самого дешёвого лота из последней проверки. «Выставить» нажимаете вы."
         or "Заполняет поле цены обычной ценой из проверок этого месяца. «Выставить» нажимаете вы.", nil, nil, nil, true)
       GameTooltip:Show()
     end)

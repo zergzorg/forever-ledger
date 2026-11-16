@@ -419,7 +419,7 @@ function ns:RefreshHelp()
 
   if q then
     -- Searching: the matching entries and questions of every topic, under its name.
-    local function hit(a, b) return (a or ""):lower():find(q, 1, true) or (b or ""):lower():find(q, 1, true) end
+    local function hit(a, b) return (a or ""):lower():find(q, 1, true) or (b or ""):lower():find(q, 1, true) or ns.LocalizeText(a or ""):lower():find(q, 1, true) or ns.LocalizeText(b or ""):lower():find(q, 1, true) end
     local any = false
     for _, s in ipairs(ns.HELP) do
       local list = {}
@@ -543,7 +543,7 @@ ns:On("PLAYER_ENTERING_WORLD", function()
     if #turnedOff == 0 then return end
     local text = ("%s установлен. Чтобы не видеть всё дважды, Forever Ledger отключил:\n\n%s\n\nОстальное остаётся. Вернуть можно в любой момент в настройках."):format(
       table.concat(names, " и "), table.concat(lines, "\n"))
-    local dialog = StaticPopup_Show("FOREVER_LEDGER_OVERLAP", text)
+    local dialog = ns:ShowPopup("FOREVER_LEDGER_OVERLAP", text)
     if dialog then dialog.data = turnedOff end
   end)
 end)

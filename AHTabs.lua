@@ -91,7 +91,7 @@ local function selectTab(key)
   deselectOurs()
   PanelTemplates_SelectTab(buttons[key])
   for _, t in ipairs(TABS) do
-    if t.key == key and ah.SetTitle then ah:SetTitle(t.title) end
+    if t.key == key and ah.SetTitle then ah:SetTitle(ns.LocalizeText(t.title)) end
   end
   host.key, chosen = key, key
   if host:IsShown() then host:GetScript("OnShow")(host) else host:Show() end
@@ -114,7 +114,7 @@ local function makeOwn()
   local prev
   for _, t in ipairs(TABS) do
     local b = CreateFrame("Button", "ForeverLedgerAHTab_" .. t.key, root, "AuctionHouseFrameDisplayModeTabTemplate")
-    b:SetText(t.label)
+    b:SetText(ns.LocalizeText(t.label))
     PanelTemplates_TabResize(b, 20, nil, 70)
     if prev then b:SetPoint("TOPLEFT", prev, "TOPRIGHT", overlap, 0)
     else b:SetPoint("TOPLEFT", root, "TOPLEFT", overlap, 0) end
@@ -149,7 +149,7 @@ local function makeShared()
       if host.key == t.key then host:Hide() end
     end)
     local id = "ForeverLedger_" .. t.key
-    lib:CreateTab(id, holder, t.label, t.title)
+    lib:CreateTab(id, holder, ns.LocalizeText(t.label), ns.LocalizeText(t.title))
     buttons[t.key] = lib:GetButton(id)
   end
 end
@@ -224,7 +224,7 @@ end
 function ns:MarkAHTab(n)
   local b = buttons.buy
   if not b then return end
-  if n and n > 0 then b:SetText(("Покупка (%d)"):format(n)) else b:SetText("Покупка") end
+  if n and n > 0 then b:SetText(ns.LocalizeText("Покупка (%d)"):format(n)) else b:SetText(ns.LocalizeText("Покупка")) end
   if PanelTemplates_TabResize then PanelTemplates_TabResize(b, 20, nil, 70) end
 end
 

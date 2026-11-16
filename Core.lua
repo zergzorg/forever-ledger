@@ -577,8 +577,8 @@ function ns.PerfLines(n)
 end
 
 function ns:PrintPerf(reset)
-  if reset then ns.perf, ns.perfSince = {}, GetTime(); ns:Print("Timing reset. Play for a minute, then /fl perf."); return end
-  ns:Print(("Time used by Forever Ledger over the last %d seconds, slowest single moment first:"):format(GetTime() - ns.perfSince))
+  if reset then ns.perf, ns.perfSince = {}, GetTime(); print(ns.PREFIX, "Timing reset. Play for a minute, then /fl perf."); return end
+  print(ns.PREFIX, ("Time used by Forever Ledger over the last %d seconds, slowest single moment first:"):format(GetTime() - ns.perfSince))
   for _, line in ipairs(ns.PerfLines(12)) do print("  " .. line) end
   -- Memory and loading, to see whether the data files (ClassicItems.lua) cost much.
   local update = (C_AddOns and C_AddOns.UpdateAddOnMemoryUsage) or UpdateAddOnMemoryUsage
@@ -1040,7 +1040,7 @@ function ns:ApiReport()
     "GetTrainerServiceLevelReq", "GetTrainerServiceTypeFilter", "GetNumTalentTabs", "GetTalentTabInfo",
     "GetTalentInfo", "IsPlayerSpell", "IsSpellKnown", "GetSkillLineInfo", "C_SpellBook.IsSpellKnown",
   }
-  ns:Print("Проверка API (приложите это к отчёту об ошибке):")
+  print(ns.PREFIX, "API check (include this in a bug report if something isn't working):")
   for _, path in ipairs(checks) do
     print(("  %s %s"):format(has(path) and "|cff7fd39cда|r" or "|cffee8597нет|r ", path))
   end

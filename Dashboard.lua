@@ -302,7 +302,7 @@ local function drawGraph(g, pts, from, to, rangeKey)
     local label = nextLabel()
     label:ClearAllPoints()
     label:SetPoint("TOP", g, "BOTTOMLEFT", PAD_LEFT + plotW * i / 3, PAD_BOTTOM - 4)
-    label:SetText(date(fmt, t))
+    label:SetText(ns.LocalizeText(date(fmt, t)))
   end
 
   doneCols(); doneLines(); doneLabels(); doneGrid()
@@ -321,8 +321,8 @@ local function hoverGraph(g)
   g.marker:SetHeight(plot.h)
   g.marker:Show()
   GameTooltip:SetOwner(g, "ANCHOR_CURSOR")
-  GameTooltip:AddLine(date("%d.%m %H:%M", p.t), 1, 1, 1)
-  GameTooltip:AddLine(p.v and ns.Money(p.v) or "Записи пока нет", 0.85, 0.85, 0.85)
+  ns:TooltipAddLine(date("%d.%m %H:%M", p.t), 1, 1, 1)
+  ns:TooltipAddLine(p.v and ns.Money(p.v) or "Записи пока нет", 0.85, 0.85, 0.85)
   GameTooltip:Show()
 end
 
@@ -376,8 +376,8 @@ function ns:BuildDashboard(parent)
   f.fundHide:GetFontString():SetFont(T.font, 11, "")
   f.fundHide:HookScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
-    GameTooltip:AddLine("Скрыть сбор на транспорт у этого персонажа", 1, 1, 1)
-    GameTooltip:AddLine("У других персонажей он останется. /fl fund вернёт его здесь; Настройки → Глобальные → Модули отключают его везде.", 0.8, 0.8, 0.8, true)
+    ns:TooltipAddLine("Скрыть сбор на транспорт у этого персонажа", 1, 1, 1)
+    ns:TooltipAddLine("У других персонажей он останется. /fl fund вернёт его здесь; Настройки → Глобальные → Модули отключают его везде.", 0.8, 0.8, 0.8, true)
     GameTooltip:Show()
   end)
   f.fundHide:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -387,16 +387,16 @@ function ns:BuildDashboard(parent)
     local r = self.fund
     if not r then return end
     GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
-    GameTooltip:AddLine(r.name, 1, 1, 1)
-    GameTooltip:AddDoubleLine("Обучение", ns.Money(r.training) .. (r.seen and "" or " |cff999999(у тренера ещё не видно)|r"), 0.7, 0.7, 0.7, 1, 1, 1)
-    GameTooltip:AddDoubleLine("Транспорт", "около " .. ns.Money(r.mount), 0.7, 0.7, 0.7, 1, 1, 1)
-    GameTooltip:AddDoubleLine("Вместе", ns.Money(r.cost), 0.7, 0.7, 0.7, 1, 1, 1)
-    GameTooltip:AddDoubleLine("С уровня", tostring(r.level), 0.7, 0.7, 0.7, 1, 1, 1)
-    GameTooltip:AddDoubleLine("Золото сейчас (персонажи выше)", ns.Money(r.gold), 0.7, 0.7, 0.7, 1, 1, 1)
+    ns:TooltipAddLine(r.name, 1, 1, 1)
+    ns:TooltipAddDoubleLine("Обучение", ns.Money(r.training) .. (r.seen and "" or " |cff999999(у тренера ещё не видно)|r"), 0.7, 0.7, 0.7, 1, 1, 1)
+    ns:TooltipAddDoubleLine("Транспорт", "около " .. ns.Money(r.mount), 0.7, 0.7, 0.7, 1, 1, 1)
+    ns:TooltipAddDoubleLine("Вместе", ns.Money(r.cost), 0.7, 0.7, 0.7, 1, 1, 1)
+    ns:TooltipAddDoubleLine("С уровня", tostring(r.level), 0.7, 0.7, 0.7, 1, 1, 1)
+    ns:TooltipAddDoubleLine("Золото сейчас (персонажи выше)", ns.Money(r.gold), 0.7, 0.7, 0.7, 1, 1, 1)
     if r.perDay and r.perDay > 0 then
-      GameTooltip:AddDoubleLine("Ваш темп", ns.Money(math.floor(r.perDay)) .. " в день", 0.7, 0.7, 0.7, 1, 1, 1)
+      ns:TooltipAddDoubleLine("Ваш темп", ns.Money(math.floor(r.perDay)) .. " в день", 0.7, 0.7, 0.7, 1, 1, 1)
     end
-    GameTooltip:AddLine("Исчезнет, когда персонаж её освоит. Настройки → Глобальные → Модули отключают везде; «Скрыть» — у этого персонажа.", 0.6, 0.6, 0.6, true)
+    ns:TooltipAddLine("Исчезнет, когда персонаж её освоит. Настройки → Глобальные → Модули отключают везде; «Скрыть» — у этого персонажа.", 0.6, 0.6, 0.6, true)
     GameTooltip:Show()
   end)
   f.fundHit:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -469,8 +469,8 @@ function ns:CharacterOptions()
   local function byName(a, b) return name(a):lower() < name(b):lower() end
   table.sort(own, byName)
   table.sort(other, byName)
-  local opts = { { value = "all", label = ("Все персонажи: %s"):format(mine) } }
-  if ns.db.chars[me] then opts[#opts + 1] = { value = me, label = "  " .. name(me) .. " |cff888888(этот)|r" } end
+  local opts = { { value = "all", label = ns.LocalizeText("Все персонажи: %s"):format(mine) } }
+  if ns.db.chars[me] then opts[#opts + 1] = { value = me, label = "  " .. name(me) .. " |cff888888" .. ns.LocalizeText("(этот)") .. "|r" } end
   for _, k in ipairs(own) do opts[#opts + 1] = { value = k, label = "  " .. name(k) } end
   if #other > 0 then
     opts[#opts + 1] = { heading = true, label = "" }
@@ -539,10 +539,10 @@ function ns:RefreshDashboard(f)
   local tileY, tileH = 32, 64
   local tw = math.floor((W - 3 * gap) / 4)
   local tiles = {
-    { "Золото сейчас", last and ns.Money(last) or dim("записи пока нет"), first and last and (signed(last - first, true) .. " " .. phrase) or "" },
-    { "Прибыль " .. phrase, signed(n.profit, true), money(math.floor(n.profit / n.days)) .. " в день" },
-    { "Продажи", ns.Money(n.sales), n.topSold and ("лучшее: " .. n.topSold) or "" },
-    { "Расходы", ns.Money(n.expenses), n.topBought and ("лучшее: " .. n.topBought) or "" },
+    { ns.LocalizeText("Золото сейчас"), last and ns.Money(last) or dim("записи пока нет"), first and last and (signed(last - first, true) .. " " .. phrase) or "" },
+    { ns.LocalizeText("Прибыль %s"):format(ns.LocalizeText(phrase)), signed(n.profit, true), ns.LocalizeText("%s в день"):format(money(math.floor(n.profit / n.days))) },
+    { ns.LocalizeText("Продажи"), ns.Money(n.sales), n.topSold and ns.LocalizeText("лучшее: %s"):format(n.topSold) or "" },
+    { ns.LocalizeText("Расходы"), ns.Money(n.expenses), n.topBought and ns.LocalizeText("лучшее: %s"):format(n.topBought) or "" },
   }
   for i, t in ipairs(f.tiles) do
     local x = (i - 1) * (tw + gap)
@@ -598,11 +598,11 @@ function ns:RefreshDashboard(f)
   local gTop = tileY + tileH + gap + (fund and (fundH + gap) or 0)
   local gBottom = dTop - gap
   nextCard(gTop, gBottom, 0, W)
-  T:StyleHeading(f.graphHead, "Золото за " .. (OVER[s.range] or "неделю"))
+  T:StyleHeading(f.graphHead, ns.LocalizeText("Золото за %s"):format(ns.LocalizeText(OVER[s.range] or "неделю")))
   place(f.graphHead, 12, gTop + 9)
   f.graphNote:ClearAllPoints()
   f.graphNote:SetPoint("TOPRIGHT", f, "TOPLEFT", W - 12, -(gTop + 9))
-  f.graphNote:SetText(hi and ("макс %s,  мин %s"):format(ns.Money(hi), ns.Money(lo)) or "")
+  f.graphNote:SetText(hi and ns.LocalizeText("макс %s,  мин %s"):format(ns.Money(hi), ns.Money(lo)) or "")
   f.graph:ClearAllPoints()
   f.graph:SetPoint("TOPLEFT", 4, -(gTop + 26))
   f.graph:SetSize(W - 8, gBottom - gTop - 30)

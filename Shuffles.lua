@@ -1,4 +1,6 @@
 local _, ns = ...
+local RaidNotice_AddMessage = ns.LocalizedRaidNotice
+local print = ns.LocalizedPrint
 
 ---------------------------------------------------------------------------
 -- Shuffle finder: things you can buy for less than they're worth to you,
@@ -38,7 +40,7 @@ end
 
 -- Text for one craft or conversion step, with the craft's extra materials unless skipBuys.
 local function stepText(o, skipBuys)
-  local step = o.step
+  local step = ns.LocalizeText(o.step)
   if o.kind == "craft" then
     if not skipBuys then
       local extra = {}
@@ -370,8 +372,8 @@ function ns:FindAllVendorCrafts()
           next = { kind = "vendor", value = sell, id = rec.out },
           rec = { n = name, out = rec.out, oq = rec.oq, r = rec.r }, units = first[2], buys = buys,
           prof = rec.prof,
-          who = ns.ProfName(rec.prof) .. (who and (": " .. who) or ", никто из ваших")
-            .. (rec.classic and ", рецепт Classic" or (rec.forever and ", данные игры Forever" or "")),
+          who = ns.ProfName(rec.prof) .. (who and (": " .. who) or ns.LocalizeText(", никто из ваших"))
+            .. (rec.classic and ns.LocalizeText(", рецепт Classic") or (rec.forever and ns.LocalizeText(", данные игры Forever") or "")),
         }
         local s = build(first[1], o, cost, listed, market, margin, secs)
         -- One row per recipe, not per item made: build's key is the item, which would
@@ -473,6 +475,9 @@ local PROF_ICONS = {
   Cooking = "Interface\\Icons\\INV_Misc_Food_15", ["Первая помощь"] = "Interface\\Icons\\Spell_Holy_SealOfSacrifice",
   Fishing = "Interface\\Icons\\Trade_Fishing", Mining = "Interface\\Icons\\Trade_Mining",
 }
+for english,chinese in pairs({Alchemy="炼金术",Blacksmithing="锻造",Enchanting="附魔",Engineering="工程学",Leatherworking="制皮",Tailoring="裁缝",Cooking="烹饪",["First Aid"]="急救",Fishing="钓鱼",Mining="采矿"}) do
+  PROF_ICONS[chinese]=PROF_ICONS[english]
+end
 local DISENCHANT_ICON = "Interface\\Icons\\Spell_Holy_RemoveCurse"
 local VENDOR_ICON = "Interface\\Icons\\INV_Misc_Coin_01"
 local AH_ICON = "Interface\\Icons\\INV_Misc_Coin_04"
@@ -647,7 +652,7 @@ function ns:ShuffleShoppingControls(d, s, width, top)
   end
   local c = d.shopping
   if c.key ~= s.key then c.key, c.runs, c.target = s.key, 1, "new" end
-  local opts = { { value = "new", label = "Новый список: " .. ns:ShuffleName(s) } }
+  local opts = { { value = "new", label = ns.LocalizeText("Новый список: %s"):format(ns:ShuffleName(s)) } }
   local selected = c.target == "new"
   for _, l in ipairs(ns:ShoppingLists()) do
     if not l.countHave and not l.temp and not l.crateID and not l.anyPrice then
@@ -681,10 +686,10 @@ end
 
 -- The buying limit and profit, as one line.
 function ns:ShuffleProfitLine(s)
-  local limit = (s.single or s.group) and ("Купить до %s. "):format(ns.Money(s.maxBuy)) or ""
-  local hour = s.opt.kind == "vendor" and "" or (", около %s в час"):format(ns.Money(s.perHour))
-  return ("%sПрибыль %s %s (%d%%)%s."):format(
-    limit, ns.Money(s.profit), s.single and "за штуку" or "за изготовление", returnPct(s), hour)
+  local limit = (s.single or s.group) and ns.LocalizeText("Купить до %s. "):format(ns.Money(s.maxBuy)) or ""
+  local hour = s.opt.kind == "vendor" and "" or ns.LocalizeText(", около %s в час"):format(ns.Money(s.perHour))
+  return ns.LocalizeText("%sПрибыль %s %s (%d%%)%s."):format(
+    limit, ns.Money(s.profit), ns.LocalizeText(s.single and "за штуку" or "за изготовление"), returnPct(s), hour)
 end
 
 -- How many times the shuffle could be done profitably with what's listed now, limited
@@ -1148,9 +1153,9 @@ local function announce(all, usual)
   local chat = ns.db.settings.dealChat ~= false   -- (Settings: UI pass, November 9)
   for _, p in ipairs(poor) do
     if chat then
-      ns:Print(("Найдено %s: %s (%s), но пока не хватает золота: %s за штуку, у вас %s."):format(
-        p.f.watched == "you" and "отслеживаемый предмет" or "перепродажа торговцу", itemName(p.f.id),
-        p.f.watched == "you" and ("до " .. ns.Money(p.f.maxBuy)) or ("торговец платит " .. ns.Money(p.f.opt.value)),
+      ns:Print(ns.LocalizeText("Найдено %s: %s (%s), но пока не хватает золота: %s за штуку, у вас %s."):format(
+        p.f.watched == "you" and ns.LocalizeText("отслеживаемый предмет") or ns.LocalizeText("перепродажа торговцу"), itemName(p.f.id),
+        p.f.watched == "you" and (ns.LocalizeText("до ") .. ns.Money(p.f.maxBuy)) or (ns.LocalizeText("торговец платит ") .. ns.Money(p.f.opt.value)),
         ns.Money(p.one), ns.Money(cash)))
     end
   end
@@ -1160,15 +1165,15 @@ local function announce(all, usual)
     local f = flips[1]
     -- Watched items at your price (Watched.lua) say so, not "vendor pays".
     if f.watched == "you" then
-      text = ("Отслеживаемый предмет: %s по %s (до %s)"):format(itemName(f.id), ns.Money(f.cost), ns.Money(f.maxBuy))
+      text = ns.LocalizeText("Отслеживаемый предмет: %s по %s (до %s)"):format(itemName(f.id), ns.Money(f.cost), ns.Money(f.maxBuy))
     else
-      text = ("Перепродажа торговцу: %s по %s (торговец платит %s)"):format(itemName(f.id), ns.Money(f.cost), ns.Money(f.opt.value))
+      text = ns.LocalizeText("Перепродажа торговцу: %s по %s (торговец платит %s)"):format(itemName(f.id), ns.Money(f.cost), ns.Money(f.opt.value))
     end
-    if #flips > 1 then text = text .. (" и ещё %d"):format(#flips - 1) end
+    if #flips > 1 then text = text .. ns.LocalizeText(" и ещё %d"):format(#flips - 1) end
   else
     -- Names the tab: the auction house panel only holds flips and shopping lists (owner,
     -- November 9: looked for 2 deals there and found nothing).
-    text = ("%d новых %s ниже обычной цены: смотрите «Заработок», «Сделки» (/fl)"):format(usual, ns.Plural(usual, "сделка", "сделки", "сделок"))
+    text = ns.LocalizeText("%d новых %s ниже обычной цены: смотрите «Заработок», «Сделки» (/fl)"):format(usual, ns.Plural(usual, "сделка", "сделки", "сделок"))
   end
   -- Off in Settings if it covers your windows (Magic, October 3: it landed on the Buy queue).
   -- Never while the auction house is open (Frank, November 15: it covered the Buy tab's
@@ -1185,16 +1190,16 @@ local function announce(all, usual)
     if ns.db.settings.openFlips and ns.OpenFlips and ns.fullScanDone then ns:OpenFlips() end
     for _, f in ipairs(chat and flips or {}) do
       if f.watched == "you" then
-        ns:Print(("Отслеживаемый предмет: %s, %d по %s или дешевле. Он в очереди покупок, в «Перепродажах торговцу»."):format(
+        ns:Print(ns.LocalizeText("Отслеживаемый предмет: %s, %d по %s или дешевле. Он в очереди покупок, в «Перепродажах торговцу»."):format(
           itemName(f.id), f.buys[1].listed or 1, ns.Money(f.maxBuy)))
       else
-        ns:Print(("Новая перепродажа торговцу: %s, %d по %s или дешевле (торговец платит %s). Она в очереди покупок, в «Перепродажах торговцу»."):format(
+        ns:Print(ns.LocalizeText("Новая перепродажа торговцу: %s, %d по %s или дешевле (торговец платит %s). Она в очереди покупок, в «Перепродажах торговцу»."):format(
           itemName(f.id), f.buys[1].listed or 1, ns.Money(f.maxBuy), ns.Money(f.opt.value)))
       end
     end
   end
   if usual > 0 and chat then
-    ns:Print(("%d новых %s ниже обычной цены: смотрите «Заработок», «Сделки» (/fl)."):format(
+    ns:Print(ns.LocalizeText("%d новых %s ниже обычной цены: смотрите «Заработок», «Сделки» (/fl)."):format(
       usual, ns.Plural(usual, "сделка", "сделки", "сделок")))
   end
 end

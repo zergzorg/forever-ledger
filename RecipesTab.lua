@@ -170,29 +170,29 @@ end
 function ns:AddClassicSourceLines(tt, name)
   local e = name and ns.CLASSIC_RECIPES and ns.CLASSIC_RECIPES[name:lower()]
   if not e then return end
-  tt:AddLine(" ")
-  tt:AddLine("В оригинальном Classic (в Forever не подтверждено):", 1, 0.82, 0)
+  ns:AddTooltipLine(tt, " ")
+  ns:AddTooltipLine(tt, "В оригинальном Classic (в Forever не подтверждено):", 1, 0.82, 0)
   for _, id in ipairs(e.vendors or {}) do
     local v = classicNPC(id, "vendor")
     if v then
-      tt:AddDoubleLine("Продаёт " .. v.npc, (v.zone or "?") .. (v.x and (" %.0f, %.0f"):format(v.x * 100, v.y * 100) or "")
+      ns:AddTooltipDoubleLine(tt, "Продаёт " .. v.npc, (v.zone or "?") .. (v.x and (" %.0f, %.0f"):format(v.x * 100, v.y * 100) or "")
         .. (friendly(v) and "" or (" (только %s)"):format(ns.OtherFaction())), 1, 1, 1, 0.8, 0.8, 0.8)
     end
   end
   for _, m in ipairs(e.mobs or {}) do
     local v = classicNPC(m[1], "mob")
     if v then
-      tt:AddDoubleLine(("%s (%s%%)"):format(v.npc, m[2] >= 1 and ("%.0f"):format(m[2]) or ("%.2f"):format(m[2])),
+      ns:AddTooltipDoubleLine(tt, ("%s (%s%%)"):format(v.npc, m[2] >= 1 and ("%.0f"):format(m[2]) or ("%.2f"):format(m[2])),
         v.zone or "?", 1, 1, 1, 0.8, 0.8, 0.8)
     end
   end
   if e.mobCount and e.mobCount > #(e.mobs or {}) then
-    tt:AddLine(("...и ещё %d видов существ."):format(e.mobCount - #(e.mobs or {})), 0.8, 0.8, 0.8)
+    ns:AddTooltipLine(tt, ns.LocalizeText("...и ещё %d видов существ."):format(e.mobCount - #(e.mobs or {})), 0.8, 0.8, 0.8)
   end
-  if e.quest then tt:AddLine("Задание: " .. e.quest, 1, 1, 1) end
+  if e.quest then ns:AddTooltipLine(tt, "Задание: " .. e.quest, 1, 1, 1) end
   local s = ns:ClassicSource(name)
   if s and s.otherSide then
-    tt:AddLine(("Этот рецепт доступен только %s. Для вас путь — нейтральный аукцион (Бухта Боти, Прибамбасск, Круговзор)."):format(
+    ns:AddTooltipLine(tt, ns.LocalizeText("Этот рецепт доступен только %s. Для вас путь — нейтральный аукцион (Бухта Боти, Прибамбасск, Круговзор)."):format(
       ns.OtherFaction()), 0.93, 0.52, 0.59, true)
   end
 end
@@ -260,20 +260,20 @@ end
 
 local function ahText(s)
   local price, rec = recipeAH(s)
-  if price then return "  |cffffd100аукцион " .. ns.Money(price) .. "|r" end
-  if rec and rec.none then return dim("  на аукционе нет") end
+  if price then return "  |cffffd100" .. ns.LocalizeText("аукцион") .. " " .. ns.Money(price) .. "|r" end
+  if rec and rec.none then return dim(ns.LocalizeText("  на аукционе нет")) end
   return ""
 end
 
 local function sourceText(s)
   -- Recipes with no recipe item to find were taught by trainers in Classic.
   -- Forever also adds recipes Classic never had (Favor vendors, camping).
-  if not s then return dim("тренер или новое в Forever") end
+  if not s then return dim(ns.LocalizeText("тренер или новое в Forever")) end
   if s.kind == "ah" then
     return ("На аукционе: |cffffd100%s|r %s"):format(ns.Money(s.price), dim(("(лотов: %d)"):format(s.listed or 0)))
   end
   local classic = s.conf ~= "seen"
-  local where = s.zone and (", " .. s.zone) or ""
+  local where = s.zone and (", " .. ns.LocalizeText(s.zone)) or ""
   local text
   if s.kind == "trainer" then
     -- Every trainer of a tier teaches the same list (owner, beta), and higher tiers teach
@@ -310,7 +310,7 @@ local function sourceText(s)
     text = s.kind or "?"
   end
   -- Short, so prices fit; the hover and summary line explain it.
-  return text .. (classic and dim("  (Classic)") or "")
+  return text .. (classic and dim(ns.LocalizeText("  (Classic)")) or "")
 end
 
 ---------------------------------------------------------------------------
@@ -408,8 +408,8 @@ function ns:BuildRecipes(parent)
   f.custom:SetHitRectInsets(0, -(f.custom.label:GetStringWidth() + 8), 0, 0)   -- the name ticks it too
   f.custom:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
-    GameTooltip:AddLine("Мои типы", 1, 1, 1)
-    GameTooltip:AddLine("Вкл: у рецептов, которым вы задали тип правым кликом, он сохраняется. Выкл: все рецепты используют автоматический тип (ваш выбор сохранится).", nil, nil, nil, true)
+    ns:TooltipAddLine("Мои типы", 1, 1, 1)
+    ns:TooltipAddLine("Вкл: у рецептов, которым вы задали тип правым кликом, он сохраняется. Выкл: все рецепты используют автоматический тип (ваш выбор сохранится).", nil, nil, nil, true)
     GameTooltip:Show()
   end)
   f.custom:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -427,8 +427,8 @@ function ns:BuildRecipes(parent)
   f.clear = T:Button(f.second, "Сбросить типы", 110, function()
     local n = 0
     for _ in pairs(ns.db.recipeTypes) do n = n + 1 end
-    if n == 0 then ns:Print("Вы ещё не задавали типы."); return end
-    StaticPopup_Show("FOREVER_LEDGER_CLEAR_TYPES", n)
+    if n == 0 then ns:Print(ns.LocalizeText("Вы ещё не задавали типы.")); return end
+    ns:ShowPopup("FOREVER_LEDGER_CLEAR_TYPES", n)
   end, 22)
   f.clear:SetPoint("LEFT", f.custom.label, "RIGHT", 14, 0)
   local hint = T:Text(f.search, 11, T.section)
@@ -474,7 +474,7 @@ local function layoutTabs(list, others)
       if tip then
         b:HookScript("OnEnter", function(self)
           GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
-          GameTooltip:AddLine(tip, 1, 1, 1)
+          ns:TooltipAddLine(tip, 1, 1, 1)
           GameTooltip:Show()
         end)
         b:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -494,8 +494,8 @@ local function layoutTabs(list, others)
       f.other = T:Dropdown(f, 170, function(v) if v ~= "" then current = v; ns:RefreshRecipes() end end)
       f.other:HookScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
-        GameTooltip:AddLine("Другие профессии", 1, 1, 1)
-        GameTooltip:AddLine("Профессии, которых нет у этого персонажа. Звёздочка: есть у другого вашего персонажа этого мира и фракции.", nil, nil, nil, true)
+        ns:TooltipAddLine("Другие профессии", 1, 1, 1)
+        ns:TooltipAddLine("Профессии, которых нет у этого персонажа. Звёздочка: есть у другого вашего персонажа этого мира и фракции.", nil, nil, nil, true)
         GameTooltip:Show()
       end)
       f.other:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -588,15 +588,15 @@ local function getRow(i)
     ns:AddClassicSourceLines(GameTooltip, self.recipeName)
     local price, rec = recipeAH(self.src)
     if price then
-      GameTooltip:AddLine(" ")
-      GameTooltip:AddDoubleLine("Рецепт на аукционе", ns.Money(price), 1, 0.82, 0, 1, 1, 1)
-      GameTooltip:AddLine(("лотов: %d, проверка %s"):format(rec.q or 0, ns.Age(rec.t)), 0.8, 0.8, 0.8)
+      ns:TooltipAddLine(" ")
+      ns:TooltipAddDoubleLine("Рецепт на аукционе", ns.Money(price), 1, 0.82, 0, 1, 1, 1)
+      ns:TooltipAddLine(ns.LocalizeText("лотов: %d, проверка %s"):format(rec.q or 0, ns.Age(rec.t)), 0.8, 0.8, 0.8)
     elseif rec and rec.none then
-      GameTooltip:AddLine(" ")
-      GameTooltip:AddLine(("Рецепта нет на аукционе (проверка %s)"):format(ns.Age(rec.t)), 0.8, 0.8, 0.8)
+      ns:TooltipAddLine(" ")
+      ns:TooltipAddLine(ns.LocalizeText("Рецепта нет на аукционе (проверка %s)"):format(ns.Age(rec.t)), 0.8, 0.8, 0.8)
     end
-    GameTooltip:AddLine(" ")
-    GameTooltip:AddLine("Правый клик — задать свой тип, Shift+правый клик — автоматический.", T.accent[1], T.accent[2], T.accent[3])
+    ns:TooltipAddLine(" ")
+    ns:TooltipAddLine("Правый клик — задать свой тип, Shift+правый клик — автоматический.", T.accent[1], T.accent[2], T.accent[3])
     GameTooltip:Show()
   end)
   r:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -740,7 +740,7 @@ local function recipeRows(prof, width, lay)
     total = total + 1
     if #knownBy(prof, id) > 0 then knownCount = knownCount + 1 end
   end
-  f.summary:SetText(("%s: рецептов %d, изучено %d. Показано %d%s. (Classic) — данные оригинального Classic, в Forever не подтверждены, пока вы их не увидите."):format(
+  f.summary:SetText(ns.LocalizeText("%s: рецептов %d, изучено %d. Показано %d%s. (Classic) — данные оригинального Classic, в Forever не подтверждены, пока вы их не увидите."):format(
     prof, total, knownCount, n, #list > MAX_ROWS and (" из " .. #list) or ""))
   return n
 end
@@ -891,8 +891,8 @@ local function trainerRows(width, lay)
       name = e.v.name or "?",
       skill = "",
       known = (e.profession and (TRAINER_PROF_RU[e.profession] or e.profession)) or dim("?"),
-      source = ("%s%s%s"):format(e.v.zone or "?", e.v.x and ("  (%.1f, %.1f)"):format(e.v.x * 100, e.v.y * 100) or "",
-        e.classic and dim("  (Classic)") or e.guard and "  |cff7fd39c(стражник)|r" or ""),
+      source = ("%s%s%s"):format(ns.LocalizeText(e.v.zone or "?"), e.v.x and ("  (%.1f, %.1f)"):format(e.v.x * 100, e.v.y * 100) or "",
+        e.classic and dim(ns.LocalizeText("  (Classic)")) or e.guard and "  |cff7fd39c(стражник)|r" or ""),
       type = e.tier and (TIER_RU[e.tier] or e.tier) or (e.guard and not e.named and dim("магазин") or dim("?")),
       profit = e.v.title and dim(e.v.title) or "",
     }
@@ -910,7 +910,7 @@ local function trainerRows(width, lay)
     row.pin:SetShown(e.v.mapID and e.v.x and true or false)
     row:Show()
   end
-  f.summary:SetText(("Тренеров найдено: %d, от городских стражников: %d, ещё из Classic: %d (не подтверждено). Спросите стражника о тренере профессии, чтобы добавить настоящее место в Forever."):format(
+  f.summary:SetText(ns.LocalizeText("Тренеров найдено: %d, от городских стражников: %d, ещё из Classic: %d (не подтверждено). Спросите стражника о тренере профессии, чтобы добавить настоящее место в Forever."):format(
     #list - classicCount - guardCount, guardCount, classicCount))
   return #list
 end
@@ -954,7 +954,7 @@ function ns:RefreshRecipes()
     h:SetSize(math.max(lay[c.key].w, 1), 22)
     h.fs:SetJustifyH(c.key == "profit" and not trainers and "RIGHT" or "LEFT")
     local sorted = sort and sortable and sort.key == c.key
-    h.fs:SetText(c.label .. (sorted and (sort.desc and " v" or " ^") or ""))
+    h.fs:SetText(ns.LocalizeText(c.label) .. (sorted and (sort.desc and " v" or " ^") or ""))
     local col = sorted and { T.accent[1], T.accent[2], T.accent[3], 1 } or T.dim
     h.fs:SetTextColor(col[1], col[2], col[3], col[4] or 1)
   end
@@ -975,7 +975,7 @@ function ns:RefreshRecipes()
   if trainers then
     f.empty:SetText("Тренеры ещё не найдены. Откройте окно тренера профессии.")
   elseif total > 0 then
-    f.empty:SetText(("%s: записано рецептов — %d, но ни один не подходит под выбранное выше (%s). Выберите «Все», чтобы увидеть их."):format(
+    f.empty:SetText(ns.LocalizeText("%s: записано рецептов — %d, но ни один не подходит под выбранное выше (%s). Выберите «Все», чтобы увидеть их."):format(
       current, total, table.concat(why, ", ")))
   else
     f.empty:SetText("Рецепты не найдены. Откройте окно этой профессии один раз, чтобы записать рецепты.")

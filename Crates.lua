@@ -501,11 +501,11 @@ local function detailLine(d, j)
     local p = self.part
     if not p then return end
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-    GameTooltip:AddLine(p.name, 1, 1, 1)
-    GameTooltip:AddDoubleLine("В сумках", tostring(p.bags or 0), 0.85, 0.85, 0.85, 1, 1, 1)
-    GameTooltip:AddDoubleLine("В банке", tostring(p.bank or 0), 0.85, 0.85, 0.85, 1, 1, 1)
-    for name, n in pairs(p.byAlt or {}) do GameTooltip:AddDoubleLine(name, tostring(n), 0.85, 0.85, 0.85, 1, 1, 1) end
-    GameTooltip:AddLine("Банк и альты на момент последнего визита. Клик — поиск на аукционе.", T.accent[1], T.accent[2], T.accent[3], true)
+    ns:TooltipAddLine(p.name, 1, 1, 1)
+    ns:TooltipAddDoubleLine("В сумках", tostring(p.bags or 0), 0.85, 0.85, 0.85, 1, 1, 1)
+    ns:TooltipAddDoubleLine("В банке", tostring(p.bank or 0), 0.85, 0.85, 0.85, 1, 1, 1)
+    for name, n in pairs(p.byAlt or {}) do ns:TooltipAddDoubleLine(name, tostring(n), 0.85, 0.85, 0.85, 1, 1, 1) end
+    ns:TooltipAddLine("Банк и альты на момент последнего визита. Клик — поиск на аукционе.", T.accent[1], T.accent[2], T.accent[3], true)
     GameTooltip:Show()
   end)
   b:SetScript("OnLeave", function() GameTooltip:Hide() end)

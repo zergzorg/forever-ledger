@@ -88,7 +88,7 @@ function ns:SellKeepReason(id)
   if ns.IsWatched and ns:IsWatched(id) then return "вы за ним следите" end
   for _, l in ipairs(ns.db.shopping and ns.db.shopping.lists or {}) do
     for _, e in ipairs(l.items or {}) do
-      if e.id == id and not e.done then return ("есть в списке %s"):format(l.name or "") end
+      if e.id == id and not e.done then return ns.LocalizeText("есть в списке %s"):format(l.name or "") end
     end
   end
   local users = ns.usage and ns.usage[id]
@@ -98,7 +98,7 @@ function ns:SellKeepReason(id)
       if not first or k < first then first = k end
     end
     local who, prof = (first or ""):match("^(.-)|(.*)$")
-    if who then return ("%s использует его (%s)"):format(who, prof) end
+    if who then return ns.LocalizeText("%s использует его (%s)"):format(who, prof) end
   end
 end
 
@@ -196,26 +196,26 @@ function ns:AddSellLines(tt, id, bound, usable, copyPrice)
   if not v then return end
   local c = COLOR[v.kind]
   if v.kind == "keep" then
-    tt:AddLine("Оставить: " .. v.reason, c[1], c[2], c[3], true)
+    ns:AddTooltipLine(tt, ns.LocalizeText("Оставить: ") .. ns.LocalizeText(v.reason), c[1], c[2], c[3], true)
     return
   end
-  local reason = v.reason and (" |cff999999(" .. v.reason .. ")|r") or ""
+  local reason = v.reason and (" |cff999999(" .. ns.LocalizeText(v.reason) .. ")|r") or ""
   -- Gear this character can wear: the suggestion is for if it won't wear it.
-  local lead = v.ifUnused and "Если не будете носить: " or ""
+  local lead = v.ifUnused and ns.LocalizeText("Если не будете носить: ") or ""
   if v.ifUnused then reason = "" end
   local function deLine(text)
     local d = COLOR.de
-    tt:AddDoubleLine(text .. (v.deWho and (" |cff999999(" .. v.deWho .. ")|r") or ""),
-      "около " .. ns.Money(v.de), d[1], d[2], d[3], 1, 1, 1)
+    ns:AddTooltipDoubleLine(tt, text .. (v.deWho and (" |cff999999(" .. v.deWho .. ")|r") or ""),
+      ns.LocalizeText("около ") .. ns.Money(v.de), d[1], d[2], d[3], 1, 1, 1)
   end
   if v.deFirst then
-    deLine(lead .. (v.ifUnused and "распылить" or "Распылить"))
-    tt:AddDoubleLine("  " .. (ALT[v.kind] or "или продать") .. reason, ns.Money(v.value), c[1], c[2], c[3], 1, 1, 1)
+    deLine(lead .. ns.LocalizeText(v.ifUnused and "распылить" or "Распылить"))
+    ns:AddTooltipDoubleLine(tt, "  " .. ns.LocalizeText(ALT[v.kind] or "или продать") .. reason, ns.Money(v.value), c[1], c[2], c[3], 1, 1, 1)
     return
   end
   if v.kind ~= "de" then
-    local what = v.ifUnused and (UNUSED[v.kind] or "продать") or ("Продать: " .. (LABEL[v.kind] or ns.SELL_MIDDLE))
-    tt:AddDoubleLine(lead .. what .. reason, ns.Money(v.value), c[1], c[2], c[3], 1, 1, 1)
+    local what = v.ifUnused and ns.LocalizeText(UNUSED[v.kind] or "продать") or (ns.LocalizeText("Продать: ") .. ns.LocalizeText(LABEL[v.kind] or ns.SELL_MIDDLE))
+    ns:AddTooltipDoubleLine(tt, lead .. what .. reason, ns.Money(v.value), c[1], c[2], c[3], 1, 1, 1)
   end
-  if v.de then deLine(v.kind == "de" and (lead .. (v.ifUnused and "распылить" or "Распылить")) or "  или распылить") end
+  if v.de then deLine(v.kind == "de" and (lead .. ns.LocalizeText(v.ifUnused and "распылить" or "Распылить")) or "  или распылить") end
 end

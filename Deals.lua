@@ -103,8 +103,8 @@ function ns:BuildDeals(parent)
   f.thin:SetHitRectInsets(0, -(f.thin.label:GetStringWidth() + 8), 0, 0)   -- the name ticks it too
   f.thin:HookScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
-    GameTooltip:AddLine("Показывать сомнительные сделки", 1, 1, 1)
-    GameTooltip:AddLine("Также показывать сделки с малым числом дней цен или с прыгающими ценами, где обычная цена — лишь догадка.", nil, nil, nil, true)
+    ns:TooltipAddLine("Показывать сомнительные сделки", 1, 1, 1)
+    ns:TooltipAddLine("Также показывать сделки с малым числом дней цен или с прыгающими ценами, где обычная цена — лишь догадка.", nil, nil, nil, true)
     GameTooltip:Show()
   end)
   f.thin:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -122,8 +122,8 @@ function ns:BuildDeals(parent)
   f.mode:SetPoint("TOPRIGHT", -4, -42)
   f.mode:HookScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
-    GameTooltip:AddLine("Сделки или Бухта Боти", 1, 1, 1)
-    GameTooltip:AddLine("Бухта Боти сравнивает нейтральный аукцион (Бухта Боти, Прибамбасск, Круговзор) с вашим, каждый после своей комиссии: там 15%. Цены берутся из проверок там и хранятся отдельно от ваших.", nil, nil, nil, true)
+    ns:TooltipAddLine("Сделки или Бухта Боти", 1, 1, 1)
+    ns:TooltipAddLine("Бухта Боти сравнивает нейтральный аукцион (Бухта Боти, Прибамбасск, Круговзор) с вашим, каждый после своей комиссии: там 15%. Цены берутся из проверок там и хранятся отдельно от ваших.", nil, nil, nil, true)
     GameTooltip:Show()
   end)
   f.mode:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -186,9 +186,9 @@ local function getHeader(i)
     end)
     h:SetScript("OnEnter", function(self)
       GameTooltip:SetOwner(self, "ANCHOR_TOP")
-      GameTooltip:AddLine(self.label or "", 1, 1, 1)
-      if self.tip then GameTooltip:AddLine(self.tip, nil, nil, nil, true) end
-      GameTooltip:AddLine("Клик — сортировка.", 0.7, 0.7, 0.7)
+      ns:TooltipAddLine(self.label or "", 1, 1, 1)
+      if self.tip then ns:TooltipAddLine(self.tip, nil, nil, nil, true) end
+      ns:TooltipAddLine("Клик — сортировка.", 0.7, 0.7, 0.7)
       GameTooltip:Show()
     end)
     h:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -200,24 +200,24 @@ end
 local function neutralTip(self, d)
   local a = T.accent
   GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-  GameTooltip:AddLine(ns.ItemName(d.id) or "?", 1, 1, 1)
-  GameTooltip:AddLine("Учитывает один непроданный лот (залог теряется).", 0.7, 0.7, 0.7, true)
-  GameTooltip:AddLine(" ")
-  GameTooltip:AddLine("Бухта Боти (комиссия 15%)", a[1], a[2], a[3])
-  GameTooltip:AddDoubleLine("  Минимум", ns.Money(d.there) .. " |cff999999" .. d.listedThere .. " в продаже|r", 0.7, 0.7, 0.7, 1, 1, 1)
-  GameTooltip:AddDoubleLine("  Продажа там даёт", ns.Money(d.netThere), 0.7, 0.7, 0.7, 1, 1, 1)
-  GameTooltip:AddDoubleLine("  Замечено", ns.Age(d.t), 0.7, 0.7, 0.7, 1, 1, 1)
-  GameTooltip:AddLine(("Ваш аукцион (комиссия %g%%)"):format(ns:AHCut(false) * 100), a[1], a[2], a[3])
-  GameTooltip:AddDoubleLine("  Минимум", ns.Money(d.here) .. " |cff999999" .. d.listedHere .. " в продаже|r", 0.7, 0.7, 0.7, 1, 1, 1)
-  GameTooltip:AddDoubleLine("  Продажа здесь даёт", ns.Money(d.netHere), 0.7, 0.7, 0.7, 1, 1, 1)
-  GameTooltip:AddLine(" ")
+  ns:TooltipAddLine(ns.ItemName(d.id) or "?", 1, 1, 1)
+  ns:TooltipAddLine("Учитывает один непроданный лот (залог теряется).", 0.7, 0.7, 0.7, true)
+  ns:TooltipAddLine(" ")
+  ns:TooltipAddLine("Бухта Боти (комиссия 15%)", a[1], a[2], a[3])
+  ns:TooltipAddDoubleLine("  Минимум", ns.Money(d.there) .. " |cff999999" .. d.listedThere .. " в продаже|r", 0.7, 0.7, 0.7, 1, 1, 1)
+  ns:TooltipAddDoubleLine("  Продажа там даёт", ns.Money(d.netThere), 0.7, 0.7, 0.7, 1, 1, 1)
+  ns:TooltipAddDoubleLine("  Замечено", ns.Age(d.t), 0.7, 0.7, 0.7, 1, 1, 1)
+  ns:TooltipAddLine(("Ваш аукцион (комиссия %g%%)"):format(ns:AHCut(false) * 100), a[1], a[2], a[3])
+  ns:TooltipAddDoubleLine("  Минимум", ns.Money(d.here) .. " |cff999999" .. d.listedHere .. " в продаже|r", 0.7, 0.7, 0.7, 1, 1, 1)
+  ns:TooltipAddDoubleLine("  Продажа здесь даёт", ns.Money(d.netHere), 0.7, 0.7, 0.7, 1, 1, 1)
+  ns:TooltipAddLine(" ")
   if d.dir == "buy" then
-    GameTooltip:AddLine(("Купить в Бухте Боти за %s, продать здесь за %s после комиссии: на %s больше за штуку."):format(
+    ns:TooltipAddLine(("Купить в Бухте Боти за %s, продать здесь за %s после комиссии: на %s больше за штуку."):format(
       ns.Money(d.there), ns.Money(d.netHere), ns.Money(d.buyProfit)), 0.5, 0.83, 0.61, true)
   else
-    GameTooltip:AddLine(("Продажа в Бухте Боти даёт на %s больше за штуку."):format(ns.Money(d.gain)), 0.5, 0.83, 0.61, true)
+    ns:TooltipAddLine(("Продажа в Бухте Боти даёт на %s больше за штуку."):format(ns.Money(d.gain)), 0.5, 0.83, 0.61, true)
   end
-  GameTooltip:AddLine("Цены меняются: цены Бухты Боти свежи только на момент последнего визита.", 0.5, 0.5, 0.5, true)
+  ns:TooltipAddLine("Цены меняются: цены Бухты Боти свежи только на момент последнего визита.", 0.5, 0.5, 0.5, true)
   GameTooltip:Show()
 end
 
@@ -227,20 +227,20 @@ local function showTip(self)
   if d.neutral then return neutralTip(self, d) end
   local a = T.accent
   GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-  GameTooltip:AddDoubleLine(ns.ItemName(d.id) or "?", ("%d%% ниже обычной"):format(math.floor(d.pct * 100 + 0.5)),
+  ns:TooltipAddDoubleLine(ns.ItemName(d.id) or "?", ("%d%% ниже обычной"):format(math.floor(d.pct * 100 + 0.5)),
     1, 1, 1, 0.5, 0.83, 0.61)
   for _, e in ipairs(ns:DealExplain(d)) do
     if e.head then
-      GameTooltip:AddLine(" ")
-      GameTooltip:AddLine(e.head, a[1], a[2], a[3])
+      ns:TooltipAddLine(" ")
+      ns:TooltipAddLine(e.head, a[1], a[2], a[3])
     elseif e.note then
-      GameTooltip:AddLine(e.note, e.color[1], e.color[2], e.color[3], true)
+      ns:TooltipAddLine(e.note, e.color[1], e.color[2], e.color[3], true)
     else
-      GameTooltip:AddDoubleLine("  " .. e[1], e[2], 0.7, 0.7, 0.7, 1, 1, 1)
+      ns:TooltipAddDoubleLine("  " .. e[1], e[2], 0.7, 0.7, 0.7, 1, 1, 1)
     end
   end
-  GameTooltip:AddLine(" ")
-  GameTooltip:AddLine("Клик — поиск на аукционе.", 0.5, 0.5, 0.5)
+  ns:TooltipAddLine(" ")
+  ns:TooltipAddLine("Клик — поиск на аукционе.", 0.5, 0.5, 0.5)
   GameTooltip:Show()
 end
 
