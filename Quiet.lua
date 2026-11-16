@@ -4,7 +4,7 @@ local _, ns = ...
 -- Quiet mode (owner, November 5): music, effects, ambience and voices off, so only
 -- sounds played on the Master channel get through (the flip chime and the addon's other
 -- alerts), at full volume and with the game in the background. Addons can't tell when
--- the game loses focus, so it's by hand (/fl quiet) or while the flip watch runs
+-- the game loses focus, so it's by hand (/fl quiet) or while Live watch runs
 -- (settings.quietWatch). The player's own sound settings are kept in quietSaved and put
 -- back afterward, and at the next login if the game closed before that.
 -- /fl quiet is a lasting choice for the character it's typed on (owner, November 8:
@@ -21,7 +21,7 @@ local MUTED = {
   Sound_EnableSoundWhenGameIsInBG = "1",
   Sound_MasterVolume = "1",
 }
-local offByHand = false   -- /fl quiet turned it off while the flip watch had it on
+local offByHand = false   -- /fl quiet turned it off while Live watch had it on
 
 -- Quiet mode turned on with /fl quiet on this character.
 local function onHere()
@@ -66,7 +66,7 @@ end
 
 function ns:IsQuiet() return ns.db.quietSaved ~= nil end
 
--- On while you asked for it on this character, or while the flip watch runs with the
+-- On while you asked for it on this character, or while Live watch runs with the
 -- setting on, unless you turned it off during this watch.
 function ns:UpdateQuiet()
   local auto = ns.db.settings.quietWatch and ns:IsFlipWatching()

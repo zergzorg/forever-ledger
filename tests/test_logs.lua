@@ -138,6 +138,73 @@ T.test("Two purchases at one price: the gold goes to the newer", function()
   T.eq(ns.db.purchases[1].id, 4561)
 end)
 
+-- Frank, November 15: 20 Runecloth bought for 72s 80c was put down as 1 Red Wolf Meat, the
+-- oldest purchase still waiting. A stack purchase carries the total the game quoted.
+local function stack(item, qty, total, failed)
+  C_AuctionHouse.StartCommoditiesPurchase(item, qty)
+  T.fire("COMMODITY_PRICE_UPDATED", math.floor(total / qty), total)
+  C_AuctionHouse.ConfirmCommoditiesPurchase(item, qty)
+  if failed then T.fire("COMMODITY_PURCHASE_FAILED") end
+end
+
+T.test("Stack purchases: each one's gold goes to the item it bought", function()
+  atAH()
+  stack(12208, 1, 178)       -- Red Wolf Meat, its gold not in yet
+  stack(14047, 20, 7280)     -- Runecloth
+  pay(7280)
+  T.eq(#ns.db.purchases, 1)
+  T.eq(ns.db.purchases[1].id, 14047, "Runecloth's gold is Runecloth's")
+  T.eq(ns.db.purchases[1].q, 20)
+  pay(178)
+  T.eq(ns.db.purchases[2].id, 12208); T.eq(ns.db.purchases[2].q, 1)
+end)
+
+T.test("Stack purchases: a refused one takes no gold; two in one gold change are logged apart", function()
+  atAH()
+  stack(12208, 3, 534, true)   -- refused
+  stack(14047, 21, 7644)
+  pay(7644)
+  T.eq(#ns.db.purchases, 1); T.eq(ns.db.purchases[1].id, 14047)
+  stack(12208, 4, 664)
+  stack(14047, 2, 728)
+  pay(664 + 728)
+  T.eq(#ns.db.purchases, 3)
+  T.eq(ns.db.purchases[2].id, 12208); T.eq(ns.db.purchases[2].a, 664)
+  T.eq(ns.db.purchases[3].id, 14047); T.eq(ns.db.purchases[3].a, 728)
+end)
+
+-- Codex review of 60da6ce, three cases from the Buy queue's real order of events.
+T.test("Stack purchases: a refused second stack leaves the first one's hint", function()
+  atAH()
+  stack(12208, 1, 100)                       -- went through, its gold still to come
+  T.fire("COMMODITY_PURCHASE_SUCCEEDED")
+  stack(14047, 20, 200, true)                -- refused
+  pay(100)
+  T.eq(#ns.db.purchases, 1)
+  T.eq(ns.db.purchases[1].id, 12208, "the first stack's gold, not the refused Runecloth")
+  T.eq(ns.db.purchases[1].q, 1); T.eq(ns.db.purchases[1].a, 100)
+end)
+
+T.test("Stack purchases: an older unanswered one doesn't hide two that add up", function()
+  atAH()
+  stack(90001, 1, 10)    -- no answer
+  stack(90002, 1, 20)
+  stack(90003, 1, 30)
+  pay(50)
+  T.eq(#ns.db.purchases, 2)
+  T.eq(ns.db.purchases[1].id, 90002); T.eq(ns.db.purchases[1].a, 20)
+  T.eq(ns.db.purchases[2].id, 90003); T.eq(ns.db.purchases[2].a, 30)
+end)
+
+T.test("Stack purchases: gold that comes late (16 s) still finds its stack", function()
+  atAH()
+  stack(14047, 20, 200)
+  S.now = S.now + 16
+  pay(200)
+  T.eq(#ns.db.purchases, 1)
+  T.eq(ns.db.purchases[1].id, 14047); T.eq(ns.db.purchases[1].q, 20)
+end)
+
 -- Frank, November 14: flights, loot, other income and the rest were only day totals, so
 -- they sorted oddly among the Ledger's timed entries. Now each has its own time too.
 T.test("Other money is logged with its time; the same kind within 5 minutes is one entry", function()

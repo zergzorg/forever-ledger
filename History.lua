@@ -44,7 +44,10 @@ end
 ns.LogOtherMoney = logOther
 local LEDGER_MONTHS_KEPT = 365 * 86400   -- monthly totals kept this long
 local PENDING_SECONDS = 5   -- how long a hint (repair, posting fee, mail) waits for the gold change
-local PURCHASE_SECONDS = 15 -- an auction house purchase can answer slowly (BuyQueue.lua waits as long; gold audit, November 9)
+-- An auction house purchase can answer slowly: its hint is kept as long as the Buy queue
+-- still takes a late answer (BuyQueue.lua LATE_SECONDS, 60) and a little more (Codex review
+-- of 60da6ce: gold at 16 seconds found the 15-second hint gone and logged the wrong item).
+local PURCHASE_SECONDS = 65
 
 -- Days follow the player's own clock (a UTC day would start in the US evening).
 local function localDay(t)
@@ -195,6 +198,7 @@ local open = {}          -- per window: true while open, GetTime() when it close
 local pendingAll = {}    -- hints for the next gold change: { source, t, amount, item, qty, log }
 local lastMoney
 local lastShownItem      -- the item the auction house last showed listings for
+local commodityQuote     -- the stack purchase being priced: { item, qty, total }
 function ns.LastShownItem() return lastShownItem end
 
 local function hint(h)
@@ -232,13 +236,47 @@ local function takeHints(delta)
   for _, h in ipairs(pending) do
     if not h.exact and h.amount == want then return { take(h) } end
   end
-  local sum, picks = 0, {}
+  -- Several whose amounts add up to it exactly (two purchases paid in one gold change). Every
+  -- set is tried, not just the first ones that fit: an older purchase that never answered
+  -- (10c) mustn't hide the two that did (20c and 30c paid as 50c; Codex review of
+  -- 60da6ce). When several sets fit, the one with the fewest hints, then the newest.
+  local fits = {}
   for _, h in ipairs(pending) do
-    if not h.exact and h.amount and sum + h.amount <= want then sum = sum + h.amount; picks[#picks + 1] = h end
+    if h.amount and h.amount > 0 and h.amount < want then fits[#fits + 1] = h end
   end
-  if sum == want and #picks > 1 then
-    for _, h in ipairs(picks) do take(h) end
-    return picks
+  if #fits >= 2 and #fits <= 12 then
+    local best, bestOldest, chosen = nil, nil, {}
+    local function try(i, sum)
+      if sum == want and #chosen >= 2 then
+        local oldest = math.huge
+        for _, h in ipairs(chosen) do oldest = math.min(oldest, h.t) end
+        if not best or #chosen < #best or (#chosen == #best and oldest > bestOldest) then
+          best, bestOldest = {}, oldest
+          for k, h in ipairs(chosen) do best[k] = h end
+        end
+        return
+      end
+      if i > #fits or sum >= want then return end
+      local h = fits[i]
+      if sum + h.amount <= want then
+        chosen[#chosen + 1] = h
+        try(i + 1, sum + h.amount)
+        chosen[#chosen] = nil
+      end
+      try(i + 1, sum)
+    end
+    try(1, 0)
+    if best then
+      for _, h in ipairs(best) do take(h) end
+      return best
+    end
+  end
+  -- Then one whose amount isn't known (a repair, a stack bought with no quote) before one
+  -- whose known amount is different; the newest first, since a purchase's hint now waits
+  -- a minute and an old one shouldn't take a posting fee's gold.
+  for i = #pending, 1, -1 do
+    local h = pending[i]
+    if not h.exact and not h.amount then return { take(h) } end
   end
   for _, h in ipairs(pending) do
     if not h.exact then return { take(h) } end
@@ -460,20 +498,26 @@ local function onMoney()
   end
   if source == "ahBuy" then
     -- Commodity purchases name their item; for other purchases, use the item the
-    -- auction house last showed listings for.
-    local h = hints[1]
-    -- Non-commodity purchases (gear) are always one item.
-    local id = (h and h.item) or lastShownItem
-    addLog(ns.db.purchases, { t = now, c = who, id = id, q = (h and h.qty) or 1, a = math.abs(delta) })
-    -- It comes by mail: shopping lists count it as had until it's taken (ShoppingLists.lua).
-    if ns.NoteBoughtToMail then ns:NoteBoughtToMail(id, (h and h.qty) or 1) end
-    -- Gear: the addon doesn't save prices from gear pages (one page shows one stat
-    -- version), so take the bought one off the saved listings instead. Otherwise a
-    -- gear flip stays on Vendor flips until the next full scan (owner's test, October 1:
-    -- Hefty Battlehammer). Commodities are saved from the page, so they're left alone.
-    if (not h or h.single) and id and ns.RemoveBought then
-      local ok, err = pcall(ns.RemoveBought, ns, id, 1, math.abs(delta))
-      if not ok then ns:Debug("Не удалось убрать покупку из лотов:", err) end
+    -- auction house last showed listings for. Two purchases in one gold change (their
+    -- quoted amounts add up to it) are logged one each.
+    local buys = {}
+    for _, h in ipairs(hints) do if h.source == "ahBuy" then buys[#buys + 1] = h end end
+    if #buys == 0 then buys[1] = false end
+    for _, h in ipairs(buys) do
+      local amount = (#buys > 1 and h.amount) or math.abs(delta)
+      -- Non-commodity purchases (gear) are always one item.
+      local id = (h and h.item) or lastShownItem
+      addLog(ns.db.purchases, { t = now, c = who, id = id, q = (h and h.qty) or 1, a = amount })
+      -- It comes by mail: shopping lists count it as had until it's taken (ShoppingLists.lua).
+      if ns.NoteBoughtToMail then ns:NoteBoughtToMail(id, (h and h.qty) or 1) end
+      -- Gear: the addon doesn't save prices from gear pages (one page shows one stat
+      -- version), so take the bought one off the saved listings instead. Otherwise a
+      -- gear flip stays on Vendor flips until the next full scan (owner's test, October 1:
+      -- Hefty Battlehammer). Commodities are saved from the page, so they're left alone.
+      if (not h or h.single) and id and ns.RemoveBought then
+        local ok, err = pcall(ns.RemoveBought, ns, id, 1, amount)
+        if not ok then ns:Debug("Не удалось убрать покупку из лотов:", err) end
+      end
     end
   end
   ns:Debug("Money", source, delta > 0 and "+" or "-", ns.Money(math.abs(delta)))
@@ -569,12 +613,22 @@ ns:OnReady(function()
   hook(_G, "RepairAllItems", function() hint({ source = "repair" }) end)
   hook(C_AuctionHouse, "PostItem", function() hint({ source = "ahFee" }) end)
   hook(C_AuctionHouse, "PostCommodity", function() hint({ source = "ahFee" }) end)
+  -- A stack (commodity) purchase: the game quotes its total before the confirm
+  -- (COMMODITY_PRICE_UPDATED, below), so the hint carries that amount and only that gold
+  -- can be it. Without it, the gold went to the oldest purchase waiting: Frank, November
+  -- 15, 20 Runecloth at 72s 80c was put down as 1 Red Wolf Meat.
+  hook(C_AuctionHouse, "StartCommoditiesPurchase", function(itemID, quantity)
+    commodityQuote = { item = itemID, qty = quantity }
+  end)
   hook(C_AuctionHouse, "ConfirmCommoditiesPurchase", function(itemID, quantity)
-    hint({ source = "ahBuy", item = itemID, qty = quantity })
+    local q = commodityQuote
+    local amount = q and q.item == itemID and q.qty == quantity and q.total or nil
+    -- With the quote, only that amount can be this purchase (exact), as a bid.
+    hint({ source = "ahBuy", item = itemID, qty = quantity, amount = amount, exact = amount and true or nil, commodity = true })
   end)
   -- The auction house window asks for an item's listings when you open it. Our own
   -- scans do too, so those are ignored. (Checks the scan's own sends, not "a scan is
-  -- running": with the flip watch on, a scan is always running, so your pages were
+  -- running": with Live watch on, a scan is always running, so your pages were
   -- ignored and a Soldier's Armor purchase was put down as Curved Dagger, October 2.)
   hook(C_AuctionHouse, "SendSearchQuery", function(itemKey)
     -- Not the buy queue's own searches either: they run in the background while you
@@ -1190,6 +1244,90 @@ local function pricingPoints(id)
 end
 ns.PricingPoints = pricingPoints   -- (tests)
 
+---------------------------------------------------------------------------
+-- Price values for the redesign (November 15). Opt-in: existing UsualPrice and
+-- PriceStats deliberately keep their released sampling. These pure calculations
+-- use the daily strings directly, not pricingPoints' synthetic older weeks.
+-- Input strings are borrowed, never changed; day and changed are local day numbers.
+---------------------------------------------------------------------------
+local function positivePrice(n)
+  return type(n) == "number" and n > 0 and n < math.huge
+end
+
+local function middlePrice(values)
+  table.sort(values)
+  local n = #values
+  if n % 2 == 1 then return values[(n + 1) / 2] end
+  return values[n / 2] / 2 + values[n / 2 + 1] / 2
+end
+
+-- One observation per completed day. Usual uses linear calendar-day weights:
+-- yesterday=14, fourteen days ago=1. Missing days have no weight or invented price.
+-- With at least five days, reject prices farther from the median than three scaled
+-- median absolute deviations (MAD), with a 50% median floor. The floor avoids
+-- rejecting ordinary movement in a flat market (MAD=0); a lone extreme still drops.
+-- Recent/long-term use equal-day means with the same filter when enough days exist.
+local function historyMean(points, day, days, weighted, changed)
+  local chosen, prices = {}, {}
+  for d, value in pairs(points) do
+    if d >= day - days and d < day and (not changed or d >= changed) then
+      chosen[#chosen + 1] = { value = value, weight = weighted and (days - (day - d) + 1) or 1 }
+      prices[#prices + 1] = value
+    end
+  end
+  if #chosen == 0 then return nil, 0, 0 end
+  local center, distance
+  if #chosen >= 5 then
+    center = middlePrice(prices)
+    local deviations = {}
+    for _, p in ipairs(chosen) do deviations[#deviations + 1] = math.abs(p.value - center) end
+    distance = math.max(3 * 1.4826 * middlePrice(deviations), center * 0.5)
+  end
+  local total, weights, used = 0, 0, 0
+  for _, p in ipairs(chosen) do
+    if not distance or math.abs(p.value - center) <= distance then
+      total, weights, used = total + p.value * p.weight, weights + p.weight, used + 1
+    end
+  end
+  return math.floor(total / weights + 0.5), used, #chosen - used
+end
+
+-- Returns usual/recent/longTerm (raw copper before cuts), their Days/Dropped counts,
+-- and sellsPerDay, saleUnits, saleMinutes. Unknown prices/rate remain nil, not zero.
+-- Sales include today over 30 calendar days, using the existing sell-speed evidence
+-- thresholds: 3h observed, at least 3 units unless observed for 24h; zero needs 12h.
+-- These are inferred disappearances that could not have expired, not proven sales.
+function ns.PriceHistoryValues(history, sold, day, changed)
+  local out = { usualDays = 0, recentDays = 0, longTermDays = 0,
+    usualDropped = 0, recentDropped = 0, longTermDropped = 0, saleUnits = 0, saleMinutes = 0 }
+  if type(day) ~= "number" or day < 0 or day >= math.huge or day % 1 ~= 0 then return out end
+  if not positivePrice(changed) then changed = nil end
+  local points = {}
+  for e in (type(history) == "string" and history or ""):gmatch("[^|]+") do
+    local d, m, a = e:match("^(%d+):(%d+):(%d+)$")
+    d, m, a = tonumber(d), tonumber(m), tonumber(a)
+    if d and positivePrice(m) and positivePrice(a) and a >= m then points[d] = a end
+  end
+  out.usual, out.usualDays, out.usualDropped = historyMean(points, day, 14, true, changed)
+  out.recent, out.recentDays, out.recentDropped = historyMean(points, day, 3, false, changed)
+  out.longTerm, out.longTermDays, out.longTermDropped = historyMean(points, day, 60, false, changed)
+  local sales = {}
+  for e in (type(sold) == "string" and sold or ""):gmatch("[^|]+") do
+    local d, g, m, c = e:match("^(%d+):(%d+):(%d+):?(%d*)$")
+    d, g, m, c = tonumber(d), tonumber(g), tonumber(m), tonumber(c)
+    if d and d >= day - 29 and d <= day and g and g >= 0 and g < math.huge
+      and positivePrice(m) and (not c or (c >= 0 and c <= m)) then sales[d] = { g, m } end
+  end
+  for _, p in pairs(sales) do
+    out.saleUnits, out.saleMinutes = out.saleUnits + p[1], out.saleMinutes + p[2]
+  end
+  local g, m = out.saleUnits, out.saleMinutes
+  if m >= 180 and (g >= 3 or m >= 1440 or (g == 0 and m >= 720)) then
+    out.sellsPerDay = g / m * 1440
+  end
+  return out
+end
+
 -- Returns a list of { day, cheapest, typical } for the last DAILY_DAYS days, oldest first.
 function ns:PriceHistory(id)
   return (pricingPoints(id))
@@ -1233,7 +1371,7 @@ end
 local function soldEntry(e)
   local d, g, m, c = e:match("^(%d+):(%d+):(%d+):?(%d*)$")
   -- Three-number entries came from the first version, which only compared scans within
-  -- one session (the flip watch), so count them as close.
+  -- one session (Live watch), so count them as close.
   return tonumber(d), tonumber(g), tonumber(m), tonumber(c) or tonumber(m)
 end
 
@@ -1278,7 +1416,7 @@ end
 -- since Copper Ore is expected to move in bulk and a sword isn't. Turnover is units
 -- bought a day for each one usually listed: 4 a day with 5 listed beats 100 listed and
 -- none selling. Rare items that are seldom listed but go when they are get their own
--- rating. Shown only after 3 hours of scans compared (the flip watch gets there fastest).
+-- rating. Shown only after 3 hours of scans compared (Live watch gets there fastest).
 ---------------------------------------------------------------------------
 local SPEED_MIN_MINUTES = 180
 local SPEED_NONE_MINUTES = 12 * 60   -- this long with none bought: "no sales seen"
@@ -1457,3 +1595,31 @@ function ns:PrintMoney()
   for _, line in ipairs(lines) do print("    " .. line) end
   print(("    Итог: %s%s"):format(net >= 0 and "+" or "-", ns.Money(math.abs(net))))
 end
+
+-- The quoted total of the stack purchase being priced (see StartCommoditiesPurchase above).
+ns:On("COMMODITY_PRICE_UPDATED", function(_, totalPrice)
+  if commodityQuote and type(totalPrice) == "number" and totalPrice > 0 then commodityQuote.total = totalPrice end
+end)
+-- A stack purchase's answer. The game's answers don't say which purchase they're for, so a
+-- hint is only marked or dropped when it's the one stack still waiting for an answer
+-- (Codex review of 60da6ce: a refused second stack took away the first one's hint, though
+-- the first had already gone through and its gold was still to come). With several waiting,
+-- nothing is dropped: quoted amounts keep them apart, and they expire with the queue's wait.
+local function waitingStacks()
+  local list = {}
+  for _, h in ipairs(pendingAll) do
+    if h.source == "ahBuy" and h.commodity and not h.answered then list[#list + 1] = h end
+  end
+  return list
+end
+ns:On("COMMODITY_PURCHASE_SUCCEEDED", function()
+  local w = waitingStacks()
+  if #w == 1 then w[1].answered = true end
+end)
+ns:On("COMMODITY_PURCHASE_FAILED", function()
+  local w = waitingStacks()
+  if #w ~= 1 then return end
+  for i, h in ipairs(pendingAll) do
+    if h == w[1] then table.remove(pendingAll, i); break end
+  end
+end)

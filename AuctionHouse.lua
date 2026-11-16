@@ -733,7 +733,7 @@ function ns:UpdateWatchButton()
   local w = ns.ahWatchButton
   if not w then return end
   local on = ns:IsFlipWatching()
-  w:SetText(on and "  Остановить" or "Следить")
+  w:SetText(on and "     Остановить" or "Следить")
   if not w.eye then w.eye = watchEye(w) end
   w.eye:SetShown(on)
   w.eye:SetScript("OnUpdate", on and eyeUpdate or nil)
@@ -762,7 +762,7 @@ ns:On("AUCTION_HOUSE_SHOW", function()
       ns.ahFinderButton = b
     end
     if ns.SetUpSidePanel then ns:SetUpSidePanel() end
-    -- Flip watch on/off (/fl watch).
+    -- Live watch on/off (/fl watch).
     if not ns.ahWatchButton then
       local w = CreateFrame("Button", nil, AuctionHouseFrame, "UIPanelButtonTemplate")
       w:SetSize(128, 24)   -- narrow enough not to reach the Auctions tab

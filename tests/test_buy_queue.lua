@@ -1114,3 +1114,98 @@ T.test("Buy queue: a listing whose bid has reached its buyout isn't tried or sav
 end)
 
 Q.cur, Q.plan, Q.state, Q.lateBuys = nil, nil, "idle", {}
+
+-- Frank, November 15: Cheap counted the listings under your price, rarely what you ended up
+-- buying. Buy and Total are what a purchase would take now.
+T.test("Buy queue: Buy and Total are what a purchase would take now", function()
+  local keep, limit = ns.db.settings.keepGold, ns.db.settings.buyQueue.limit
+  local money = S.money
+  ns.db.settings.keepGold, ns.db.settings.buyQueue.limit = 0, nil
+  local market = ns.db.prices[ns.MarketKey()] or {}
+  ns.db.prices[ns.MarketKey()] = market
+  market[91301] = { m = 10, l = "10:5,12:9,20:30", t = time(), src = "scan" }
+  S.money = 100000
+  -- A list that wants 7: 5 at 10c, 2 at 12c; 9 listed at or under 15c.
+  local stillWanted = ns.ListStillWanted
+  local wants = 7
+  ns.ListStillWanted = function() return wants end
+  local n, cost, listed = Q.buyNow({ id = 91301, limit = 15, reason = "list", want = 7 })
+  T.eq(n, 7); T.eq(cost, 74); T.eq(listed, 9)
+  -- Codex review of b22d836: the list now wants 5 and 3 are on their way (bought, not yet
+  -- answered), so the planner buys 2, and so does Buy, whatever the row's own Want says.
+  wants = 5
+  local late, won = Q.lateBuys, Q.wonDue
+  Q.lateBuys = { { at = GetTime(), cur = { id = 91301 }, plan = { kind = "commodity", qty = 3 } } }
+  Q.wonDue = {}
+  n, cost = Q.buyNow({ id = 91301, limit = 15, reason = "list", want = 7 })
+  T.eq(n, 2); T.eq(cost, 20)
+  Q.lateBuys, Q.wonDue = late, won
+  ns.ListStillWanted = stillWanted
+  -- A flip with 1s to spend: 5 at 10c, then the 4 at 12c your gold still covers.
+  S.money = 100
+  n, cost, listed = Q.buyNow({ id = 91301, limit = 15, reason = "flip" })
+  T.eq(n, 9); T.eq(cost, 98); T.eq(listed, 9)
+  S.money = 70
+  n, cost, listed = Q.buyNow({ id = 91301, limit = 15, reason = "flip" })
+  T.eq(n, 6, "5 at 10c and one at 12c"); T.eq(cost, 62); T.eq(listed, 9)
+  -- Gear (Codex review of b22d836): one copy a click, at the cheapest known price, marked
+  -- an estimate until the queue has looked it up; then the planned auction's price.
+  S.money = 100000
+  market[91302] = { m = 10, t = time(), src = "scan" }
+  local gear = { id = 91302, gear = true, limit = 30, cost = 20, n = 3, reason = "flip" }
+  local one, estimate
+  n, cost, listed, one, estimate = Q.buyNow(gear)
+  T.eq(n, 1); T.eq(cost, 10); T.eq(listed, 3); T.eq(one, "one"); T.eq(estimate, true)
+  local cur, plan = Q.cur, Q.plan
+  Q.cur, Q.plan = gear, { kind = "item", price = 12 }
+  n, cost, listed, one, estimate = Q.buyNow(gear)
+  T.eq(n, 1); T.eq(cost, 12); T.eq(estimate, nil)
+  Q.cur, Q.plan = cur, plan
+  market[91302] = nil
+  -- Waiting rows buy nothing.
+  n = Q.buyNow({ id = 91301, limit = 15, reason = "list", want = 3, waiting = true })
+  T.eq(n, 0)
+  market[91301] = nil
+  S.money = money
+  ns.db.settings.keepGold, ns.db.settings.buyQueue.limit = keep, limit
+end)
+
+-- Frank, November 15: a new flip showed Buy 1 (the list's stand-in) until it was clicked.
+-- While the queue only waits for a click, it looks such flips up by itself.
+T.test("Buy queue: a new flip's count is looked up while the queue waits for your click", function()
+  local sent = {}
+  rawset(C_AuctionHouse, "SendSearchQuery", function(key) sent[#sent + 1] = key.itemID end)
+  rawset(C_AuctionHouse, "MakeItemKey", function(id) return { itemID = id } end)
+  rawset(C_AuctionHouse, "IsThrottledMessageSystemReady", function() return true end)
+  local standIn = { [91401] = true, [91402] = true }
+  local old = ns.SweepStandIn
+  ns.SweepStandIn = function(_, id) return standIn[id] or false end
+  local lanes = Q.lanes
+  local cur = { id = 91400, lane = "flips" }
+  Q.forceActive, Q.cur, Q.state = true, cur, "ready"
+  Q.lanes = { flips = { cur, { id = 91403, gear = true }, { id = 91401 }, { id = 91402 } } }
+  ns.lastUserSearch = nil
+  S.now = S.now + 100
+  Q.peek()
+  T.same(sent, { 91401 }, "the first stand-in that isn't the one being bought, and not gear")
+  Q.peek()
+  T.eq(#sent, 1, "one at a time")
+  S.now = S.now + 2
+  Q.peek()
+  T.same(sent, { 91401, 91402 }, "the next one, a moment later")
+  S.now = S.now + 2
+  Q.state = "price"
+  standIn[91401], standIn[91402] = nil, nil
+  standIn[91404] = true
+  Q.lanes.flips[#Q.lanes.flips + 1] = { id = 91404 }
+  Q.peek()
+  T.eq(#sent, 2, "never while a purchase is being priced")
+  Q.state = "ready"
+  Q.peek()
+  T.same(sent, { 91401, 91402, 91404 })
+  ns.SweepStandIn = old
+  rawset(C_AuctionHouse, "SendSearchQuery", nil)
+  rawset(C_AuctionHouse, "MakeItemKey", nil)
+  rawset(C_AuctionHouse, "IsThrottledMessageSystemReady", nil)
+  Q.forceActive, Q.cur, Q.state, Q.lanes = nil, nil, "idle", lanes
+end)

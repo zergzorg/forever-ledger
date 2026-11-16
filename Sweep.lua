@@ -1,7 +1,7 @@
 local _, ns = ...
 
 ---------------------------------------------------------------------------
--- Browse sweep (owner, November 10): between full scans the flip watch reads the auction
+-- Browse sweep (owner, November 10): between full scans Live watch reads the auction
 -- house's whole list, the same as a search with no name on the Buy page, which gives every
 -- item with its cheapest price and how many are up. Each item is compared with what the
 -- last sweep saw, and only what changed is acted on:
@@ -88,14 +88,14 @@ function ns:SweepAvailable()
     and AH.HasFullBrowseResults ~= nil and AH.GetBrowseResults ~= nil
 end
 
--- Whether the flip watch reads the list: always, where the client can. (Until November 11,
+-- Whether Live watch reads the list: always, where the client can. (Until November 11,
 -- 2026 a setting could turn it off, and three failed readings in a row turned it off for
 -- the visit; the old item checks ran instead. Frank had them removed.)
 function ns:SweepOn()
   return ns:SweepAvailable()
 end
 
--- After FAILS_SLOWER failed readings in a row, the flip watch tries again every half minute
+-- After FAILS_SLOWER failed readings in a row, Live watch tries again every half minute
 -- (Prices.lua), not a few seconds later.
 function ns:SweepSlower() return S.fails >= FAILS_SLOWER end
 
@@ -246,7 +246,7 @@ local function holdReason(first)
   end
 end
 
--- Watch flips started by your click: the half minute after your own search or an item's
+-- Live watch started by your click: the half minute after your own search or an item's
 -- page ends now (owner, November 12: "hitting stop then start again should just reset
 -- it"). A page that's still open is still waited for, so it isn't changed under you.
 function ns:SweepResetWait()
@@ -374,6 +374,11 @@ local function stillProvisional(id, rec)
   if rec ~= nil and rec == p.rec and rec.l == p.l and rec.t == p.t then return true end
   provisional[id] = nil
   return false
+end
+-- For the Buy queue: whether this material's saved listings are still the list's stand-in
+-- (its cheapest at a count of 1), so its Buy count isn't known yet.
+function ns:SweepStandIn(id)
+  return stillProvisional(id, (ns.db.prices[ns.MarketKey()] or {})[id])
 end
 
 local function earlyJudge(id, it, now)

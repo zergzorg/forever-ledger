@@ -593,7 +593,7 @@ local function build()
   end)
   f.addItem:HookScript("OnLeave", function() GameTooltip:Hide() end)
 
-  -- Watch it (Watched.lua; owner, November 10): the flip watch looks for it in every reading
+  -- Watch it (Watched.lua; owner, November 10): Live watch looks for it in every reading
   -- of the auction house and the Buy queue buys it at or under the price beside it. Typing a
   -- price watches it too.
   local function watchTip(self)

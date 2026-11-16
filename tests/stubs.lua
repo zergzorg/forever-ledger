@@ -56,14 +56,14 @@ UnitLevel = function() return 60 end
 UnitExists = function() return false end
 GetMoney = function() return S.money end
 
--- Items: S.items[id] = { name, quality, ilvl, equipLoc, sell, classID } gives what
+-- Items: S.items[id] = { name, quality, ilvl, minLevel, equipLoc, sell, classID } gives what
 -- GetItemInfo would; S.bags[id] and S.bank[id] what GetItemCount counts. The addon
 -- remembers an item's details for the session, so each test uses its own item IDs.
 S.items, S.bags, S.bank = {}, {}, {}
 function GetItemInfo(id)
   local i = S.items[id]
   if not i then return end
-  return i.name, "|Hitem:" .. id .. "|h[" .. i.name .. "]|h", i.quality or 1, i.ilvl or 1, 1, "", "", i.stack or 1,
+  return i.name, "|Hitem:" .. id .. "|h[" .. i.name .. "]|h", i.quality or 1, i.ilvl or 1, i.minLevel or 1, "", "", i.stack or 1,
     i.equipLoc or "", 0, i.sell or 0, i.classID or 15
 end
 -- A vendor: S.merchant[slot] = itemID. History.lua hooks BuyMerchantItem at login.
