@@ -416,6 +416,12 @@ MANUAL = {
         "Вернуть встроенные группы к наборам по умолчанию?\n\nУйдёт добавленных вами: %d. Вернётся убранных: %d. Правил, которые вы меняли, вернётся к «По умолчанию»: %d.\n\nВаши группы и сохранённые правила останутся. Отменить нельзя.",
     # Writs: two counts in one line, so both read as a colon list and no noun inflects.
     "%d orders, %d with a price.   %s": "Заказов: %d, с ценой: %d.   %s",
+    # Recipes under Professions with every recipe hidden by the filters: the English
+    # template picks "recipe" or "recipes" itself, so each wording is a key.
+    "%s has %d recipe, but none match what's chosen above (%s). Choose All and Any to see them.":
+        "%s: рецептов записано — %d, но под выбранное выше (%s) не подходит ни один. Выберите «Все» и «Любой», чтобы увидеть их.",
+    "%s has %d recipes, but none match what's chosen above (%s). Choose All and Any to see them.":
+        "%s: рецептов записано — %d, но под выбранное выше (%s) не подходит ни один. Выберите «Все» и «Любой», чтобы увидеть их.",
     # Writs: the shopping list line counts two nouns, and both words are part of the
     # rendered text, so every word pair is a key of its own; Russian lists the counts.
     **{

@@ -1158,7 +1158,7 @@ function ns:RefreshRecipes()
   if trainers then
     f.empty:SetText("Тренеры ещё не найдены. Откройте окно тренера профессии.")
   elseif total > 0 then
-    f.empty:SetText(ns.LocalizeText("%s: записано рецептов — %d, но ни один не подходит под выбранное выше (%s). Выберите «Все» и «Любой», чтобы увидеть их."):format(
+    f.empty:SetText(("%s: рецептов записано — %d, но под выбранное выше (%s) не подходит ни один. Выберите «Все» и «Любой», чтобы увидеть их."):format(
       current, total, table.concat(why, ", ")))
   else
     f.empty:SetText("Рецепты не найдены. Откройте окно этой профессии один раз, чтобы записать рецепты.")

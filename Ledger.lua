@@ -947,7 +947,7 @@ function ns:RefreshLedger()
   end
   for i = n + 1, #rows do rows[i]:Hide() end
   local narrowed = itemTab and (s.group ~= "all" or s.rarity ~= "all")
-  f.empty:SetText((EMPTY[s.tab] or EMPTY.all) .. (narrowed and "\n\nThe Group or Rarity choice is hiding some: choose Any group and Any rarity to see them." or ""))
+  f.empty:SetText((EMPTY[s.tab] or EMPTY.all) .. (narrowed and "\n\nФильтр группы или редкости что-то скрывает: выберите «Любая группа» и «Любая редкость», чтобы увидеть всё." or ""))
   f.empty:SetShown(#list == 0)
   f.content:SetHeight(math.max(n * ROW_HEIGHT, 30))
   f.sf.UpdateScrollBar()
