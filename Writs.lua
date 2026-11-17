@@ -349,8 +349,8 @@ function ns:WritsToShoppingList(add)
   if ns.RefreshListsView then ns:RefreshListsView() end
   local orders = 0
   for _ in pairs(list.writOrders) do orders = orders + 1 end
-  ns:Print(("Список покупок «%s»: %d %s на %d %s, каждый до самой высокой цены из плана.%s Отметьте «Покупать из этого списка» в очереди (/fl lists)."):format(
-    LIST_NAME, added, ns.Plural(added, "предмет", "предмета", "предметов"), orders, ns.Plural(orders, "заказ", "заказа", "заказов"),
+  ns:Print(("Список покупок «%s»: предметов: %d, заказов: %d, каждый до самой высокой цены из плана.%s Отметьте «Покупать из этого списка» в очереди (/fl lists)."):format(
+    LIST_NAME, added, orders,
     ready > 0 and (" Предмет для %d уже есть."):format(ready) or ""))
   return list
 end
@@ -644,7 +644,7 @@ function ns:RefreshWrits()
   for _, k in ipairs({ "J", "E", "A" }) do
     if sealed[k] then opened[#opened + 1] = ("%s: %d"):format(TIERS[k].label, sealed[k]) end
   end
-  f.summary:SetText(("%d %s, %d с ценой.   %s"):format(#list, ns.Plural(#list, "заказ", "заказа", "заказов"), priced,
+  f.summary:SetText(("Заказов: %d, с ценой: %d.   %s"):format(#list, priced,
     #opened > 0 and (T:AccentCode() .. "Ещё запечатаны: " .. table.concat(opened, ", ") .. ". Откройте, чтобы увидеть заказы.|r") or dim(priced < #list and "Заказы без цены: на последней полной проверке ничего не выставлено, и материалы без цены." or "Наведите на заказ — самый дешёвый способ его получить.")))
   if s.tier == "mine" and #list == 0 and #opened == 0 then
     f.summary:SetText(dim("В сумках и банке нет заказов ремесленника. Они падают с существ и из сундуков; можно купить на аукционе."))

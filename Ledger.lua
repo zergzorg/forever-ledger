@@ -431,7 +431,7 @@ local function updateSummary()
     for _, rec in ipairs(f.list or {}) do
       spent, earned, profit = spent + rec.boughtTotal, earned + rec.soldTotal, profit + (rec.profit or 0)
     end
-    local extra = (f.list and #f.list > MAX_ROWS) and dim((" (showing the first %d)"):format(MAX_ROWS)) or ""
+    local extra = (f.list and #f.list > MAX_ROWS) and dim((" (показаны первые %d)"):format(MAX_ROWS)) or ""
     -- (Short: with "showing the first 500" the hint ran off the edge, Frank's screenshot.)
     f.summary:SetText(("%d %s: потрачено %s, получено %s, прибыль с перепродажи %s%s   %s"):format(f.list and #f.list or 0,
       ns.Plural(f.list and #f.list or 0, "предмет", "предмета", "предметов"),

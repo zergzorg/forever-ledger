@@ -368,6 +368,13 @@ PLURAL = {
         forms("Синхронизация: дополнено %d день истории цен от %s.",
               "Синхронизация: дополнено %d дня истории цен от %s.",
               "Синхронизация: дополнено %d дней истории цен от %s."),
+    # Ledger, By item: the summary and the tooltip's profit line count one noun each.
+    "%d items: spent %s, got %s, resold profit %s%s   %s":
+        forms("%d предмет: потрачено %s, получено %s, прибыль с перепродажи %s%s   %s",
+              "%d предмета: потрачено %s, получено %s, прибыль с перепродажи %s%s   %s",
+              "%d предметов: потрачено %s, получено %s, прибыль с перепродажи %s%s   %s"),
+    "Profit on %d resold":
+        forms("Прибыль с %d перепроданного", "Прибыль с %d перепроданных", "Прибыль с %d перепроданных"),
 }
 
 # -- Messages Russian phrases differently ------------------------------------
@@ -407,6 +414,10 @@ MANUAL = {
         "Вернуть встроенные группы к наборам по умолчанию?\n\nУйдёт добавленных вами: %d. Вернётся убранных: %d. Правил, которые вы меняли, вернётся к «По умолчанию»: %d.\n\nВаши группы и сохранённые правила останутся. Отменить нельзя.",
     "Restore the built-in groups to their defaults?\n\n%d items you added taken out, %d you took out put back, %d rules you changed back to Default.\n\nYour own groups and saved rules stay. This can't be undone.":
         "Вернуть встроенные группы к наборам по умолчанию?\n\nУйдёт добавленных вами: %d. Вернётся убранных: %d. Правил, которые вы меняли, вернётся к «По умолчанию»: %d.\n\nВаши группы и сохранённые правила останутся. Отменить нельзя.",
+    # Writs: two counts in one line, so both read as a colon list and no noun inflects.
+    "%d orders, %d with a price.   %s": "Заказов: %d, с ценой: %d.   %s",
+    'Shopping list "%s": %d %s for %d %s, each up to the highest price the plan paid.%s Tick Buy from this list in the Buy queue (/fl lists).':
+        "Список покупок «%s»: предметов: %d, заказов: %d, каждый до самой высокой цены из плана.%s Отметьте «Покупать из этого списка» в очереди (/fl lists).",
     # Essences: the kind is joined in the middle of the label.
     "Combine into Greater %s Essence": "Соединить в большую эссенцию (%s)",
     "Split into Lesser %s Essence": "Разделить на малые эссенции (%s)",
