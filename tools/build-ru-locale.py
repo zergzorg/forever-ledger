@@ -416,6 +416,10 @@ MANUAL = {
         "Вернуть встроенные группы к наборам по умолчанию?\n\nУйдёт добавленных вами: %d. Вернётся убранных: %d. Правил, которые вы меняли, вернётся к «По умолчанию»: %d.\n\nВаши группы и сохранённые правила останутся. Отменить нельзя.",
     # Writs: two counts in one line, so both read as a colon list and no noun inflects.
     "%d orders, %d with a price.   %s": "Заказов: %d, с ценой: %d.   %s",
+    # Ledger, By item: the hint under an empty list when a group or rarity filter hides
+    # what the tab would otherwise show.
+    "\n\nThe Group or Rarity choice is hiding some: choose Any group and Any rarity to see them.":
+        "\n\nФильтр группы или редкости что-то скрывает: выберите «Любая группа» и «Любая редкость», чтобы увидеть всё.",
     # Recipes under Professions with every recipe hidden by the filters: the English
     # template picks "recipe" or "recipes" itself, so each wording is a key.
     "%s has %d recipe, but none match what's chosen above (%s). Choose All and Any to see them.":
