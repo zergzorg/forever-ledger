@@ -160,6 +160,7 @@ local function quality(id)
   local _, _, q = ns.GetItemInfo(id)
   return q
 end
+ns.ItemQuality = quality   -- (the Ledger's Rarity choice)
 
 -- Items a hand list holds that change at run time: the crate bundles read from crate
 -- tooltips, and the quest and Darkmoon Faire turn-ins.

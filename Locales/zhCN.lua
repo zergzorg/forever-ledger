@@ -3498,6 +3498,10 @@ language.strings["Gold making"] = "赚钱"
 language.strings["Right-click for Gold making."] = "右键点击打开赚钱页面。"
 language.strings["%d new %s below the usual price: see Gold making, Deals (/fl)"] = "发现 %d 个低于通常价格的%s，可在赚钱页的低价机会中查看（/fl）"
 language.strings["%d new %s below the usual price: see Gold making, Deals (/fl)."] = "发现 %d 个低于通常价格的%s，可在赚钱页的低价机会中查看（/fl）。"
+language.strings["Professions"] = "专业技能"
+language.strings["a recipe item, not seen yet"] = "需要配方物品，尚未记录来源"
+language.strings["%s has %d recipe%s, but none match what's chosen above (%s). Choose All and Any to see them."] = "%s有 %d 个配方%s，但没有符合当前筛选条件的配方（%s）。选择“全部”和“任意”可查看。"
+language.strings["Buy %d (one copy a click) for %s%s. %d listed at or under %s at the last look%s."] = "购买 %d 件（每次点击一件），花费%s%s。上次查询有 %d 件单价不高于 %s%s。"
 for english, translated in pairs(language.strings) do language.upper[string.upper(english)] = translated end
 language.strings["Darkmoon Faire: %d for %d ticket%s (%s)"] = nil
 ns.RegisterLocale("zhCN", language)

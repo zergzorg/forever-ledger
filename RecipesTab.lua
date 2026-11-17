@@ -34,6 +34,10 @@ local function settings()
   s.view = s.view or "known"   -- "view", not the first test's "show", so everyone starts on Known
   s.type = s.type or "all"
   if s.custom == nil then s.custom = true end
+  s.source = s.source or "all"
+  s.skill = s.skill or "all"
+  s.group = s.group or "all"
+  s.least = tonumber(s.least) or 0
   -- s.sort = { key, desc } after a column heading is clicked; nil keeps the usual order.
   return s
 end
@@ -91,6 +95,40 @@ local function autoType(r)
     return "loss", profit
   end
   return "shuffle", profit
+end
+
+---------------------------------------------------------------------------
+-- Recipes from the game's own data (ForeverCrafts.lua) that no profession window has
+-- recorded yet, so a profession nobody of yours has opened still lists its recipes
+-- (Frank, November 15: Recipes needs more data). Shaped like recipe book entries:
+-- `fc` marks them, `learn` is the recipe item's required skill where the game has one
+-- (so the recipe is taught by an item), `rank` the skill the craft starts at.
+---------------------------------------------------------------------------
+local fcByProf
+local function foreverBook(prof)
+  if not fcByProf then
+    fcByProf = {}
+    for _, e in ipairs(ns.FOREVER_CRAFTS or {}) do
+      local t = fcByProf[e.prof] or {}
+      fcByProf[e.prof] = t
+      t[e.id] = { n = e.n, out = e.out, oq = ((e.low or 1) + (e.high or e.low or 1)) / 2, r = e.r,
+        fc = true, learn = e.learn, rank = e.skill }
+    end
+  end
+  return fcByProf[prof] or {}
+end
+
+-- Every recipe of a profession: the recorded ones, then the game data's others.
+local function eachRecipe(prof, fn)
+  local book = ns.db.recipeBook[prof] or {}
+  for id, r in pairs(book) do fn(id, r) end
+  for id, r in pairs(foreverBook(prof)) do
+    if not book[id] then fn(id, r) end
+  end
+end
+
+local function hasRecipes(prof)
+  return ns.db.recipeBook[prof] ~= nil or next(foreverBook(prof)) ~= nil
 end
 
 ---------------------------------------------------------------------------
@@ -265,10 +303,12 @@ local function ahText(s)
   return ""
 end
 
-local function sourceText(s)
+local function sourceText(s, fromItem)
   -- Recipes with no recipe item to find were taught by trainers in Classic.
   -- Forever also adds recipes Classic never had (Favor vendors, camping).
-  if not s then return dim(ns.LocalizeText("тренер или новое в Forever")) end
+  if not s then
+    return dim(ns.LocalizeText(fromItem and "предмет-рецепт, ещё не видно" or "тренер или новое в Forever"))
+  end
   if s.kind == "ah" then
     return ("На аукционе: |cffffd100%s|r %s"):format(ns.Money(s.price), dim(("(лотов: %d)"):format(s.listed or 0)))
   end
@@ -333,6 +373,27 @@ local COLS = {
 local NUMERIC = {}   -- [key] = true for numbers, false for text; columns with a label only
 for _, c in ipairs(COLS) do if c.label ~= "" then NUMERIC[c.key] = c.num or false end end
 
+-- The filters (November 16; Frank: Recipes needs filters, it's a long list).
+local SOURCE_OPTS = {
+  { value = "all", label = "Любой источник" }, { value = "trainer", label = "Тренер" }, { value = "vendor", label = "Торговец" },
+  { value = "drop", label = "Добыча" }, { value = "quest", label = "Задание" }, { value = "ah", label = "На аукционе" },
+  { value = "unseen", label = "Ещё не видно" },
+}
+local SKILL_OPTS = { { value = "all", label = "Любой навык" }, { value = "now", label = "Можно выучить" }, { value = "later", label = "Нужно больше навыка" } }
+local LEAST_OPTS = {
+  { value = 0, label = "Любая прибыль" }, { value = 100, label = "1с и больше" }, { value = 1000, label = "10с и больше" },
+  { value = 5000, label = "50с и больше" }, { value = 10000, label = "1g и больше" }, { value = 50000, label = "5g и больше" },
+}
+
+-- Which Where from choice a recipe's source falls under. No source: a trainer (or new in
+-- Forever), unless the game's data says a recipe item teaches it.
+local function sourceKind(src, fromItem)
+  if not src then return fromItem and "unseen" or "trainer" end
+  if src.kind == "mob" or src.kind == "drop" then return "drop" end
+  return src.kind
+end
+ns.RecipeSourceKind = sourceKind   -- (tests)
+
 -- The tabs: this character's professions (main ones first, then secondary), then
 -- Trainers; every other profession with a recipe book goes in the "Другие профессии"
 -- dropdown, starred when another character on this realm and faction has it (owner's
@@ -341,14 +402,17 @@ local function professions()
   local me = ns.db.chars[ns.CharKey()]
   local mine, others, seen = {}, {}, {}
   for p in pairs((me and me.profs) or {}) do
-    if ns.db.recipeBook[p] then mine[#mine + 1] = p; seen[p] = true end
+    if hasRecipes(p) then mine[#mine + 1] = p; seen[p] = true end
   end
   table.sort(mine, function(a, b)
     if (SECONDARY[a] or false) ~= (SECONDARY[b] or false) then return not SECONDARY[a] end
     return a < b
   end)
-  for p in pairs(ns.db.recipeBook) do
-    if not seen[p] then others[#others + 1] = p end
+  foreverBook("")   -- (builds the index)
+  for _, set in ipairs({ ns.db.recipeBook, fcByProf }) do
+    for p in pairs(set) do
+      if not seen[p] then others[#others + 1] = p; seen[p] = true end
+    end
   end
   table.sort(others)
   return mine, others
@@ -394,17 +458,60 @@ function ns:BuildRecipes(parent)
   f = CreateFrame("Frame", nil, parent)
   f:SetAllPoints()
   f.tabs = {}
+  -- Two rows of choices (redesign build step 6, November 16): what to show, then how
+  -- to narrow it. Trainers and Crates hide both.
   f.second = CreateFrame("Frame", nil, f)
   f.second:SetPoint("TOPLEFT", 0, -30)
   f.second:SetPoint("TOPRIGHT", 0, -30)
   f.second:SetHeight(24)
+  f.third = CreateFrame("Frame", nil, f)
+  f.third:SetPoint("TOPLEFT", 0, -56)
+  f.third:SetPoint("TOPRIGHT", 0, -56)
+  f.third:SetHeight(24)
+
+  local function tip(frame, title, text)
+    frame:HookScript("OnEnter", function(self)
+      GameTooltip:SetOwner(self, "ANCHOR_TOP")
+      GameTooltip:AddLine(title, 1, 1, 1)
+      GameTooltip:AddLine(text, nil, nil, nil, true)
+      GameTooltip:Show()
+    end)
+    frame:HookScript("OnLeave", function() GameTooltip:Hide() end)
+  end
 
   local s = settings()
   f.show = T:Choice(f.second, { { value = "all", label = "Все" }, { value = "unknown", label = "Не изучено" }, { value = "known", label = "Известно" } },
     function(v) s.view = v; ns:RefreshRecipes() end)
   f.show:SetPoint("LEFT", 0, 0)
-  f.custom = T:Check(f.second, function(self) s.custom = self:GetChecked(); ns:RefreshRecipes() end)
-  f.custom.label:SetText("Мои типы")
+  -- Short labels so the row fits the window.
+  -- A dropdown: six buttons pushed Use my types off the window with wider fonts
+  -- (owner's test, October 4).
+  local typeOpts = { { value = "all", label = "Любой тип" } }
+  for _, k in ipairs(ORDER) do typeOpts[#typeOpts + 1] = { value = k, label = TYPES[k].short } end
+  f.type = T:Dropdown(f.second, 120, function(v) s.type = v; ns:RefreshRecipes() end)
+  f.type:SetOptions(typeOpts)
+  f.type:SetPoint("LEFT", f.show, "RIGHT", 14, 0)
+  tip(f.type, "Тип", "Перепродажа или цепочка, изготовление на продажу, услуги чар, не на продажу или невыгодно, по сегодняшним ценам. Правый клик по рецепту — задать свой.")
+  f.source = T:Dropdown(f.second, 130, function(v) s.source = v; ns:RefreshRecipes() end)
+  f.source:SetOptions(SOURCE_OPTS)
+  f.source:SetPoint("LEFT", f.type, "RIGHT", 8, 0)
+  tip(f.source, "Откуда", "Где учат рецепту: сначала то, что вы видели в игре, иначе данные оригинального Classic. «Ещё не видно»: рецепт даёт предмет, который никто не встречал.")
+  f.skill = T:Dropdown(f.second, 140, function(v) s.skill = v; ns:RefreshRecipes() end)
+  f.skill:SetOptions(SKILL_OPTS)
+  f.skill:SetPoint("LEFT", f.source, "RIGHT", 8, 0)
+  tip(f.skill, "Навык", "«Можно выучить»: у одного из ваших персонажей этого мира и фракции хватает навыка. «Нужно больше навыка»: ни у кого пока нет.")
+
+  f.group = T:Dropdown(f.third, 170, function(v) s.group = v; ns:RefreshRecipes() end)
+  f.group:SetPoint("LEFT", 0, 0)
+  tip(f.group, "Группа", "Что делает рецепт, по группам вкладки «Группы»: зелья, тканевая броня, 16–25 уровень... Показаны только группы, в которых эта профессия что-то делает.")
+  f.least = T:Dropdown(f.third, 110, function(v) s.least = v; ns:RefreshRecipes() end)
+  f.least:SetOptions(LEAST_OPTS)
+  f.least:SetPoint("LEFT", f.group, "RIGHT", 8, 0)
+  tip(f.least, "Минимальная прибыль", "Скрыть рецепты, которые дают меньше этого за изготовление по сегодняшним ценам (и те, у которых нет цены).")
+  f.search = T:EditBox(f.third, 130, "LEFT")
+  f.search:SetPoint("LEFT", f.least, "RIGHT", 14, 0)
+  f.custom = T:Check(f.third, function(self) s.custom = self:GetChecked(); ns:RefreshRecipes() end)
+  f.custom.label:SetText("Использовать мои типы")
   f.custom:SetHitRectInsets(0, -(f.custom.label:GetStringWidth() + 8), 0, 0)   -- the name ticks it too
   f.custom:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
@@ -413,18 +520,8 @@ function ns:BuildRecipes(parent)
     GameTooltip:Show()
   end)
   f.custom:SetScript("OnLeave", function() GameTooltip:Hide() end)
-  -- Short labels so the row fits the window.
-  -- A dropdown: six buttons pushed Use my types off the window with wider fonts
-  -- (owner's test, October 4).
-  local typeOpts = { { value = "all", label = "Любой тип" } }
-  for _, k in ipairs(ORDER) do typeOpts[#typeOpts + 1] = { value = k, label = TYPES[k].short } end
-  f.type = T:Dropdown(f.second, 130, function(v) s.type = v; ns:RefreshRecipes() end)
-  f.type:SetOptions(typeOpts)
-  f.type:SetPoint("LEFT", f.show, "RIGHT", 14, 0)
-  f.search = T:EditBox(f.second, 140, "LEFT")
-  f.search:SetPoint("LEFT", f.type, "RIGHT", 14, 0)
   f.custom:SetPoint("LEFT", f.search, "RIGHT", 14, 0)
-  f.clear = T:Button(f.second, "Сбросить типы", 110, function()
+  f.clear = T:Button(f.third, "Сбросить типы", 110, function()
     local n = 0
     for _ in pairs(ns.db.recipeTypes) do n = n + 1 end
     if n == 0 then ns:Print(ns.LocalizeText("Вы ещё не задавали типы.")); return end
@@ -442,19 +539,31 @@ function ns:BuildRecipes(parent)
   f.search:SetScript("OnEditFocusLost", function(self) hint:SetShown(self:GetText() == "") end)
   f.search:SetScript("OnEscapePressed", function(self) self:SetText(""); self:ClearFocus() end)
 
+  -- The header and list move up when Trainers hides the rows of choices.
   f.header = CreateFrame("Frame", nil, f)
-  f.header:SetPoint("TOPLEFT", 0, -58)
-  f.header:SetPoint("TOPRIGHT", 0, -58)
   f.header:SetHeight(22)
   T:Fill(f.header, { 1, 1, 1, 0.05 })
   f.heads = {}
   f.sf, f.content = T:Scroll(f)
-  f.sf:SetPoint("TOPLEFT", 0, -82)
-  f.sf:SetPoint("BOTTOMRIGHT", 0, 20)
   f.summary = T:Text(f, 11, T.dim)
   f.summary:SetPoint("BOTTOMLEFT", 4, 2)
   f.empty = T:Text(f.content, 12, T.dim)
   f.empty:SetPoint("TOPLEFT", 8, -8)
+  f.empty:SetPoint("RIGHT", f.content, "RIGHT", -8, 0)
+  f.empty:SetJustifyH("LEFT")
+
+  -- Waylaid Crates live here too, as a tab after Trainers (Crates.lua builds the view).
+  f.cratesHost = CreateFrame("Frame", nil, f)
+  f.cratesHost:SetPoint("TOPLEFT", 0, -30)
+  f.cratesHost:SetPoint("BOTTOMRIGHT")
+  f.cratesHost:Hide()
+  ns:BuildCrates(f.cratesHost)
+  -- Craftsman's Writs beside them (Writs.lua).
+  f.writsHost = CreateFrame("Frame", nil, f)
+  f.writsHost:SetPoint("TOPLEFT", 0, -30)
+  f.writsHost:SetPoint("BOTTOMRIGHT")
+  f.writsHost:Hide()
+  ns:BuildWrits(f.writsHost)
   return f
 end
 
@@ -462,7 +571,7 @@ end
 local function layoutTabs(list, others)
   local me = ns.db.chars[ns.CharKey()] or { profs = {} }
   me.profs = me.profs or {}
-  local sig = table.concat(list, ",") .. "|" .. table.concat(others, ",")
+  local sig = table.concat(list, ",") .. "|" .. table.concat(others, ",") .. "|" .. tostring(ns.db.settings.crates)
   for _, p in ipairs(list) do sig = sig .. ":" .. tostring(me.profs[p] and me.profs[p].max) end
   if f.tabSig ~= sig then
     for _, b in pairs(f.tabs) do b:Hide() end
@@ -489,6 +598,8 @@ local function layoutTabs(list, others)
         ("%s %s/%s, %s"):format(p, tostring(info and info.rank or "?"), tostring(info and info.max or "?"), rank))
     end
     add("trainers", "Тренеры")
+    if ns.db.settings.crates then add("crates", "Ящики", "Забытые ящики: самый дешёвый способ заполнить каждый") end
+    if ns.db.settings.crates then add("writs", "Заказы", "Заказы ремесленника: сколько стоит каждый заказ в репутации") end
     -- Other professions: a dropdown after the tabs.
     if not f.other then
       f.other = T:Dropdown(f, 170, function(v) if v ~= "" then current = v; ns:RefreshRecipes() end end)
@@ -615,14 +726,19 @@ local function knownBy(prof, recipeID)
   return names
 end
 
--- Skill needed to learn a recipe: from a trainer seen in game, else Classic's.
-local function skillFor(name)
-  if not name then return end
-  for _, s in pairs(ns.db.recipeSources[name:lower()] or {}) do
-    if s.skill and s.skill > 0 then return s.skill end
+-- Skill needed to learn a recipe: from a trainer seen in game, else Classic's, else the
+-- game's data (the recipe item's requirement, or the skill the craft starts at).
+local function skillFor(prof, id, r)
+  local name = r and r.n
+  if name then
+    for _, s in pairs(ns.db.recipeSources[name:lower()] or {}) do
+      if s.skill and s.skill > 0 then return s.skill end
+    end
+    local e = ns.CLASSIC_RECIPES and ns.CLASSIC_RECIPES[name:lower()]
+    if e and e.skill then return e.skill end
   end
-  local e = ns.CLASSIC_RECIPES and ns.CLASSIC_RECIPES[name:lower()]
-  return e and e.skill
+  local fc = foreverBook(prof)[id]
+  return fc and (fc.learn or fc.rank)
 end
 
 -- Highest skill any of your characters has in a profession.
@@ -642,18 +758,43 @@ local function skillText(skill, rank)
   return (rank >= skill and "|cff7fd39c%d|r" or "|cffee8597%d|r"):format(skill)
 end
 
+-- The Group choices for a profession: groups (built in, two levels deep, and yours) that
+-- hold something it makes, with each output's set of groups. Worked out again when the
+-- profession or its recipe count changes, or after a minute (groups can be edited).
+local groupCache = {}
+local function groupChoices(prof)
+  local count = 0
+  eachRecipe(prof, function() count = count + 1 end)
+  local c = groupCache[prof]
+  if c and c.count == count and GetTime() - c.t < 60 then return c end
+  c = { count = count, t = GetTime(), sets = {}, opts = { { value = "all", label = "Любая группа" } } }
+  local present = {}
+  if ns.ItemGroupSet then
+    eachRecipe(prof, function(_, r)
+      if r.out and not c.sets[r.out] then
+        c.sets[r.out] = ns:ItemGroupSet(r.out)
+        for gid in pairs(c.sets[r.out]) do present[gid] = true end
+      end
+    end)
+    for _, g in ipairs(ns:GroupTree()) do
+      if present[g.id] and (g.kind == "user" or (g.kind == "builtin" and g.depth <= 1)) then
+        c.opts[#c.opts + 1] = { value = g.id, label = (g.depth > 0 and "   " or "") .. g.name }
+      end
+    end
+  end
+  groupCache[prof] = c
+  return c
+end
+
 -- What a row sorts by in a column (nil: no value, always last).
 local function plain(text)
   return (text:gsub("|T.-|t", ""):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("^%s+", ""):lower())
 end
 local function sortValue(e, key)
   if key == "name" then return e.r.n and e.r.n:lower() end
-  if key == "skill" then return skillFor(e.r.n) end
+  if key == "skill" then return e.skill end
   if key == "known" then return #e.names > 0 and table.concat(e.names, ", "):lower() or nil end
-  if key == "source" then
-    local src = bestSource(e.r.n)
-    return src and plain(sourceText(src)) or nil
-  end
+  if key == "source" then return e.src and plain(sourceText(e.src)) or nil end
   if key == "type" then return typeRank[e.type] end   -- the usual group order, not A to Z
   if key == "profit" then return e.profit end
 end
@@ -662,19 +803,31 @@ local function recipeRows(prof, width, lay)
   local rank = bestRank(prof)
   local s = settings()
   local match = (f.search:GetText() or ""):lower()
+  local groups = groupChoices(prof)
+  local fc = foreverBook(prof)
   local list = {}
-  for id, r in pairs(ns.db.recipeBook[prof] or {}) do
+  local total, knownCount = 0, 0
+  eachRecipe(prof, function(id, r)
     local names = knownBy(prof, id)
     local known = #names > 0
-    if (s.view == "all" or (s.view == "known") == known) and (match == "" or (r.n or ""):lower():find(match, 1, true)) then
-      local auto, profit = autoType(r)
-      local mine = s.custom and ns.db.recipeTypes[id] or nil
-      local t = mine or auto
-      if s.type == "all" or s.type == t then
-        list[#list + 1] = { id = id, r = r, names = names, type = t, override = mine ~= nil, profit = profit }
-      end
-    end
-  end
+    total = total + 1
+    if known then knownCount = knownCount + 1 end
+    if not ((s.view == "all" or (s.view == "known") == known) and (match == "" or (r.n or ""):lower():find(match, 1, true))) then return end
+    if s.group ~= "all" and not (r.out and groups.sets[r.out] and groups.sets[r.out][s.group]) then return end
+    local auto, profit = autoType(r)
+    local mine = s.custom and ns.db.recipeTypes[id] or nil
+    local t = mine or auto
+    if s.type ~= "all" and s.type ~= t then return end
+    if s.least > 0 and not (profit and profit >= s.least) then return end
+    local skill = skillFor(prof, id, r)
+    if s.skill == "now" and not (skill and rank and skill <= rank) then return end
+    if s.skill == "later" and not (skill and (not rank or skill > rank)) then return end
+    local fromItem = fc[id] and fc[id].learn and true or false
+    local src = bestSource(r.n)
+    if s.source ~= "all" and sourceKind(src, fromItem) ~= s.source then return end
+    list[#list + 1] = { id = id, r = r, names = names, type = t, override = mine ~= nil, profit = profit,
+      skill = skill, src = src, fromItem = fromItem }
+  end)
   -- Grouped by type (flip or shuffle first), then most profit first.
   local function usual(a, b)
     if a.type ~= b.type then return typeRank[a.type] < typeRank[b.type] end
@@ -710,14 +863,14 @@ local function recipeRows(prof, width, lay)
     row.icon:SetTexture(e.r.out and ns:ItemIcon(e.r.out) or "Interface\\Icons\\INV_Misc_QuestionMark")
     row.icon:ClearAllPoints()
     row.icon:SetPoint("LEFT", row, "LEFT", lay.name.x, 0)
-    local src = bestSource(e.r.n)
+    local src = e.src
     row.src = src
     local tinfo = TYPES[e.type]
     local values = {
       name = e.r.n or "?",
-      skill = skillText(skillFor(e.r.n), rank),
+      skill = skillText(e.skill, rank),
       known = #e.names > 0 and table.concat(e.names, ", ") or (SECONDARY[prof] and "|cff7fd39cможет изучить любой|r" or dim("пока никто")),
-      source = sourceText(src),
+      source = sourceText(src, e.fromItem),
       type = ("|cff%s%s|r%s"):format(tinfo.color, tinfo.label, e.override and dim(" (ваш)") or ""),
       profit = money(e.profit),
     }
@@ -735,14 +888,9 @@ local function recipeRows(prof, width, lay)
     row.pin:SetShown(src and src.mapID and src.x and true or false)
     row:Show()
   end
-  local total, knownCount = 0, 0
-  for id in pairs(ns.db.recipeBook[prof] or {}) do
-    total = total + 1
-    if #knownBy(prof, id) > 0 then knownCount = knownCount + 1 end
-  end
   f.summary:SetText(ns.LocalizeText("%s: рецептов %d, изучено %d. Показано %d%s. (Classic) — данные оригинального Classic, в Forever не подтверждены, пока вы их не увидите."):format(
     prof, total, knownCount, n, #list > MAX_ROWS and (" из " .. #list) or ""))
-  return n
+  return n, total
 end
 
 -- The Trainers view has its own column widths (same keys, so rows can be shared).
@@ -921,9 +1069,37 @@ function ns:RefreshRecipes()
   f.show:SetValue(s.view)
   f.custom:SetChecked(s.custom)
   f.type:SetValue(s.type)
+  f.source:SetValue(s.source)
+  f.skill:SetValue(s.skill)
+  f.least:SetValue(s.least)
   layoutTabs(professions())   -- (mine, others)
-  local trainers = current == "trainers"
-  f.second:SetShown(not trainers)
+  local trainers, writs = current == "trainers", current == "writs"
+  local crates = current == "crates" or writs   -- (the same: the list's parts hidden)
+  f.second:SetShown(not trainers and not crates)
+  f.third:SetShown(not trainers and not crates)
+  f.header:SetShown(not crates)
+  f.sf:SetShown(not crates)
+  f.summary:SetShown(not crates)
+  f.cratesHost:SetShown(crates and not writs)
+  f.writsHost:SetShown(writs)
+  if writs then ns:RefreshWrits(); return end
+  if crates then ns:RefreshCrates(); return end
+  local top = trainers and -30 or -84
+  f.header:ClearAllPoints()
+  f.header:SetPoint("TOPLEFT", 0, top)
+  f.header:SetPoint("TOPRIGHT", 0, top)
+  f.sf:ClearAllPoints()
+  f.sf:SetPoint("TOPLEFT", 0, top - 24)
+  f.sf:SetPoint("BOTTOMRIGHT", 0, 20)
+  if not trainers and current then
+    -- A group chosen for another profession that makes nothing in it here: back to Any.
+    local opts = groupChoices(current).opts
+    local found = false
+    for _, o in ipairs(opts) do if o.value == s.group then found = true end end
+    if not found then s.group = "all" end
+    f.group:SetOptions(opts)
+    f.group:SetValue(s.group)
+  end
 
   local width = f:GetWidth() - 20   -- (clear of the scroll bar)
   local cols = trainers and TRAINER_COLS or COLS
@@ -960,22 +1136,29 @@ function ns:RefreshRecipes()
   end
 
   f.content:SetWidth(width)
-  local n = trainers and trainerRows(width, lay) or (current and recipeRows(current, width, lay) or 0)
+  local n, total = 0, 0
+  if trainers then n = trainerRows(width, lay) elseif current then n, total = recipeRows(current, width, lay) end
   for i = n + 1, #rows do rows[i]:Hide() end
   f.empty:SetShown(n == 0)
-  -- Recipes recorded but all hidden by the choices above: say so (Frank, AN6, November 13:
+  -- Recipes there but all hidden by the choices above: say which (Frank, AN6, November 13:
   -- Skinning looked empty on Known, as none of his characters knows its 3 recipes).
-  local total = 0
-  for _ in pairs((not trainers and current and ns.db.recipeBook[current]) or {}) do total = total + 1 end
   local why = {}
   if s.view == "known" then why[#why + 1] = "Только известные" elseif s.view == "unknown" then why[#why + 1] = "Только неизвестные" end
   if s.type ~= "all" and TYPES[s.type] then why[#why + 1] = TYPES[s.type].label end
+  local function label(opts, v)
+    for _, o in ipairs(opts) do if o.value == v then return (o.label:gsub("^%s+", "")) end end
+    return tostring(v)
+  end
+  if s.source ~= "all" then why[#why + 1] = label(SOURCE_OPTS, s.source) end
+  if s.skill ~= "all" then why[#why + 1] = label(SKILL_OPTS, s.skill) end
+  if s.group ~= "all" and current and not trainers then why[#why + 1] = label(groupChoices(current).opts, s.group) end
+  if s.least > 0 then why[#why + 1] = label(LEAST_OPTS, s.least) end
   local match = f.search:GetText() or ""
   if match ~= "" then why[#why + 1] = ('поиск "%s"'):format(match) end
   if trainers then
     f.empty:SetText("Тренеры ещё не найдены. Откройте окно тренера профессии.")
   elseif total > 0 then
-    f.empty:SetText(ns.LocalizeText("%s: записано рецептов — %d, но ни один не подходит под выбранное выше (%s). Выберите «Все», чтобы увидеть их."):format(
+    f.empty:SetText(ns.LocalizeText("%s: записано рецептов — %d, но ни один не подходит под выбранное выше (%s). Выберите «Все» и «Любой», чтобы увидеть их."):format(
       current, total, table.concat(why, ", ")))
   else
     f.empty:SetText("Рецепты не найдены. Откройте окно этой профессии один раз, чтобы записать рецепты.")

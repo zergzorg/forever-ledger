@@ -53,7 +53,7 @@ local DEFAULTS = {
   watchItems = {},   -- [itemID] = { max = copper or nil for the vendor price, t = added }: watched items (Watched.lua)
   groups = { user = {}, added = {}, removed = {}, rules = {}, saved = {}, nextId = 1 }, -- groups and rules, account-wide (Groups.lua: shapes there)
   settings = { source = "auto", maxAgeHours = 12, tooltip = true, debug = false, watch = {}, ahCut = 5, margin = 10, actionSeconds = 3, skipChars = {}, minimap = true, minimapAngle = 200, dealSound = true, dealScreen = true, dealChat = true, sellGuard = true, watchResume = true, stackTwoClicks = false, sessionValue = "best", saleSound = true, deRolls = true, keepGold = 0, vendorItemsAH = false, undercutAlerts = true, undercutSound = true, updateNotice = true, priceHelper = true, soldSummary = true,
-    dealUsualPct = 20, dealWindow = "all", dealVendorPct = 10, dealVendorMin = 0, dealHistory = "auto", dealUsualMin = 1000, dealShowThin = false, dealsSort = {}, window = {}, ahHighlight = true, ahTabs = true, dashboard = {}, ledger = {}, goldMaking = {}, deFinder = {}, crates = true, recipes = {}, openFlips = true, customers = true, customerSound = true, customerWindow = true, customerChat = false,
+    dealUsualPct = 20, dealWindow = "all", dealVendorPct = 10, dealVendorMin = 0, dealHistory = "auto", dealUsualMin = 1000, dealShowThin = false, dealsSort = {}, window = {}, ahHighlight = true, ahTabs = true, dashboard = {}, ledger = {}, goldMaking = {}, writs = {}, quickDE = true, quickDEKey = "ctrlalt", deFinder = {}, crates = true, recipes = {}, openFlips = true, customers = true, customerSound = true, customerWindow = true, customerChat = false,
     svcCrafting = true, svcFood = true, svcPortal = true, svcSummon = true, svcLockpick = true,
     -- Buy queue (BuyQueue.lua): what goes in it, scroll anywhere to buy, the side panel's tab.
     -- wheel: on from the start (owner, October 22: the fresh-install test found it hard to
@@ -999,7 +999,7 @@ function ns:ApiReport()
     "GetProfessions", "GetNumSkillLines",
     "C_AuctionHouse.SendSearchQuery", "C_AuctionHouse.ReplicateItems", "C_AuctionHouse.GetReplicateItemTimeLeft","C_AuctionHouse.GetCommoditySearchResultInfo",
     "C_AuctionHouse.GetItemSearchResultInfo", "C_MerchantFrame.GetItemInfo", "GetMerchantItemInfo",
-    "TooltipDataProcessor.AddTooltipPostCall", "C_Item.GetItemInfo", "C_Item.GetItemCount", "GetItemCount",
+    "TooltipDataProcessor.AddTooltipPostCall", "IsPlayerSpell", "C_Spell.GetSpellName", "C_Item.GetItemInfo", "C_Item.GetItemCount", "GetItemCount",
     "GetInboxHeaderInfo", "GetInboxInvoiceInfo", "GetInboxItem", "GetInboxNumItems",
     -- Your auctions (Auctions.lua).
     "C_AuctionHouse.CalculateCommodityDeposit", "C_AuctionHouse.CalculateItemDeposit", "C_AuctionHouse.GetItemKeyInfo",
@@ -1330,6 +1330,8 @@ SlashCmdList.FOREVERLEDGER = function(msg)
     ns:PrintPerf(msg == "perf reset")
   elseif msg == "de" or msg == "de reset" then
     ns:PrintDisenchants(msg == "de reset")
+  elseif msg == "disenchant" then
+    ns:ToggleDisenchantList()   -- QuickDisenchant.lua
   elseif msg == "trainer" then
     ns:PrintTrainer()
   elseif msg == "fund" then

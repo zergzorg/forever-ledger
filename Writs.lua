@@ -1,0 +1,654 @@
+local _, ns = ...
+local T = ns.Theme
+
+---------------------------------------------------------------------------
+-- Craftsman's Writs (Frank, November 16: "items that give you a quest to deliver a
+-- crafted item somewhere in the world and you get some reputation", where crates give
+-- Merchant's Favor). A Sealed Journeyman's, Expert's or Artisan's Writ drops from mobs
+-- and chests (tradable, sold on the auction house) and opens into one order,
+-- "Craftsman's Writ: <item>": deliver that item to a customer somewhere in the world for
+-- Azeroth Commerce Authority (Alliance) or Durotar Supply and Logistics (Horde)
+-- reputation and a coin pouch, each order once a day; no profession needed.
+--
+-- The list below is from fan guides read November 16 (conquestcapped.com,
+-- foreverchanges.pro, loreforeverwow.com, theforeverera.com; names checked against the
+-- game's item names): 150 orders, Alchemy, Blacksmithing, Engineering, Leatherworking
+-- and Tailoring. Reputation (75, 125, 200) and the coin pouch amounts are the guides'
+-- numbers and not yet seen in game; customers marked nil aren't known yet.
+---------------------------------------------------------------------------
+local TIERS = {
+  J = { key = "J", label = "Ученик", rep = 75, pouch = 3300, sealed = 262888 },
+  E = { key = "E", label = "Эксперт", rep = 125, pouch = 7000, sealed = 262889 },
+  A = { key = "A", label = "Умелец", rep = 200, pouch = 7500, sealed = 262890 },
+}
+ns.WRIT_TIERS = TIERS
+
+-- { item ID, profession, tier, skill to make it, customer, zone, writ item ID, how many }
+local LIST = {
+  -- Journeyman
+  { 3383, "Alchemy", "J", 120, "Muggol Breezebeard", "Arathi Highlands", 264012 },
+  { 3385, "Alchemy", "J", 145, "Ash'alari", "Ashenvale", 264013 },
+  { 6048, "Alchemy", "J", 160, "Kzixx", "Duskwood", 264014 },
+  { 5634, "Alchemy", "J", 175, "Webbed Mudsnout Gnoll", "Hillsbrad Foothills", 264015 },
+  { 3390, "Alchemy", "J", 165, "Ziz Fizziks", "Stonetalon Mountains", 264016 },
+  { 3388, "Alchemy", "J", 150, "Short John Mithril", "Stranglethorn Vale", 264017 },
+  { 8951, "Alchemy", "J", 215, "Rizzle Brassbolts", "Thousand Needles", 264018 },
+  { 5996, "Alchemy", "J", 120, "Kixxle", "Wetlands", 264019 },
+  { 3391, "Alchemy", "J", 175, "Sos'mol", "Alterac Mountains" },
+  { 5540, "Blacksmithing", "J", 115, "Alan Sneeks", "Alterac Mountains", 264020 },
+  { 11128, "Blacksmithing", "J", 130, "Muggol Breezebeard", "Arathi Highlands", 264021 },
+  { 5541, "Blacksmithing", "J", 145, "Cowardly Peon", "Ashenvale", 264022 },
+  { 15869, "Blacksmithing", "J", 75, "Battered Trunk", "Duskwood", 264023 },
+  { 3491, "Blacksmithing", "J", 135, "Gorgrash", "Hillsbrad Foothills", 264024 },
+  { 2865, "Blacksmithing", "J", 120, "Ziz Fizziks", "Stonetalon Mountains", 264025 },
+  { 3485, "Blacksmithing", "J", 155, "\"Sea Wolf\" MacKinley", "Stranglethorn Vale", 264026 },
+  { 3848, "Blacksmithing", "J", 110, "\"Plucky\" Johnson", "Thousand Needles", 264027 },
+  { 3484, "Blacksmithing", "J", 150, "Kixxle", "Wetlands", 264028 },
+  { 5507, "Engineering", "J", 160, "Alan Sneeks", "Alterac Mountains", 264029 },
+  { 4384, "Engineering", "J", 175, "Alyce", "Arathi Highlands", 264030 },
+  { 4383, "Engineering", "J", 170, "Grembly", "Ashenvale", 264031 },
+  { 4381, "Engineering", "J", 165, "Kzixx", "Duskwood", 264032 },
+  { 6712, "Engineering", "J", 115, "Gorgrash", "Hillsbrad Foothills", 264033 },
+  { 4373, "Engineering", "J", 145, "Ziz Fizziks", "Stonetalon Mountains", 264034 },
+  { 7506, "Engineering", "J", 150, "Scooty", "Stranglethorn Vale", 264035 },
+  { 4380, "Engineering", "J", 140, "Razzeric", "Thousand Needles", 264036 },
+  { 8069, "Engineering", "J", 125, "Kixxle", "Wetlands", 264037, 200 },
+  { 18662, "Leatherworking", "J", 125, "Sos'mol", "Alterac Mountains", 264038 },
+  { 5958, "Leatherworking", "J", 105, "Alyce", "Arathi Highlands", 264039 },
+  { 7349, "Leatherworking", "J", 135, "Murache", "Ashenvale", 264040 },
+  { 2317, "Leatherworking", "J", 100, "Kzixx", "Duskwood", 264041 },
+  { 7358, "Leatherworking", "J", 140, "Kris Legace", "Hillsbrad Foothills", 264042 },
+  { 7371, "Leatherworking", "J", 145, "Ziz Fizziks", "Stonetalon Mountains", 264043 },
+  { 4252, "Leatherworking", "J", 140, "Narkk", "Stranglethorn Vale", 264044 },
+  { 4254, "Leatherworking", "J", 150, "Goblin Pit Boss", "Thousand Needles", 264045 },
+  { 7284, "Leatherworking", "J", 120, "Kixxle", "Wetlands", 264046 },
+  { 5766, "Tailoring", "J", 130, "Alan Sneeks", "Alterac Mountains", 264047 },
+  { 6263, "Tailoring", "J", 100, "Alyce", "Arathi Highlands", 264048 },
+  { 7048, "Tailoring", "J", 130, "Cowardly Peon", "Ashenvale", 264049 },
+  { 4245, "Tailoring", "J", 145, "Kzixx", "Duskwood", 264050 },
+  { 4317, "Tailoring", "J", 125, "Bath'rah the Windwatcher", "Alterac Mountains", 264051 },
+  { 4313, "Tailoring", "J", 80, "Ziz Fizziks", "Stonetalon Mountains", 264052 },
+  { 10048, "Tailoring", "J", 95, "Hekshi", "Stranglethorn Vale", 264053 },
+  { 6264, "Tailoring", "J", 115, "Magus Tirth", "Thousand Needles", 264054 },
+  { 4321, "Tailoring", "J", 135, "Kixxle", "Wetlands", 264055 },
+  -- Expert
+  { 6050, "Alchemy", "E", 205, "Lotwil Veriatus", "Badlands", 264056 },
+  { 3823, "Alchemy", "E", 185, "Centaur Pariah", "Desolace", 264057 },
+  { 4623, "Alchemy", "E", 230, "Mudcrush Durtfeet", "Dustwallow Marsh", 264058 },
+  { 6052, "Alchemy", "E", 210, "Greta Mosshoof", "Felwood", 264059 },
+  { 10592, "Alchemy", "E", 220, "Scout Raroul", "Feralas", 264060 },
+  { 5633, "Alchemy", "E", 195, "Dendrite Starblaze", "Moonglade", 264061 },
+  { 3827, "Alchemy", "E", 180, "Spek", "Riverglades", 264062 },
+  { 6049, "Alchemy", "E", 210, "Durganon", "Searing Gorge", 264063 },
+  { 3824, "Alchemy", "E", 190, "Mukomonji", "Swamp of Sorrows", 264064 },
+  { 9061, "Alchemy", "E", 225, "Alchemist Pestlezugg", "Tanaris", 264065 },
+  { 8949, "Alchemy", "E", 205, "Juo", "The Hinterlands", 264066 },
+  { 9144, "Alchemy", "E", 225, "Spark Nilminer", "Un'Goro Crater", 264067 },
+  { 7922, "Blacksmithing", "E", 210, "Furious Shadowforge Digger", "Badlands", 264068 },
+  { 9060, "Blacksmithing", "E", 200, "Bibbly F'utzbuckle", "Desolace", 264069 },
+  { 6041, "Blacksmithing", "E", 190, "Ugbert", "Dustwallow Marsh", 264070 },
+  { 7928, "Blacksmithing", "E", 220, "Taronn Redfeather", "Felwood", 264071 },
+  { 7942, "Blacksmithing", "E", 220, "Scout Raroul", "Feralas", 264072 },
+  { 3853, "Blacksmithing", "E", 180, "Meliri", "Moonglade", 264073 },
+  { 3837, "Blacksmithing", "E", 190, "Spek", "Riverglades", 264074 },
+  { 7964, "Blacksmithing", "E", 175, "Master Smith Burninate", "Searing Gorge", 264075 },
+  { 7943, "Blacksmithing", "E", 225, nil, nil, 264076 },
+  { 11144, "Blacksmithing", "E", 180, "Spigot Operator Luglunket", "Tanaris", 264077 },
+  { 9366, "Blacksmithing", "E", 200, nil, nil, 264078 },
+  { 7941, "Blacksmithing", "E", 210, "Torwa Pathfinder", "Un'Goro Crater", 264079 },
+  { 4396, "Engineering", "E", 220, nil, "Badlands?", 264080 },
+  { 4392, "Engineering", "E", 185, "Bibbly F'utzbuckle", "Desolace", 264081 },
+  { 4393, "Engineering", "E", 205, "The Ravenous", "Dustwallow Marsh", 264082 },
+  { 4395, "Engineering", "E", 215, "Jessir Moonbow", "Felwood", 264083 },
+  { 10501, "Engineering", "E", 240, "Scout Raroul", "Feralas", 264084 },
+  { 10560, "Engineering", "E", 200, "Narianna", "Moonglade", 264085 },
+  { 4852, "Engineering", "E", 185, "Spek", "Riverglades", 264086 },
+  { 10500, "Engineering", "E", 225, "Durganon", "Searing Gorge", 264087 },
+  { 10514, "Engineering", "E", 215, "Bullets Bigblast", "Swamp of Sorrows", 264088 },
+  { 10498, "Engineering", "E", 175, "Jhordy Lapforge", "Tanaris", 264089 },
+  { 11590, "Engineering", "E", 200, "Rhapsody Shindigger", "The Hinterlands", 264090 },
+  { 16005, "Engineering", "E", 305, nil, nil, 264091 },
+  { 8174, "Leatherworking", "E", 195, "Garek", "Badlands", 264092 },
+  { 5965, "Leatherworking", "E", 180, "Azore Aldamort", "Desolace", 264093 },
+  { 7378, "Leatherworking", "E", 180, "The Ravenous", "Dustwallow Marsh", 264094 },
+  { 8214, "Leatherworking", "E", 220, "Ivy Leafrunner", "Felwood", 264095 },
+  { 8210, "Leatherworking", "E", 215, nil, "Feralas?", 264096 },
+  { 8217, "Leatherworking", "E", 220, "Narianna", "Moonglade", 264097 },
+  { 7391, "Leatherworking", "E", 195, "Spek", "Riverglades", 264098 },
+  { 8192, "Leatherworking", "E", 205, "Evonice Sootsmoker", "Searing Gorge", 264099 },
+  { 8201, "Leatherworking", "E", 215, "Mukomonji", "Swamp of Sorrows", 264100 },
+  { 8200, "Leatherworking", "E", 210, "Yeh'kinya", "Tanaris", 264101 },
+  { 8189, "Leatherworking", "E", 205, "Juo", "The Hinterlands", 264102 },
+  { 8218, "Leatherworking", "E", 220, "Nergal", "Un'Goro Crater", 264103 },
+  { 10050, "Tailoring", "E", 205, "Rigglefuzz", "Badlands", 264104 },
+  { 10023, "Tailoring", "E", 205, "Willow", "Desolace", 264105 },
+  { 7063, "Tailoring", "E", 185, "Tabetha", "Dustwallow Marsh", 264106 },
+  { 10004, "Tailoring", "E", 195, "Eridan Bluewind", "Felwood", 264107 },
+  { 22246, "Tailoring", "E", 205, nil, "Felwood?", 264108 },
+  { 4329, "Tailoring", "E", 185, "Mylentha Riverbend", "Moonglade", 264109 },
+  { 9998, "Tailoring", "E", 185, "Spek", "Riverglades", 264110 },
+  { 10009, "Tailoring", "E", 195, "Lookout Captain Lolo Longstriker", "Searing Gorge", 264111 },
+  { 10052, "Tailoring", "E", 190, "Bullets Bigblast", "Swamp of Sorrows", 264112 },
+  { 10008, "Tailoring", "E", 185, "Vizzklick", "Tanaris", 264113 },
+  { 10042, "Tailoring", "E", 205, "Atal'ai Exile", "The Hinterlands", 264114 },
+  { 7061, "Tailoring", "E", 180, "Petra Grossen", "Un'Goro Crater", 264115 },
+  -- Artisan (most customers not known yet)
+  { 9224, "Alchemy", "A", 265, "Archmage Xylem", "Azshara", 264116 },
+  { 12190, "Alchemy", "A", 245, "Kum'isha the Collector", "Blasted Lands", 264117 },
+  { 9233, "Alchemy", "A", 265, "Hastings", "Deadwind Pass", 264119 },
+  { 9088, "Alchemy", "A", 255, "Adon", "Eastern Plaguelands", 264120 },
+  { 13513, "Alchemy", "A", 315, nil, nil, 264121 },
+  { 246948, "Alchemy", "A", 260 },
+  { 3387, "Alchemy", "A", 275 },
+  { 13457, "Alchemy", "A", 305 },
+  { 18253, "Alchemy", "A", 310 },
+  { 7929, "Blacksmithing", "A", 225 },
+  { 7969, "Blacksmithing", "A", 230, nil, "Deadwind Pass?", 264128 },
+  { 15872, "Blacksmithing", "A", 250 },
+  { 12416, "Blacksmithing", "A", 255, "Kum'isha the Collector", "Blasted Lands", 264126 },
+  { 7947, "Blacksmithing", "A", 255 },
+  { 12775, "Blacksmithing", "A", 280 },
+  { 12417, "Blacksmithing", "A", 290 },
+  { 12422, "Blacksmithing", "A", 295 },
+  { 20549, "Blacksmithing", "A", 320 },
+  { 10548, "Engineering", "A", 260 },
+  { 10504, "Engineering", "A", 265 },
+  { 18631, "Engineering", "A", 270, "Khur Hornstriker", "Silithus", 264140 },
+  { 18645, "Engineering", "A", 275 },
+  { 15996, "Engineering", "A", 285 },
+  { 18587, "Engineering", "A", 285 },
+  { 16023, "Engineering", "A", 295 },
+  { 18232, "Engineering", "A", 320 },
+  { 21277, "Engineering", "A", 320 },
+  { 15084, "Leatherworking", "A", 260, "Quartermaster Miranda Breechlock", "Eastern Plaguelands", 264147 },
+  { 15092, "Leatherworking", "A", 270, "Fallen Adventurer", "Western Plaguelands", 264150 },
+  { 15071, "Leatherworking", "A", 270 },
+  { 15053, "Leatherworking", "A", 280 },
+  { 15087, "Leatherworking", "A", 285 },
+  { 18258, "Leatherworking", "A", 285 },
+  { 15094, "Leatherworking", "A", 285, "Hastings", "Deadwind Pass", 264146 },
+  { 15075, "Leatherworking", "A", 285 },
+  { 15080, "Leatherworking", "A", 290 },
+  { 10036, "Tailoring", "A", 155, "Hastings", "Deadwind Pass", 264155 },
+  { 10025, "Tailoring", "A", 215, "Hermit Ortell", "Silithus", 264158 },
+  { 14046, "Tailoring", "A", 230, "Kum'isha the Collector", "Blasted Lands", 264153 },
+  { 21340, "Tailoring", "A", 230, nil, "Winterspring?", 264160 },
+  { 14141, "Tailoring", "A", 240 },
+  { 22251, "Tailoring", "A", 245 },
+  { 13864, "Tailoring", "A", 250, "Gorzeeki Wildeyes", "Burning Steppes", 264154 },
+  { 14108, "Tailoring", "A", 255 },
+  { 14130, "Tailoring", "A", 275 },
+}
+
+local WRITS, byWrit, byItem = {}, {}, {}
+for i, w in ipairs(LIST) do
+  local e = { item = w[1], prof = w[2], tier = w[3], skill = w[4], who = w[5], zone = w[6], writ = w[7], qty = w[8] or 1, n = i }
+  WRITS[i] = e
+  if e.writ then byWrit[e.writ] = e end
+  byItem[e.item] = e
+end
+ns.WRITS = WRITS
+local SEALED = {}
+for _, t in pairs(TIERS) do SEALED[t.sealed] = t end
+
+-- The writ an item is: its ID first, else its name ("Craftsman's Writ: <item>"), since
+-- some writs' IDs aren't known. Returns the order, or (sealed writs) the tier.
+local function itemName(id)
+  return (ns.db and ns.db.itemNames and ns.db.itemNames[id]) or (ns.FOREVER_ITEM_NAMES and ns.FOREVER_ITEM_NAMES[id])
+end
+local nameIndex
+function ns:WritFor(id)
+  if not id then return end
+  if byWrit[id] then return byWrit[id] end
+  if SEALED[id] then return nil, SEALED[id] end
+  local name = ns.ItemName and ns.ItemName(id)
+  if type(name) ~= "string" then return end
+  local wanted = name:match("^Craftsman's Writ: (.+)$")
+  if wanted then
+    if not nameIndex then
+      nameIndex = {}
+      for _, e in ipairs(WRITS) do
+        local n = itemName(e.item)
+        if n then nameIndex[n:lower()] = e end
+      end
+    end
+    return nameIndex[wanted:lower()]
+  end
+  local sealed = name:match("^Sealed (%a+)'s Writ$")
+  for _, t in pairs(TIERS) do
+    if sealed == t.label then return nil, t end
+  end
+end
+
+---------------------------------------------------------------------------
+-- What an order costs: the cheapest way to get the item (bought on the auction house or
+-- from a vendor, or made from its materials, whichever is cheaper, as Gold making's How
+-- it adds up), less the coin pouch, per point of reputation.
+---------------------------------------------------------------------------
+local fcByOut
+local function foreverRecipe(id)
+  if not fcByOut then
+    fcByOut = {}
+    for _, e in ipairs(ns.FOREVER_CRAFTS or {}) do
+      if e.out and e.r and #e.r > 0 and not fcByOut[e.out] then fcByOut[e.out] = e end
+    end
+  end
+  local e = fcByOut[id]
+  if e then return { makes = math.max(1, math.floor(((e.low or 1) + (e.high or e.low or 1)) / 2)), mats = e.r } end
+end
+
+-- Gold making's source of an item, with the game's own recipe when no character's or
+-- seen recipe makes it (Blacksmithing, Engineering... nobody of yours has).
+local function source(id)
+  local s = ns.GoldSource and ns:GoldSource(id) or {}
+  if not s.recipe then s.recipe = foreverRecipe(id) end
+  return s
+end
+
+local costs, costsAt = {}, 0
+function ns:WritCost(e)
+  if GetTime() - costsAt > 30 then wipe(costs); costsAt = GetTime() end
+  local c = costs[e.item]
+  if c == nil then
+    local cache = {}
+    local function src(id)
+      if not cache[id] then cache[id] = source(id) end
+      return cache[id]
+    end
+    local need = { [e.item] = e.qty }
+    local total, plan = ns.CraftPlan(need, src)
+    c = total and { total = total, plan = plan, need = need, src = src } or false
+    costs[e.item] = c
+  end
+  return c or nil
+end
+
+-- Copper per point of reputation after the pouch (negative: the pouch pays more).
+function ns.WritPerRep(cost, tier)
+  local t = TIERS[tier]
+  if not (cost and t) then return end
+  return (cost - t.pouch) / t.rep
+end
+
+-- How the cheapest way gets it: "buy on the AH", "make it", "from a vendor".
+local function howText(c, e)
+  local p = c and c.plan and c.plan[e.item]
+  if not p then return "" end
+  if p.made > 0 then return "изготовить" end
+  if p.vendor > 0 then return "торговец" end
+  if p.owned > 0 and p.bought == 0 then return "сумки" end
+  return "аукцион"
+end
+
+-- The writs this character has, in bags and bank (Frank, November 16, from SKTools'
+-- idea: the orders you have and what each needs): { [order] = count }, and sealed writs
+-- { [tier key] = count }. Found by item, so writs whose ID isn't listed count too.
+function ns:YourWrits()
+  local inv = ns.db.inventory and ns.db.inventory[ns.CharKey()]
+  local orders, sealed = {}, {}
+  for _, where in ipairs({ "bags", "bank" }) do
+    for id, n in pairs(inv and inv[where] or {}) do
+      local e, t = ns:WritFor(id)
+      if e then orders[e] = (orders[e] or 0) + n
+      elseif t then sealed[t.key] = (sealed[t.key] or 0) + n end
+    end
+  end
+  return orders, sealed
+end
+
+-- Orders onto the "Writs" shopping list: every order on it is planned together (the
+-- cheapest way, what you have used first, nothing counted twice) and the list holds what
+-- to buy, on the auction house or from a vendor, up to the highest price the plan paid;
+-- an order made from materials adds its materials. Kept a week, like crate lists.
+local LIST_NAME = "Заказы"
+local function plan(need)
+  local cache = {}
+  return ns.CraftPlan(need, function(id)
+    if not cache[id] then cache[id] = source(id) end
+    return cache[id]
+  end, { ownedFree = true })
+end
+
+function ns:WritsToShoppingList(add)
+  local list
+  for i, l in ipairs(ns:ShoppingLists()) do
+    if l.name == LIST_NAME and l.writOrders then list = l; ns:SelectShoppingList(i) end
+  end
+  if not list then
+    list = ns:NewShoppingList(LIST_NAME)
+    list.writOrders = {}
+  end
+  list.temp, list.tempT = LIST_NAME, time()
+  for _, e in ipairs(add) do list.writOrders[e.item] = true end
+  local need = {}
+  for item in pairs(list.writOrders) do
+    local e = byItem[item]
+    if e then need[item] = (need[item] or 0) + e.qty end
+  end
+  local _, p = plan(need)
+  -- What this list added before goes, so the new plan replaces it.
+  for id in pairs(list.writItems or {}) do
+    for i = #list.items, 1, -1 do if list.items[i].id == id then table.remove(list.items, i) end end
+  end
+  list.writItems = {}
+  local added, ready = 0, 0
+  for id, x in pairs(p or {}) do
+    local qty = x.bought + x.vendor
+    if qty > 0 then
+      local top = x.top or 0
+      if x.vendor > 0 then top = math.max(top, math.ceil(x.vendorCost / x.vendor)) end
+      ns:AddToShoppingList(list, id, top, qty)
+      list.writItems[id] = true
+      added = added + 1
+    end
+  end
+  for item in pairs(need) do
+    local x = p and p[item]
+    if x and x.owned >= need[item] then ready = ready + 1 end
+  end
+  if ns.RefreshListsView then ns:RefreshListsView() end
+  local orders = 0
+  for _ in pairs(list.writOrders) do orders = orders + 1 end
+  ns:Print(("Список покупок «%s»: %d %s на %d %s, каждый до самой высокой цены из плана.%s Отметьте «Покупать из этого списка» в очереди (/fl lists)."):format(
+    LIST_NAME, added, ns.Plural(added, "предмет", "предмета", "предметов"), orders, ns.Plural(orders, "заказ", "заказа", "заказов"),
+    ready > 0 and (" Предмет для %d уже есть."):format(ready) or ""))
+  return list
+end
+
+-- Tooltip lines on a writ (the crate setting covers both).
+function ns:WritTooltipLines(id)
+  local e, tier = ns:WritFor(id)
+  if e then
+    local t = TIERS[e.tier]
+    local c = ns:WritCost(e)
+    local lines = {}
+    lines[1] = ("Заказ: %s%s — %s, репутации: %d"):format(e.qty > 1 and (e.qty .. " ") or "", itemName(e.item) or ns.ItemName(e.item),
+      e.who and (e.who .. (e.zone and (" (" .. e.zone .. ")") or "")) or (e.zone and ("кто-то в " .. e.zone) or "заказчик пока неизвестен"), t.rep)
+    if c then
+      local per = ns.WritPerRep(c.total, e.tier)
+      lines[2] = ("Дешевле всего: %s (%s), около %s за репутацию после мешочка монет"):format(ns.Money(math.floor(c.total + 0.5)),
+        howText(c, e), per <= 0 and "ничего" or ns.Money(math.floor(per + 0.5)))
+    end
+    return lines
+  elseif tier then
+    -- A sealed writ: the average order of its tier at today's prices.
+    local sum, n = 0, 0
+    for _, w in ipairs(WRITS) do
+      if w.tier == tier.key then
+        local c = ns:WritCost(w)
+        if c then sum, n = sum + c.total, n + 1 end
+      end
+    end
+    local line = ("Открывается в один заказ: %s, репутации %d"):format(tier.label, tier.rep)
+    if n > 0 then line = line .. (", в среднем около %s на заполнение"):format(ns.Money(math.floor(sum / n + 0.5))) end
+    return { line }
+  end
+end
+
+---------------------------------------------------------------------------
+-- The Writs tab (under Professions, after Crates)
+---------------------------------------------------------------------------
+local ROW = 22
+local f
+local rows = {}
+local COLS = {
+  { key = "name", label = "Заказ" },
+  { key = "prof", label = "Профессия", w = 96 },
+  { key = "tier", label = "Уровень", w = 74 },
+  { key = "rep", label = "Репутация", w = 34, right = true },
+  { key = "where", label = "Отнести", w = 190 },
+  { key = "cost", label = "Дешевле всего", w = 92, right = true },
+  { key = "perRep", label = "За репутацию", w = 66, right = true },
+  { key = "writ", label = "Заказ на аукционе", w = 72, right = true },
+  { key = "add", label = "", w = 40 },
+}
+
+local function S()
+  local s = ns.db.settings
+  s.writs = type(s.writs) == "table" and s.writs or {}
+  local w = s.writs
+  w.tier = w.tier or "all"
+  w.prof = w.prof or "all"
+  w.sort = w.sort or { key = "perRep" }
+  return w
+end
+
+local function dim(t) return "|cff888888" .. t .. "|r" end
+
+function ns:BuildWrits(parent)
+  f = CreateFrame("Frame", nil, parent)
+  f:SetAllPoints()
+  local opts = { { value = "all", label = "Все" } }
+  for _, k in ipairs({ "J", "E", "A" }) do opts[#opts + 1] = { value = k, label = TIERS[k].label } end
+  opts[#opts + 1] = { value = "mine", label = "Ваши" }   -- the writs in your bags and bank
+  f.tier = T:Choice(f, opts, function(v) S().tier = v; ns:RefreshWrits() end)
+  f.tier:SetPoint("TOPLEFT", 2, -2)
+  f.prof = T:Dropdown(f, 150, function(v) S().prof = v; ns:RefreshWrits() end)
+  f.prof:SetPoint("LEFT", f.tier, "RIGHT", 12, 0)
+  local popts = { { value = "all", label = "Любая профессия" } }
+  for _, p in ipairs({ "Alchemy", "Blacksmithing", "Engineering", "Leatherworking", "Tailoring" }) do popts[#popts + 1] = { value = p, label = p } end
+  f.prof:SetOptions(popts)
+  f.info = T:Text(f, 11, T.dim)
+  f.info:SetPoint("TOPLEFT", f.tier, "BOTTOMLEFT", 0, -6)
+  f.info:SetPoint("RIGHT", f, "RIGHT", -2, 0)
+  f.info:SetJustifyH("LEFT")
+  f.info:SetText("Заказ ремесленника просит один предмет, который нужно отнести заказчику в другом месте, за репутацию и мешочек монет; каждый заказ раз в день, профессия не нужна. «Дешевле всего»: купить или изготовить по ценам последней проверки. «За репутацию» вычитает обычные деньги из мешочка. Репутация и суммы в мешочке — из руководств игроков, в игре видны ещё не все. «Ваши»: заказы в сумках и банке. «В список» кладёт заказ в список покупок «Заказы» (что купить или его материалы, если изготовить дешевле). Клик по заказу — поиск на аукционе.")
+  f.header = CreateFrame("Frame", nil, f)
+  f.header:SetPoint("TOP", f.info, "BOTTOM", 0, -6)
+  f.header:SetPoint("LEFT", f, "LEFT", 0, 0)
+  f.header:SetPoint("RIGHT", f, "RIGHT", 0, 0)
+  f.header:SetHeight(22)
+  T:Fill(f.header, { 1, 1, 1, 0.05 })
+  f.heads = {}
+  f.sf, f.content = T:Scroll(f)
+  f.sf:SetPoint("TOP", f.header, "BOTTOM", 0, -2)
+  f.sf:SetPoint("LEFT", f, "LEFT", 0, 0)
+  f.sf:SetPoint("BOTTOMRIGHT", 0, 22)
+  f.summary = T:Text(f, 12)
+  f.summary:SetPoint("BOTTOMLEFT", 4, 4)
+  f.addMine = T:Button(f, "Добавить свои в список покупок", 190, function()
+    local add = {}
+    for e in pairs(ns:YourWrits()) do add[#add + 1] = e end
+    if #add == 0 then ns:Print("В сумках и банке нет заказов ремесленника (сначала откройте запечатанные).") return end
+    ns:WritsToShoppingList(add)
+  end, 20)
+  f.addMine:SetPoint("BOTTOMRIGHT", 0, 2)
+  f.summary:SetPoint("RIGHT", f.addMine, "LEFT", -8, 0)
+  f.summary:SetJustifyH("LEFT")
+  f.summary:SetWordWrap(false)
+  return f
+end
+
+local function layout(width)
+  local fixed = 0
+  for _, c in ipairs(COLS) do fixed = fixed + (c.w or 0) + 8 end
+  local x, out = 4, {}
+  for _, c in ipairs(COLS) do
+    local w = c.w or math.max(150, width - fixed - 4)
+    out[c.key] = { x = x, w = w }
+    x = x + w + 8
+  end
+  return out
+end
+
+local function rowTooltip(self)
+  local e, c = self.entry, self.cost
+  if not e then return end
+  GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+  GameTooltip:SetItemByID(e.item)
+  GameTooltip:AddLine(" ")
+  local t = TIERS[e.tier]
+  GameTooltip:AddDoubleLine("Заказ", ("%s, репутации %d"):format(t.label, t.rep), 0.7, 0.7, 0.7, 1, 1, 1)
+  GameTooltip:AddDoubleLine("Отнести", e.who and (e.who .. (e.zone and (", " .. e.zone) or "")) or (e.zone and ("пока неизвестно (игроки говорят: " .. e.zone:gsub("%?$", "") .. ")") or "пока неизвестно"),
+    0.7, 0.7, 0.7, 1, 1, 1)
+  GameTooltip:AddDoubleLine("Изготовить", ("%s, навык %d"):format(e.prof, e.skill or 0), 0.7, 0.7, 0.7, 1, 1, 1)
+  if c and ns.GoldPlanLines then
+    GameTooltip:AddLine(" ")
+    GameTooltip:AddLine("Дешевле всего", 1, 0.82, 0)
+    local lines = ns.GoldPlanLines(c.need, { e.item }, c.plan, function(id) return c.src(id).recipe end,
+      function(v) return ns.Money(math.floor((v or 0) + 0.5)) end)
+    for _, l in ipairs(lines) do
+      GameTooltip:AddDoubleLine(("  "):rep(l.depth + 1) .. l.head:format(itemName(l.id) or ns.ItemName(l.id)), l.text, 0.85, 0.85, 0.85, 1, 1, 1)
+    end
+    GameTooltip:AddDoubleLine("Итого", ns.Money(math.floor(c.total + 0.5)), 0.7, 0.7, 0.7, 1, 1, 1)
+  elseif not c then
+    GameTooltip:AddLine("Цены на него или его материалы пока нет: запустите полную проверку.", 0.6, 0.6, 0.6, true)
+  end
+  GameTooltip:AddLine("Клик — поиск на аукционе.", 0.5, 0.5, 0.5, true)
+  GameTooltip:Show()
+end
+
+local function getRow(i)
+  if rows[i] then return rows[i] end
+  local r = CreateFrame("Button", nil, f.content)
+  r:SetHeight(ROW)
+  r.stripe = T:Fill(r, { 1, 1, 1, 0.025 })
+  local hl = r:CreateTexture(nil, "HIGHLIGHT")
+  hl:SetAllPoints()
+  hl:SetColorTexture(T.accent[1], T.accent[2], T.accent[3], 0.10)
+  r.icon = r:CreateTexture(nil, "ARTWORK")
+  r.icon:SetSize(16, 16)
+  r.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+  r.cells = {}
+  for _, c in ipairs(COLS) do
+    if c.key == "add" then break end   -- (a button, below)
+    local fs = T:Text(r, 12)
+    fs:SetWordWrap(false)
+    fs:SetJustifyH(c.right and "RIGHT" or "LEFT")
+    r.cells[c.key] = fs
+  end
+  -- This order onto the Writs shopping list.
+  r.add = T:Button(r, "В список", 38, function() if r.entry then ns:WritsToShoppingList({ r.entry }) end end, 18)
+  r.add:HookScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_LEFT")
+    GameTooltip:AddLine("Добавить заказ в список покупок «Заказы»", 1, 1, 1)
+    GameTooltip:AddLine("Что купить для него или его материалы, если изготовить дешевле; имеющееся используется первым.", 0.8, 0.8, 0.8, true)
+    GameTooltip:Show()
+  end)
+  r.add:HookScript("OnLeave", function() GameTooltip:Hide() end)
+  r:SetScript("OnClick", function(self)
+    if self.entry and not ns:SearchAuctionHouse(self.entry.item) then
+      ns:Print("Откройте аукцион и кликните по заказу, чтобы найти его предмет.")
+    end
+  end)
+  r:SetScript("OnEnter", rowTooltip)
+  r:SetScript("OnLeave", function() GameTooltip:Hide() end)
+  rows[i] = r
+  return r
+end
+
+local function bagHas(id) return ns.HaveCount and ns:HaveCount(id) or 0 end
+
+function ns:RefreshWrits()
+  if not f or not f:IsShown() then return end
+  local s = S()
+  f.tier:SetValue(s.tier)
+  f.prof:SetValue(s.prof)
+  local width = f:GetWidth() - 12
+  local lay = layout(width)
+  local sort = s.sort
+  for i, c in ipairs(COLS) do
+    local h = f.heads[i]
+    if not h then
+      h = CreateFrame("Button", nil, f.header)
+      h.fs = T:Text(h, 11, T.dim)
+      h.fs:SetAllPoints()
+      h:SetScript("OnClick", function(self)
+        local so = S().sort
+        if so.key == self.key then so.desc = not so.desc else so.key, so.desc = self.key, false end
+        ns:RefreshWrits()
+      end)
+      f.heads[i] = h
+    end
+    h.key = c.key
+    h:ClearAllPoints()
+    h:SetPoint("LEFT", f.header, "LEFT", lay[c.key].x, 0)
+    h:SetSize(lay[c.key].w, 22)
+    h.fs:SetJustifyH(c.right and "RIGHT" or "LEFT")
+    local on = sort.key == c.key
+    h.fs:SetText(c.label .. (on and (sort.desc and " v" or " ^") or ""))
+    local col = on and T.accent or T.dim
+    h.fs:SetTextColor(col[1], col[2], col[3], 1)
+  end
+
+  local list, priced = {}, 0
+  local yours, sealed = ns:YourWrits()
+  for _, e in ipairs(WRITS) do
+    if (s.tier == "all" or e.tier == s.tier or (s.tier == "mine" and yours[e])) and (s.prof == "all" or e.prof == s.prof) then
+      local c = ns:WritCost(e)
+      if c then priced = priced + 1 end
+      local writPrice = e.writ and ns:GetPrice(e.writ)
+      list[#list + 1] = { e = e, c = c, name = (itemName(e.item) or ns.ItemName(e.item)),
+        cost = c and c.total, perRep = c and ns.WritPerRep(c.total, e.tier), writ = writPrice,
+        have = yours[e] ~= nil, ready = bagHas(e.item) >= e.qty }
+    end
+  end
+  local tierRank = { J = 1, E = 2, A = 3 }
+  local function value(x, key)
+    if key == "name" then return x.name:lower() end
+    if key == "prof" then return x.e.prof end
+    if key == "tier" or key == "rep" then return tierRank[x.e.tier] end
+    if key == "where" then return x.e.zone and x.e.zone:lower() end
+    return x[key]
+  end
+  table.sort(list, function(a, b)
+    if a.have ~= b.have then return a.have end   -- writs in your bags first
+    local va, vb = value(a, sort.key), value(b, sort.key)
+    if va == vb or va == nil or vb == nil then
+      if va == nil and vb ~= nil then return false end
+      if vb == nil and va ~= nil then return true end
+      return a.e.n < b.e.n
+    end
+    if sort.desc then return va > vb end
+    return va < vb
+  end)
+
+  f.content:SetWidth(width)
+  for i, x in ipairs(list) do
+    local r = getRow(i)
+    r:ClearAllPoints()
+    r:SetPoint("TOPLEFT", f.content, "TOPLEFT", 0, -(i - 1) * ROW)
+    r:SetWidth(width)
+    r.stripe:SetShown(i % 2 == 0)
+    r.entry, r.cost = x.e, x.c
+    r.icon:SetTexture(ns:ItemIcon(x.e.item))
+    r.icon:ClearAllPoints()
+    r.icon:SetPoint("LEFT", r, "LEFT", lay.name.x, 0)
+    local e, t = x.e, TIERS[x.e.tier]
+    local values = {
+      name = (e.qty > 1 and (e.qty .. " x ") or "") .. x.name .. (x.have and (T:AccentCode() .. "  ваш|r") or ""),
+      prof = e.prof,
+      tier = t.label,
+      rep = tostring(t.rep),
+      where = e.who and (e.who .. dim(", " .. (e.zone or "?"))) or dim(e.zone and (e.zone:gsub("%?$", "") .. ", не подтверждено") or "пока неизвестно"),
+      cost = x.ready and "|cff7fd39cу вас есть|r" or x.cost and (ns.Money(math.floor(x.cost + 0.5)) .. dim(" " .. howText(x.c, e))) or dim("нет цены"),
+      perRep = x.perRep and (x.perRep <= 0 and "|cff7fd39cбесплатно|r" or ns.Money(math.floor(x.perRep + 0.5))) or dim("?"),
+      writ = x.writ and ns.Money(x.writ) or dim("-"),
+    }
+    for key, fs in pairs(r.cells) do
+      fs:ClearAllPoints()
+      local px, w = lay[key].x, lay[key].w
+      if key == "name" then px, w = px + 20, w - 20 end
+      fs:SetPoint("LEFT", r, "LEFT", px, 0)
+      fs:SetWidth(w)
+      fs:SetText(values[key])
+    end
+    r.add:ClearAllPoints()
+    r.add:SetPoint("LEFT", r, "LEFT", lay.add.x, 0)
+    r:Show()
+  end
+  for i = #list + 1, #rows do rows[i]:Hide() end
+  f.content:SetHeight(math.max(#list * ROW, 30))
+  f.sf.UpdateScrollBar()
+  local opened = {}
+  for _, k in ipairs({ "J", "E", "A" }) do
+    if sealed[k] then opened[#opened + 1] = ("%s: %d"):format(TIERS[k].label, sealed[k]) end
+  end
+  f.summary:SetText(("%d %s, %d с ценой.   %s"):format(#list, ns.Plural(#list, "заказ", "заказа", "заказов"), priced,
+    #opened > 0 and (T:AccentCode() .. "Ещё запечатаны: " .. table.concat(opened, ", ") .. ". Откройте, чтобы увидеть заказы.|r") or dim(priced < #list and "Заказы без цены: на последней полной проверке ничего не выставлено, и материалы без цены." or "Наведите на заказ — самый дешёвый способ его получить.")))
+  if s.tier == "mine" and #list == 0 and #opened == 0 then
+    f.summary:SetText(dim("В сумках и банке нет заказов ремесленника. Они падают с существ и из сундуков; можно купить на аукционе."))
+  end
+end
+
+ns.RefreshWrits = ns.Timed("Writs tab", ns.RefreshWrits)

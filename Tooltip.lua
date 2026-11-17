@@ -421,6 +421,9 @@ local function addLines(tt, id, forceFull, copyPrice)
 
   local crateLine = on("tipCrate") and ns.CrateTooltipLine and ns:CrateTooltipLine(id)
   if crateLine then ns:AddTooltipLine(tt, crateLine, LR, LG, LB, true) end
+  -- Craftsman's Writs: what the order asks for and costs (Writs.lua; the same setting).
+  local writLines = on("tipCrate") and ns.WritTooltipLines and ns:WritTooltipLines(id)
+  for _, l in ipairs(writLines or {}) do ns:AddTooltipLine(tt, l, LR, LG, LB, true) end
 
   if on("tipBagSlot") then bagLines(tt, id) end
 

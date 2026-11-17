@@ -263,3 +263,35 @@ T.test("Ledger: a day the size limit cut into shows its day totals, nothing lost
   local total = ledgerOther()
   T.eq(total, 10006, "all of it, from the day totals")
 end)
+
+-- Frank, November 16 (TSM's item view): By item lists every item bought or sold.
+T.test("Ledger by item: averages, profit on the resold ones, exact search, item filter", function()
+  local real = { ns.db.sales, ns.db.purchases, ns.db.vendorLog, ns.db.ledgerMonths }
+  local ORE, BAR = 97001, 97002
+  ns.db.itemNames[ORE], ns.db.itemNames[BAR] = "Test Ore", "Test Ore Bar"
+  ns.db.purchases = { { t = NOW, c = ME, id = ORE, q = 10, a = 100 }, { t = NOW + 300, c = ME, id = ORE, q = 10, a = 140 },
+    { t = NOW, c = ME, id = BAR, q = 2, a = 50 } }
+  ns.db.sales = { { t = NOW + 3600, c = ME, n = "Test Ore", q = 5, a = 100 } }   -- (sales are saved by name)
+  ns.db.vendorLog, ns.db.ledgerMonths = {}, {}
+  local all = function() return true end
+  local rows = ns.LedgerRecords("resale", 0, all, "")
+  T.eq(#rows, 2, "the bar was never sold but is listed too")
+  local by = {}
+  for _, r in ipairs(rows) do by[r.item] = r end
+  local ore, bar = by["Test Ore"], by["Test Ore Bar"]
+  T.eq(ore.id, ORE, "the sale's ID found from its name")
+  T.eq(ore.bought, 20); T.eq(ore.avgBuy, 12); T.eq(ore.sold, 5); T.eq(ore.avgSell, 20)
+  T.eq(ore.avgProfit, 8); T.eq(ore.profit, 40, "8 each on the 5 resold")
+  T.eq(ore.where.boughtAuction, 20); T.eq(ore.where.soldAuction, 5)
+  T.eq(ore.first, NOW); T.eq(ore.last, NOW + 3600)
+  T.eq(bar.bought, 2); T.eq(bar.sold, nil); T.eq(bar.profit, nil)
+  T.eq(#ns.LedgerRecords("resale", 0, all, "test ore"), 2, "a plain search finds both")
+  T.eq(#ns.LedgerRecords("resale", 0, all, '"test ore"'), 1, "in quotes, that item only")
+  T.eq(#ns.LedgerRecords("all", 0, all, '"test ore"'), 3, "its three trades in All, not the bar's")
+  local seen = {}
+  rows = ns.LedgerRecords("resale", 0, all, "", { seen = seen, itemOK = function(id) return id == BAR end })
+  T.eq(#rows, 1); T.eq(rows[1].item, "Test Ore Bar")
+  T.ok(seen[ORE] and seen[BAR], "the choices see every item")
+  ns.db.sales, ns.db.purchases, ns.db.vendorLog, ns.db.ledgerMonths = real[1], real[2], real[3], real[4]
+  ns.db.itemNames[ORE], ns.db.itemNames[BAR] = nil, nil
+end)

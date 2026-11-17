@@ -116,8 +116,9 @@ local TABS = {
   { key = "shuffles", label = "Цепочки", show = function() return false end },
   { key = "deals", label = "Сделки", show = function() return false end },
   { key = "ledger", label = "Журнал" },
-  { key = "crates", label = "Ящики", setting = "crates" },
-  { key = "recipes", label = "Рецепты" },
+  -- Professions (redesign build step 6, November 16): Recipes with filters, Trainers and
+  -- Waylaid Crates as tabs inside it (RecipesTab.lua). The key stays "recipes".
+  { key = "recipes", label = "Профессии" },
   { key = "groups", label = "Группы" },   -- GroupsTab.lua (redesign build step 6)
   { key = "characters", label = "Персонажи" },
   { key = "settings", label = "Настройки" },
@@ -138,7 +139,7 @@ local function textArea()
   return sf
 end
 
--- Line the tabs up, leaving out any turned off in Settings (the Crates tab).
+-- Line the tabs up, leaving out any turned off in Settings or hidden.
 function ns:LayoutTabs()
   if not main then return end
   local prev
@@ -172,6 +173,17 @@ local function buildMain()
     GameTooltip:Show()
   end)
   prices:HookScript("OnLeave", function() GameTooltip:Hide() end)
+  -- The Disenchant window (QuickDisenchant.lua), on characters that can disenchant.
+  local de = T:Button(main.bar, "Распылить", 90, function() ns:ToggleDisenchantList() end, 22)
+  de:SetPoint("RIGHT", prices, "LEFT", -6, 0)
+  de:HookScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+    GameTooltip:AddLine("Распыление", 1, 1, 1)
+    GameTooltip:AddLine("Что в сумках можно распылить: отметьте предметы и распыляйте по одному клику. Или держите " .. ns:QuickDisenchantKeyName() .. " и кликните по предмету в сумках.", 0.8, 0.8, 0.8, true)
+    GameTooltip:Show()
+  end)
+  de:HookScript("OnLeave", function() GameTooltip:Hide() end)
+  main:HookScript("OnShow", function() de:SetShown(ns:CanDisenchantHere()) end)
 
   -- Tabs
   main.tabs = {}
@@ -191,7 +203,6 @@ local function buildMain()
     dashboard = ns:BuildDashboard(main.body),
     ledger = ns:BuildLedger(main.body),
     deals = ns:BuildDeals(main.body),
-    crates = ns:BuildCrates(main.body),
     recipes = ns:BuildRecipes(main.body),
     characters = ns:BuildCharacters(main.body),   -- Characters.lua
     groups = ns:BuildGroups(main.body),   -- GroupsTab.lua
@@ -383,8 +394,6 @@ function ns:RefreshUI()
     ns:RefreshDashboard(main.views.dashboard)
   elseif main.view == "ledger" then
     ns:RefreshLedger()
-  elseif main.view == "crates" then
-    ns:RefreshCrates()
   elseif main.view == "deals" then
     ns:RefreshDeals()
   elseif main.view == "help" then
