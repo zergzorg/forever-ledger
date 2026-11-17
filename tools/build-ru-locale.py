@@ -416,8 +416,15 @@ MANUAL = {
         "Вернуть встроенные группы к наборам по умолчанию?\n\nУйдёт добавленных вами: %d. Вернётся убранных: %d. Правил, которые вы меняли, вернётся к «По умолчанию»: %d.\n\nВаши группы и сохранённые правила останутся. Отменить нельзя.",
     # Writs: two counts in one line, so both read as a colon list and no noun inflects.
     "%d orders, %d with a price.   %s": "Заказов: %d, с ценой: %d.   %s",
-    'Shopping list "%s": %d %s for %d %s, each up to the highest price the plan paid.%s Tick Buy from this list in the Buy queue (/fl lists).':
-        "Список покупок «%s»: предметов: %d, заказов: %d, каждый до самой высокой цены из плана.%s Отметьте «Покупать из этого списка» в очереди (/fl lists).",
+    # Writs: the shopping list line counts two nouns, and both words are part of the
+    # rendered text, so every word pair is a key of its own; Russian lists the counts.
+    **{
+        'Shopping list "%s": %d {i} for %d {o}, each up to the highest price the plan '
+        'paid.%s Tick Buy from this list in the Buy queue (/fl lists).'.format(i=i, o=o):
+        "Список покупок «%s»: предметов: %d, заказов: %d, каждый по самой высокой цене из плана.%s "
+        "Отметьте «Покупать из этого списка» в очереди (/fl lists)."
+        for i in ("item", "items") for o in ("order", "orders")
+    },
     # Essences: the kind is joined in the middle of the label.
     "Combine into Greater %s Essence": "Соединить в большую эссенцию (%s)",
     "Split into Lesser %s Essence": "Разделить на малые эссенции (%s)",

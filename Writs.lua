@@ -349,7 +349,7 @@ function ns:WritsToShoppingList(add)
   if ns.RefreshListsView then ns:RefreshListsView() end
   local orders = 0
   for _ in pairs(list.writOrders) do orders = orders + 1 end
-  ns:Print(("Список покупок «%s»: предметов: %d, заказов: %d, каждый до самой высокой цены из плана.%s Отметьте «Покупать из этого списка» в очереди (/fl lists)."):format(
+  ns:Print(("Список покупок «%s»: предметов: %d, заказов: %d, каждый по самой высокой цене из плана.%s Отметьте «Покупать из этого списка» в очереди (/fl lists)."):format(
     LIST_NAME, added, orders,
     ready > 0 and (" Предмет для %d уже есть."):format(ready) or ""))
   return list
