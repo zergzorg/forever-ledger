@@ -17,9 +17,9 @@ local T = ns.Theme
 -- numbers and not yet seen in game; customers marked nil aren't known yet.
 ---------------------------------------------------------------------------
 local TIERS = {
-  J = { key = "J", label = "Ученик", en = "Journeyman", rep = 75, pouch = 3300, sealed = 262888 },
+  J = { key = "J", label = "Подмастерье", en = "Journeyman", rep = 75, pouch = 3300, sealed = 262888 },
   E = { key = "E", label = "Эксперт", en = "Expert", rep = 125, pouch = 7000, sealed = 262889 },
-  A = { key = "A", label = "Умелец", en = "Artisan", rep = 200, pouch = 7500, sealed = 262890 },
+  A = { key = "A", label = "Искусник", en = "Artisan", rep = 200, pouch = 7500, sealed = 262890 },
 }
 ns.WRIT_TIERS = TIERS
 
