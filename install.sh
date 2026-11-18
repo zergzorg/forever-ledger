@@ -27,7 +27,7 @@ LIST=$(mktemp)
 { awk 'NF && $0 !~ /^##/' ForeverLedger.toc
   echo ForeverLedger.toc; echo LICENSE; echo README.md; echo CHANGELOG.md; echo media
 } > "$LIST"
-rsync -a --delete --files-from="$LIST" . "$DEST"/
+rsync -a -r --delete --files-from="$LIST" . "$DEST"/
 rm -f "$LIST"
 echo "Установлено: $DEST"
 echo "В игре: /reload (или полный перезапуск, если WoW был открыт во время установки)."
