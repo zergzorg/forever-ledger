@@ -419,6 +419,8 @@ MANUAL = {
         "Вернуть встроенные группы к наборам по умолчанию?\n\nУйдёт добавленных вами: %d. Вернётся убранных: %d. Правил, которые вы меняли, вернётся к «По умолчанию»: %d.\n\nВаши группы и сохранённые правила останутся. Отменить нельзя.",
     "Restore the built-in groups to their defaults?\n\n%d items you added taken out, %d you took out put back, %d rules you changed back to Default.\n\nYour own groups and saved rules stay. This can't be undone.":
         "Вернуть встроенные группы к наборам по умолчанию?\n\nУйдёт добавленных вами: %d. Вернётся убранных: %d. Правил, которые вы меняли, вернётся к «По умолчанию»: %d.\n\nВаши группы и сохранённые правила останутся. Отменить нельзя.",
+    # The session window's loot table: the line under it when an item has no price yet.
+    "%d more with no price yet, not counted.": "Ещё %d без цены — не учтены.",
     # The session window's loot table: its own heading in the tooltip.
     "Sort by %s": "Сортировать: %s",
     # Writs: two counts in one line, so both read as a colon list and no noun inflects.
