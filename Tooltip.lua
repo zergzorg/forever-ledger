@@ -1,6 +1,7 @@
 local _, ns = ...
 
 local LR, LG, LB = 0.73, 0.64, 1.0   -- label colour
+local clock = debugprofilestop or function() return GetTime() * 1000 end
 
 -- What shows is set in Settings (tester feedback: the tooltip grew long): compact mode
 -- shows one line and the rest while Shift is held; each section can be turned off; and
@@ -203,6 +204,25 @@ local shownLists   -- GameTooltip already has the lists (Shift)
 local function addLines(tt, id, forceFull, copyPrice)
   local s = ns.db and ns.db.settings
   if not id or not s or not s.tooltip then return end
+  -- Each section's time, in /fl perf as "Tooltip: ..." (Frank's AN30, November 17: one freeze
+  -- was 468 ms in our tooltip lines); a freeze names the slowest section and the item.
+  if ns.NoteTipItem then ns.NoteTipItem(id) end
+  local lapAt = clock()
+  -- AHledger's credit, once, wherever its prices went into what this tooltip shows (Codex
+  -- review, November 17: Worth to you from an AHledger material price had none).
+  local ahlBefore = ns.AHledgerUses and ns.AHledgerUses() or 0
+  local credited
+  local function credit()
+    if credited then return end
+    credited = true
+    ns:AddTooltipLine(tt, ns.AHLEDGER_CREDIT, 0.5, 0.5, 0.5)
+  end
+  local function usedAHledger() return ns.AHledgerUses and ns.AHledgerUses() ~= ahlBefore end
+  local function lap(label)
+    local now = clock()
+    if ns.PerfNote then ns.PerfNote("Tooltip: " .. label, now - lapAt, true) end
+    lapAt = now
+  end
   ns:RememberItem(id)
   if tt == GameTooltip then
     copyPrice = copyPrice or (forceFull and shownCopyPrice) or nil   -- (Shift pressed later)
@@ -234,6 +254,7 @@ local function addLines(tt, id, forceFull, copyPrice)
   if tt == GameTooltip then shownID, shownFull, shownHistory = id, full, had or withHistory end
 
   local price, src, t, rec = ns:GetPrice(id)
+  lap("price")
   -- Quests and crafts (summaryLines, listLines above): the lists with Shift held.
   local expanded = forceFull or IsShiftKeyDown()
   local function questsAndCrafts()
@@ -256,7 +277,7 @@ local function addLines(tt, id, forceFull, copyPrice)
   -- cheapest, after the cut and a deposit. When the auction house line is under what
   -- today's cheapest would bring, say why.
   local function whyLower(best, options)
-    if not (rec and rec.m and not rec.none and src ~= "Auctionator" and src ~= "TSM" and src ~= "Auctioneer") then return end
+    if not (rec and rec.m and not rec.none and not ns.EXTERNAL_NAMES[src or ""]) then return end
     local o
     for _, x in ipairs(options or {}) do if x.kind == "ah" then o = x; break end end
     if not o then return end
@@ -269,18 +290,21 @@ local function addLines(tt, id, forceFull, copyPrice)
   -- The sell suggestion goes first, straight under the game's own lines (Frank, AN4,
   -- November 13: below Worth to you and its ways he didn't see it).
   sellLines()
+  lap("sell suggestion")
 
   if not full then
     questsAndCrafts()
+    lap("quests and crafts")
     -- Today's cheapest too, so a new scan shows at once (CurseForge comment, October 22).
     local shownCheapest
-    if price and on("tipPrice") and rec and rec.m and not rec.none and src ~= "Auctionator" and src ~= "TSM" and src ~= "Auctioneer" then
+    if price and on("tipPrice") and rec and rec.m and not rec.none and not ns.EXTERNAL_NAMES[src or ""] then
       local age = t and ns.Age(t) or ""
       ns:AddTooltipDoubleLine(tt, "Аукцион, минимум", ns.Money(rec.m) .. (age ~= "" and (" |cff999999" .. age .. "|r") or ""), LR, LG, LB, 1, 1, 1)
       shownCheapest = true
     end
     local best, options = ns:GetValue(id, true)
     best, options = ns:WorthOfCopy(best, options, copyPrice)
+    lap("worth to you")
     if best then
       local how = options and options[1] and options[1].label
       ns:AddTooltipDoubleLine(tt, "Стоит для вас" .. (how and (" |cff999999(" .. how .. ")|r") or ""), ns.Money(best), LR, LG, LB, 1, 1, 1)
@@ -295,6 +319,8 @@ local function addLines(tt, id, forceFull, copyPrice)
       return
     end
     if withHistory then historyLines(tt, id) end
+    -- AHledger's terms: credit wherever its prices show (Prices.lua).
+    if src == "AHledger" or usedAHledger() then credit() end
     ns:AddTooltipLine(tt, (on("tipHistory") and "Shift — подробности Forever Ledger, Ctrl — история цен"
       or "Shift — подробности Forever Ledger") .. (on("priceWindow") and (", " .. ns:PriceClickName() .. " — график") or ""), 0.5, 0.5, 0.5, true)
     return
@@ -306,7 +332,7 @@ local function addLines(tt, id, forceFull, copyPrice)
   if price and on("tipPrice") then
     local age = t and ns.Age(t) or ""
     age = age ~= "" and (" |cff999999" .. age .. "|r") or ""
-    local own = rec and rec.m and src ~= "Auctionator" and src ~= "TSM" and src ~= "Auctioneer"
+    local own = rec and rec.m and not ns.EXTERNAL_NAMES[src or ""]
     if own then
       local listed = rec.q and (" |cff999999" .. rec.q .. " в продаже|r") or ""
       ns:AddTooltipDoubleLine(tt, "Аукцион, минимум", ns.Money(rec.m) .. listed .. age, LR, LG, LB, 1, 1, 1)
@@ -316,7 +342,13 @@ local function addLines(tt, id, forceFull, copyPrice)
           ns.Money(rec.a), 0.7, 0.7, 0.7, 1, 1, 1)
       end
     else
-      ns:AddTooltipDoubleLine(tt, "Цена на аукционе (" .. (src or "?") .. ")", ns.Money(price) .. age, LR, LG, LB, 1, 1, 1)
+      -- AHledger's own packaged copy (no sync running) can be weeks old: say so.
+      local label = src or "?"
+      if src == "AHledger" then
+        local p = ns.AHledgerInfo(id)
+        if p and p.snapshot then label = "AHledger, копия в аддоне" end
+      end
+      ns:AddTooltipDoubleLine(tt, ("Цена на аукционе (%s)"):format(label), ns.Money(price) .. age, LR, LG, LB, 1, 1, 1)
     end
   elseif rec and rec.none and on("tipPrice") then
     ns:AddTooltipDoubleLine(tt, "Аукцион, минимум", "лотов нет " .. ns.Age(rec.t), LR, LG, LB, 0.7, 0.7, 0.7)
@@ -326,7 +358,13 @@ local function addLines(tt, id, forceFull, copyPrice)
   if on("tipSpeed") and ns.SellSpeed then
     local ok, sp = pcall(ns.SellSpeed, ns, id)
     if ok and sp then ns:AddTooltipDoubleLine(tt, "Продаётся", ns:SellSpeedText(sp), LR, LG, LB, 1, 1, 1) end
+    if (src == "AHledger" and on("tipPrice")) or (ok and sp and sp.from == "AHledger") then
+      credit()
+    end
+  elseif src == "AHledger" and price and on("tipPrice") then
+    credit()
   end
+  lap("sell speed")
 
   -- Gear with random stats: the price of this exact version ("of the Eagle"). An auction
   -- house group ("Items in this group may vary") has no one version: its link carries a
@@ -368,6 +406,7 @@ local function addLines(tt, id, forceFull, copyPrice)
         "version:", suffix or "нет (группа)", "по проверке:", rec.sx:sub(1, 80))
     end
   end
+  lap("versions")
 
   -- Booty Bay, only when it's clearly better there (owner, October 5: neutral prices
   -- mustn't muddle these; off by default, and never while you're at a neutral one,
@@ -389,9 +428,11 @@ local function addLines(tt, id, forceFull, copyPrice)
     ns:AddTooltipDoubleLine(tt, "Торговец продаёт за", shown .. (buy.lim and " |cff999999ограничено|r" or "")
       .. (standing and (" |cff999999в " .. standing .. "|r") or ""), LR, LG, LB, 1, 1, 1)
   end
+  lap("Booty Bay and vendor")
 
   local best, options = ns:GetValue(id, true)
   best, options = ns:WorthOfCopy(best, options, copyPrice)
+  lap("worth to you")
   if best and on("tipWorth") then
     ns:AddTooltipDoubleLine(tt, "Стоит для вас", ns.Money(best), LR, LG, LB, 1, 1, 1)
     whyLower(best, options)
@@ -409,6 +450,8 @@ local function addLines(tt, id, forceFull, copyPrice)
     end
   end
 
+  lap("worth lines")
+
   -- Green when the auction price is already at or below it.
   local maxBuy = on("tipBuy") and ns:BuyAtOrBelow(id, true)
   if maxBuy then
@@ -419,17 +462,23 @@ local function addLines(tt, id, forceFull, copyPrice)
     end
   end
 
+  lap("buy at or below")
   local crateLine = on("tipCrate") and ns.CrateTooltipLine and ns:CrateTooltipLine(id)
   if crateLine then ns:AddTooltipLine(tt, crateLine, LR, LG, LB, true) end
   -- Craftsman's Writs: what the order asks for and costs (Writs.lua; the same setting).
   local writLines = on("tipCrate") and ns.WritTooltipLines and ns:WritTooltipLines(id)
   for _, l in ipairs(writLines or {}) do ns:AddTooltipLine(tt, l, LR, LG, LB, true) end
+  lap("crates and writs")
 
   if on("tipBagSlot") then bagLines(tt, id) end
+  lap("bag slots")
 
   if on("tipDisenchant") and ns:AddDisenchantLines(tt, id) then ns.disenchantLinesFor = id end
+  lap("disenchant")
 
   questsAndCrafts()
+  lap("quests and crafts")
+  if usedAHledger() then credit() end
   -- The hint says what Shift, Ctrl and the click show (AN12, November 14: Frank held Ctrl,
   -- as only Ctrl was named, and didn't see the craft list Shift gives).
   local hints = {}
@@ -448,6 +497,7 @@ local function addLines(tt, id, forceFull, copyPrice)
   local text = #hints > 0 and (ns.LocalizeText("Удерживайте ") .. table.concat(hints, ", ")) or ""
   if click then text = text .. (text ~= "" and ", " or "") .. click end
   if text ~= "" then ns:AddTooltipLine(tt, text, 0.5, 0.5, 0.5, true) end
+  lap("hints and history")
 end
 
 if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall and Enum and Enum.TooltipDataType then

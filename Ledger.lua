@@ -285,7 +285,7 @@ local function records(tab, from, charOK, match, opts)
         local gained = (e.earned or 0) - (e.spent or 0)
         out[#out + 1] = { t = e.t, session = e, item = e.kind == "general" and "Session" or (e.name or "Shuffle"),
           kind = "Session", length = secs, total = gained, amount = gained, loot = e.kind == "general" and (e.loot or 0) or nil,
-          rate = secs >= 120 and gained / secs * 3600 or nil, char = e.c }
+          rate = ns.SessionRate and ns.SessionRate(e) or nil, char = e.c }
       end
     end
   end

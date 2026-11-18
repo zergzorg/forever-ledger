@@ -323,6 +323,17 @@ end
 
 local options
 
+-- AHledger's terms ask for its credit wherever its prices show, and values worked out from
+-- them count (Codex review, November 17: Worth to you from an AHledger material price had
+-- none). ns:GetPrice counts each AHledger price it gives (ns.ahledgerUses); a list worked out
+-- while that count rose is marked (list.ahl and each option's .ahl), and using a marked
+-- one from the cache counts again, so whoever shows a value can compare the count before
+-- and after (ns.AHledgerUses) and add the credit.
+local function carried(x)
+  if type(x) == "table" and x.ahl then ns.ahledgerUses = (ns.ahledgerUses or 0) + 1 end
+end
+function ns.AHledgerUses() return ns.ahledgerUses or 0 end
+
 -- Best option for the next item in a chain that doesn't lead back to `from`. If the
 -- best one loops back, take the next best instead of treating the item as worthless:
 -- otherwise which items looked profitable depended on the order they were worked out,
@@ -335,6 +346,7 @@ local function follow(nextID, depth, from)
   local key = "all:" .. nextID .. ":" .. (depth + 1)
   local list = cache[key]
   if not list then list = options(nextID, depth + 1); cache[key] = list end
+  carried(list)
   for _, alt in ipairs(list) do
     if not passesThrough(alt, from) then return alt end
   end
@@ -351,6 +363,7 @@ local function sellable(id, depth, from)
   local key = "all:" .. id .. ":" .. (depth + 1)
   local list = cache[key]
   if not list then list = options(id, depth + 1); cache[key] = list end
+  carried(list)
   local found
   for _, o in ipairs(list) do
     local way
@@ -441,6 +454,20 @@ options = function(id, depth)
   return list
 end
 
+-- Marks a list worked out with an AHledger price in it, or from one that was (see carried).
+do
+  local raw = options
+  options = function(id, depth)
+    local before = ns.ahledgerUses or 0
+    local list = raw(id, depth)
+    if (ns.ahledgerUses or 0) ~= before then
+      list.ahl = true
+      for _, o in ipairs(list) do o.ahl = true end
+    end
+    return list
+  end
+end
+
 best = function(id, depth)
   local key = id .. ":" .. depth
   local hit = cache[key]
@@ -448,6 +475,7 @@ best = function(id, depth)
     hit = options(id, depth)[1] or false
     cache[key] = hit
   end
+  carried(hit)
   return hit or nil
 end
 
@@ -465,6 +493,7 @@ end
 local function allOptions(id)
   local list = listCache[id]
   if not list then list = options(id, 0); listCache[id] = list end
+  carried(list)
   return list
 end
 

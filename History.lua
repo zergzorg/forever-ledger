@@ -491,9 +491,12 @@ local function onMoney()
     if h.log == "sale" then
       local d = (h.deposit and h.deposit > 0 and h.deposit < amount) and h.deposit or nil
       addLog(ns.db.sales, { t = now, c = who, n = h.item, a = amount - (d or 0), dep = d, cut = h.cut, q = h.qty, b = h.buyer })
+      -- Looted in a running session: it counts as this gold now, not as loot too (Sessions.lua).
+      if ns.SessionSold then ns:SessionSold(h.item, h.qty) end
       ns:Debug("Sale", h.qty or "?", "x", h.item or "?", "to", h.buyer or "?", "for", ns.Money(amount))
     elseif h.log == "vendor" then
       addLog(ns.db.vendorLog, { t = now, c = who, id = h.item, q = h.qty, a = amount, s = h.source == "vendorSell" and "sell" or "buy" })
+      if h.source == "vendorSell" and ns.SessionSold then ns:SessionSold(h.item, h.qty) end
       ns:Debug("Vendor", h.source == "vendorSell" and "sold" or "bought", h.qty or "?", "x", h.item or "?", "for", ns.Money(amount))
     end
   end
@@ -1464,9 +1467,39 @@ function ns:SellSpeed(id)
   local c = speedCache[id]
   if not c then
     c = { sellSpeed(id) }
+    -- Not enough scans of our own yet: AHledger's estimate (every player's scans of
+    -- this market) when it has one, rated the same way and marked from = "AHledger".
+    if not c[1] then
+      local sp = ns.AHledgerSpeed and ns:AHledgerSpeed(id)
+      if sp then c[1] = sp end
+    end
     speedCache[id] = c
   end
   return c[1], c[2]
+end
+
+local function rateSpeed(kind, perDay, listed)
+  if kind ~= "goods" and listed <= 2 and perDay >= 1 then return "rare" end
+  local steps = SPEED_STEPS[kind] or SPEED_STEPS.other
+  local turnover = perDay / math.max(listed, 1)
+  return (turnover >= steps[1] and "fast") or (turnover >= steps[2] and "steady") or "slow"
+end
+
+-- AHledger's estimated units sold a day (AHledgerAPI.GetPrice soldPerDay), for when our own scans
+-- can't say yet. Its packaged copy (p.snapshot) only while under a week old: speeds go
+-- stale, and AHledger releases a fresh copy every few days.
+function ns:AHledgerSpeed(id)
+  local p = ns.AHledgerInfo and ns.AHledgerInfo(id)
+  if p and p.snapshot and not (tonumber(p.updated) and time() - p.updated <= 7 * 86400) then return end
+  local perDay = p and tonumber(p.soldPerDay)
+  -- (None at all isn't judged from it: "none bought in 0 hours of scans" says nothing.)
+  if not perDay or perDay <= 0 then return end
+  local listed = tonumber(p.quantity) or 0
+  local kind = speedKind(id)
+  local key = rateSpeed(kind, perDay, listed)
+  local s = SPEED[key]
+  return { key = key, label = s.label, color = s.color, perDay = perDay,
+    listed = listed, hours = 0, kind = kind, from = "AHledger" }
 end
 
 -- Fewer sales than this aren't enough to judge by in the first day: one piece of gear
@@ -1501,7 +1534,8 @@ end
 function ns:SellSpeedText(sp)
   local per = sp.perDay >= 1 and ("около %d в день"):format(math.floor(sp.perDay + 0.5))
     or sp.perDay > 0 and "меньше 1 в день" or "не покупали"
-  return ("|cff%s%s|r, %s (лотов: %s)"):format(sp.color, sp.label, per, math.floor(sp.listed + 0.5))
+  return ("|cff%s%s|r, %s (лотов: %s)%s"):format(sp.color, sp.label, per, math.floor(sp.listed + 0.5),
+    sp.from and (" |cff999999" .. sp.from .. "|r") or "")
 end
 
 local function median(list)

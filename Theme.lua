@@ -572,6 +572,11 @@ end
 -- A tab: plain text, with an accent underline when selected.
 function T:Tab(parent, label, onClick)
   local b = CreateFrame("Button", nil, parent)
+  -- Keep the tab above its header background and make its click target explicit.
+  -- The auction-house panel embeds this row over Blizzard's own content frames.
+  b:SetFrameLevel(parent:GetFrameLevel() + 5)
+  b:EnableMouse(true)
+  b:RegisterForClicks("LeftButtonUp")
   local fs = T:Text(b, 12, T.dim)   -- (12, lighter, like the mockup)
   fs:SetPoint("CENTER")
   b:SetFontString(fs)

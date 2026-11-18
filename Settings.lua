@@ -30,8 +30,8 @@ local PAGES = {
         { key = "actionSeconds", label = "Секунд на изготовление", kind = "number", suffix = "сек", min = 1, max = 60,
           help = "Для примерной прибыли в час." },
         { key = "source", label = "Цены аукциона из", kind = "choice", after = recalc, options = {
-            { "auto", "Авто" }, { "own", "Мои проверки" }, { "Auctionator", "Auctionator" }, { "TSM", "TSM" }, { "Auctioneer", "Auctioneer" } },
-          help = "Авто берёт ваши свежие проверки, затем другие аукционные аддоны." },
+            { "auto", "Авто" }, { "own", "Мои проверки" }, { "AHledger", "AHledger" }, { "Auctionator", "Auctionator" }, { "TSM", "TSM" }, { "Auctioneer", "Auctioneer" } },
+          help = "Авто берёт ваши свежие проверки, затем другие аукционные аддоны: сначала AHledger (цены по проверкам всех игроков, с пометкой «Цены из AHledger», ahledger.com), затем Auctionator, TSM и Auctioneer." },
       } },
       { name = "Перепродажи и сделки", rules = true, rows = {
         { sub = "Перепродажи торговцу" },

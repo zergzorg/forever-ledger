@@ -62,3 +62,19 @@ T.test("Writs: yours from the bags, and onto the Writs shopping list", function(
   T.eq(list.items[1].qty, 1)
   ns.db.inventory[ns.CharKey()] = nil
 end)
+
+T.test("Writs: a sealed writ's average is worked out in the background, then kept", function()
+  -- (Frank's AN30, November 17: all of a tier's orders at once froze a hover for half a second.)
+  local key = ns.MarketKey()
+  ns.db.prices[key] = ns.db.prices[key] or {}
+  ns.db.prices[key][3383] = { m = 900, a = 900, q = 5, l = "900:5", t = S.now }
+  local first = ns.WritTierAverage("J")
+  T.runTimers()
+  local a = ns.WritTierAverage("J")
+  T.ok(a and a.avg and a.avg > 0, "ready once its timers ran")
+  T.ok(first == nil or first == a, "not all at once in the tooltip (or already kept)")
+  T.eq(ns.WritTierAverage("J"), a, "kept: not worked out again")
+  T.eq(#S.timers, 0, "and nothing started again")
+  local lines = ns:WritTooltipLines(262888)
+  T.ok(lines and lines[1]:find("on average", 1, true), "the sealed writ's line has it")
+end)

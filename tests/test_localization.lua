@@ -501,3 +501,26 @@ T.test("Localization: Post's built-in bag group headings are translated", functi
     T.eq(text:find("[A-Za-z]"), nil, group.name .. " -> " .. text)
   end
 end)
+
+
+T.test("Localization: recent upstream settings and sessions stay Chinese", function()
+  local ns = loadLocale("zhCN")
+  local visible = {
+    "Forever Ledger's tabs in the auction house",
+    "Resume Live watch",
+    "Hold a key and click to disenchant",
+    "QUICK DISENCHANT",
+    "Less", "More", "Pause", "Stop", "Session", "Gold", "Loot",
+    "AHledger, packaged copy", "Prices from AHledger (ahledger.com)",
+    "Your usual pace shows after 3 sessions of 10 minutes or more.",
+    "AH crafts", "Crafts that sell on the auction house for more than their materials cost, after the cut.",
+    "Conversions", "How it adds up", "Click an idea on the left: what it costs, what it brings and, for a craft, the cheapest way to get its materials for that many crafts.",
+    "Least profit", "Only my recipes", "Search names", "Save these filters",
+    "Pick a rule on the left", "Forever Ledger's defaults", "Default post", "can't change",
+  }
+  for _, text in ipairs(visible) do
+    T.ok(ns.LocalizeText(text) ~= text, "missing translation: " .. text)
+  end
+  T.ok(ns.LocalizeText("Auction price (%s)"):format("AHledger")
+    :find("拍卖行价格", 1, true))
+end)

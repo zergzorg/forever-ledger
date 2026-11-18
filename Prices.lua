@@ -1736,14 +1736,41 @@ local function auctioneerPrice(id)
     end
   end
 end
+-- AHledger (ahledger.com, Frank, November 16): a free addon whose sync app writes a
+-- price table for the player's market every 30 minutes, from every player's scans, and
+-- hands it to other addons through AHledgerAPI (their developers page). Their terms:
+-- credit "Prices from AHledger (ahledger.com)" wherever the prices show, never present
+-- them as our own scans, and (from December 10) keep nothing past its cache time, so
+-- they're read live and never copied into saved data (noCopy). p.snapshot means the copy
+-- that ships with their addon, not sync's: used only after every other source.
+ns.AHLEDGER_CREDIT = "Цены из AHledger (ahledger.com)"
+function ns.AHledgerInfo(id)
+  local api = AHledgerAPI
+  if not (api and api.GetPrice and id) then return end
+  local ok, p = pcall(api.GetPrice, id)
+  if ok and type(p) == "table" then return p end
+end
+local function ahledgerPrice(id, snapshot)
+  local p = ns.AHledgerInfo(id)
+  if not p or (p.snapshot and true or false) ~= snapshot then return end
+  local v = tonumber(p.median) or tonumber(p.minBuyout)
+  -- With when its prices were seen, so an old packaged copy counts as old (shuffles and
+  -- the sell suggestion skip prices past the age in Settings).
+  if v and v > 0 then return math.floor(v + 0.5), tonumber(p.updated) end
+end
 ns.EXTERNAL = {
+  { name = "AHledger", fn = function(id) return ahledgerPrice(id, false) end, noCopy = true },
   { name = "Auctionator", fn = auctionatorPrice },
   { name = "TSM", fn = tsmPrice },
   { name = "Auctioneer", fn = auctioneerPrice },
+  { name = "AHledger", fn = function(id) return ahledgerPrice(id, true) end, noCopy = true },
 }
+-- Prices that came from another addon (tooltips show them by name, not as our scans).
+ns.EXTERNAL_NAMES = { AHledger = true, Auctionator = true, TSM = true, Auctioneer = true }
 
 function ns:ExternalSources()
   local found = {}
+  if AHledgerAPI then found[#found + 1] = "AHledger" end
   if Auctionator and Auctionator.API then found[#found + 1] = "Auctionator" end
   if TSM_API then found[#found + 1] = "TSM" end
   if AucAdvanced then found[#found + 1] = "Auctioneer" end
@@ -1766,8 +1793,12 @@ function ns:GetPrice(id)
   if src ~= "own" then
     for _, e in ipairs(ns.EXTERNAL) do
       if src == "auto" or src == e.name then
-        local v = e.fn(id)
-        if v and v > 0 then return v, e.name, nil, rec end
+        local v, when = e.fn(id)
+        if v and v > 0 then
+          -- (Counted, so a value worked out from it shows AHledger's credit: Values.lua.)
+          if e.name == "AHledger" then ns.ahledgerUses = (ns.ahledgerUses or 0) + 1 end
+          return v, e.name, when, rec
+        end
       end
     end
   end
@@ -1814,14 +1845,18 @@ function ns:PriceValues(id, market)
 end
 
 -- Copy prices from Auctionator/TSM/Auctioneer into the ledger so they're included in exports.
+-- (Not AHledger's: its terms don't allow keeping them.)
 function ns:PullExternal()
-  local sources = ns:ExternalSources()
+  local sources = {}
+  for _, name in ipairs(ns:ExternalSources()) do
+    if name ~= "AHledger" then sources[#sources + 1] = name end
+  end
   if #sources == 0 then ns:Print("Поддерживаемый аукционный аддон не найден (Auctionator, TSM или Auctioneer)."); return end
   local key, n = ns.MarketKey(), 0
   ns.db.prices[key] = ns.db.prices[key] or {}
   for _, id in ipairs(ns:WatchList()) do
     for _, e in ipairs(ns.EXTERNAL) do
-      local v = e.fn(id)
+      local v = not e.noCopy and e.fn(id)
       if v and v > 0 then
         local mine = ns.db.prices[key][id]
         if not mine or mine.src ~= "scan" or (time() - (mine.t or 0)) > 3600 then

@@ -3811,8 +3811,9 @@ local function ensureSide()
   side.tabs = {}
   local x = 4
   for _, t in ipairs(TABS) do
-    local b = T:Tab(strip, t[2], function() showTab(t[1]) end)
-    b.key = t[1]
+    local key, label = t[1], t[2]
+    local b = T:Tab(strip, label, function() showTab(key) end)
+    b.key = key
     b:SetPoint("LEFT", x, 0)
     x = x + b:GetWidth()
     side.tabs[#side.tabs + 1] = b

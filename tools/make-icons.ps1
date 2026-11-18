@@ -128,4 +128,43 @@ foreach ($kind in @("major", "new", "edit", "fix")) {
   $p[0].Save((Join-Path $pngOut "$($pngNames[$kind]).png"), [System.Drawing.Imaging.ImageFormat]::Png)
   $p[0].Dispose()
 }
+# The session tracker's small buttons (Frank, AN29, November 17: the words overlapped the
+# time): filled shapes, clear at 14 px. Pause, play, stop, and a chevron down / up.
+function Fill-Shape($name, [scriptblock]$draw) {
+  $p = New-Canvas; $g = $p[1]
+  $brush = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::White)
+  & $draw $g $brush $p[2]
+  $brush.Dispose()
+  Finish $p $name
+}
+function Round-Rect($g, $brush, $x, $y, $w, $h, $r) {
+  $path = New-Object System.Drawing.Drawing2D.GraphicsPath
+  $path.AddArc($x, $y, 2 * $r, 2 * $r, 180, 90)
+  $path.AddArc($x + $w - 2 * $r, $y, 2 * $r, 2 * $r, 270, 90)
+  $path.AddArc($x + $w - 2 * $r, $y + $h - 2 * $r, 2 * $r, 2 * $r, 0, 90)
+  $path.AddArc($x, $y + $h - 2 * $r, 2 * $r, 2 * $r, 90, 90)
+  $path.CloseFigure()
+  $g.FillPath($brush, $path)
+  $path.Dispose()
+}
+Fill-Shape "session-pause" { param($g, $b) Round-Rect $g $b 6 4.5 4.2 15 1.2; Round-Rect $g $b 13.8 4.5 4.2 15 1.2 }
+Fill-Shape "session-stop" { param($g, $b) Round-Rect $g $b 5.5 5.5 13 13 2 }
+Fill-Shape "session-play" { param($g, $b)
+  $path = New-Object System.Drawing.Drawing2D.GraphicsPath
+  $path.AddPolygon(@((New-Object System.Drawing.PointF 7.5, 4.5), (New-Object System.Drawing.PointF 19, 12), (New-Object System.Drawing.PointF 7.5, 19.5)))
+  $g.FillPath($b, $path)
+  $pen = New-Object System.Drawing.Pen ([System.Drawing.Color]::White), 1.6
+  $pen.LineJoin = [System.Drawing.Drawing2D.LineJoin]::Round
+  $g.DrawPath($pen, $path)
+  $pen.Dispose(); $path.Dispose()
+}
+Fill-Shape "session-more" { param($g, $b, $pen)
+  $pen.Width = 2.6
+  $g.DrawLines($pen, @((New-Object System.Drawing.PointF 5.5, 9), (New-Object System.Drawing.PointF 12, 15.5), (New-Object System.Drawing.PointF 18.5, 9)))
+}
+Fill-Shape "session-less" { param($g, $b, $pen)
+  $pen.Width = 2.6
+  $g.DrawLines($pen, @((New-Object System.Drawing.PointF 5.5, 15), (New-Object System.Drawing.PointF 12, 8.5), (New-Object System.Drawing.PointF 18.5, 15)))
+}
+
 Get-ChildItem $out, $pngOut | Select-Object Name, Length

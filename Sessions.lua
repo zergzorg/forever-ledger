@@ -19,6 +19,7 @@ local T = ns.Theme
 local TRACKER_SECONDS = 1   -- the tracker redraws this often, and only while a session runs
 
 local function live() return ns.db and ns.db.liveSession end
+local drawTracker   -- (the tracker, below; the loot event redraws it)
 
 -- Gold an hour, losses in red with a minus (owner's test, October 3: a session that
 -- spent 16s said "0c an hour").
@@ -30,8 +31,32 @@ end
 
 -- What one looted item is worth: ns:LootValue (Values.lua; Settings, Sessions, Count loot at).
 
+-- Gold an hour shows from this far in: before that one kill or purchase swings it wildly
+-- (owner's test, October 3: "-21g 60s an hour" 20 seconds in; 5 minutes since November 17,
+-- as Blackthornes Farmer does).
+local RATE_SECONDS = 300
+ns.SESSION_RATE_SECONDS = RATE_SECONDS
+
+-- Of a session's loot, how many still count as loot: looted, less what was sold during it,
+-- and no more than this character still has (bags, bank, its auctions not yet sold).
+-- Selling looted items counted them twice, as loot and again as the gold they brought (a
+-- player on CurseForge, November 16); disenchanting, using or destroying them likewise
+-- left them counted. What a sale brought is in the gold; what's gone is gone.
+local function stillHeld(s)
+  if s.char ~= ns.CharKey() then return nil end   -- another character's bags say nothing
+  local posted = {}
+  for _, key in ipairs({ s.char, s.char .. " (neutral)" }) do
+    local mine = ns.db.myAuctions and ns.db.myAuctions[key]
+    for _, e in ipairs(mine and mine.list or {}) do
+      if e.id and not e.sold then posted[e.id] = (posted[e.id] or 0) + (e.q or 1) end
+    end
+  end
+  return function(id) return ns.ItemCount(id, true) + (posted[id] or 0) end
+end
+
 -- Totals so far: { secs, gained = net gold change, earned, spent, loot = value of what
--- was looted, items = { { id, n, value } } best first, perHour }.
+-- was looted and is still held, items = { { id, n, value } } best first, unpriced = items
+-- with no price (not counted), perHour }.
 function ns:SessionTotals(s)
   s = s or live()
   if not s then return end
@@ -39,11 +64,20 @@ function ns:SessionTotals(s)
   for _, v in pairs(s.money or {}) do
     if v > 0 then earned = earned + v else spent = spent - v end
   end
-  local loot, items = 0, {}
+  local loot, items, unpriced = 0, {}, 0
+  local held = stillHeld(s)
   for id, n in pairs(s.loot or {}) do
-    local value = ns:LootValue(id) * n
-    loot = loot + value
-    items[#items + 1] = { id = id, n = n, value = value }
+    n = n - ((s.sold or {})[id] or 0)
+    if held then n = math.min(n, held(id)) end
+    if n > 0 then
+      local value = ns:LootValue(id) * n
+      if value > 0 then
+        loot = loot + value
+        items[#items + 1] = { id = id, n = n, value = value }
+      else
+        unpriced = unpriced + n
+      end
+    end
   end
   table.sort(items, function(a, b) return a.value > b.value end)
   -- Time played, not time since it started: a session carried over a logout doesn't
@@ -61,7 +95,35 @@ function ns:SessionTotals(s)
   secs = math.max(1, secs)
   local gained = earned - spent
   return { secs = secs, earned = earned, spent = spent, gained = gained, loot = loot, items = items,
-    perHour = (gained + loot) / secs * 3600 }
+    unpriced = unpriced, perHour = (gained + loot) / secs * 3600 }
+end
+
+-- Gold an hour of a finished session (gold and loot), or nil when it was too short to say.
+function ns.SessionRate(e)
+  local secs = e and (e.secs or ((e.stop or e.t or 0) - (e.t or 0)))
+  if not secs or secs < RATE_SECONDS then return nil end
+  return ((e.earned or 0) - (e.spent or 0) + (e.loot or 0)) / secs * 3600
+end
+
+-- Your usual and best gold an hour, from finished sessions of 10 minutes or more on this
+-- character's realm and faction (the newest 20; usual = their median). nil with fewer than 3.
+local USUAL_MIN_SECONDS, USUAL_COUNT = 600, 20
+function ns:SessionUsual()
+  local rates = {}
+  local list = ns.db.sessions or {}
+  for i = #list, 1, -1 do
+    local e = list[i]
+    if e.kind == "general" and (e.secs or 0) >= USUAL_MIN_SECONDS and (not e.c or not ns.SameMarketChar or ns:SameMarketChar(e.c)) then
+      rates[#rates + 1] = ns.SessionRate(e)
+      if #rates >= USUAL_COUNT then break end
+    end
+  end
+  if #rates < 3 then return nil end
+  local best = math.max(unpack(rates))
+  table.sort(rates)
+  local n = #rates
+  local usual = n % 2 == 1 and rates[(n + 1) / 2] or (rates[n / 2] + rates[n / 2 + 1]) / 2
+  return { usual = usual, best = best, n = n }
 end
 
 local function duration(secs)
@@ -70,6 +132,7 @@ local function duration(secs)
   return ("%d мин %02d с"):format(m, secs % 60)
 end
 local function signed(c) return (c < 0 and "-" or "+") .. ns.Money(math.abs(c)) end
+ns.SessionFormat = { duration = duration, signed = signed, rate = rateText }   -- (SessionWindow.lua)
 
 ---------------------------------------------------------------------------
 -- Counting
@@ -77,9 +140,67 @@ local function signed(c) return (c < 0 and "-" or "+") .. ns.Money(math.abs(c)) 
 -- Every gold change, with where it came from (History.lua onMoney).
 function ns:SessionMoney(source, delta)
   local s = live()
-  if not s or s.char ~= ns.CharKey() then return end
+  if not s or s.char ~= ns.CharKey() or s.paused then return end
   s.money[source] = (s.money[source] or 0) + delta
 end
+
+-- Something sold to a vendor or on the auction house (History.lua, with the gold it
+-- brought): looted this session, it now counts as that gold, not as loot as well. item is
+-- an item ID (vendor) or a name (auction sales name the item). Counted while paused too:
+-- the loot it was is still in the totals.
+-- An auction sale counts only against what was posted during this session (Codex review,
+-- November 17: the money for an auction posted before it took this session's new loot of
+-- the same item off), and its name may carry random stats ("Short Bastard Sword of
+-- Strength" for the looted Short Bastard Sword). Copies are alike, so what's sold during
+-- the session comes off its loot first: never counted twice, at worst a little under.
+local function nameMatches(sale, base)
+  if not (sale and base) then return false end
+  if sale == base then return true end
+  return sale:sub(1, #base + 4) == base .. " of "
+end
+function ns:SessionSold(item, qty)
+  local s = live()
+  if not (s and item) or s.char ~= ns.CharKey() then return end
+  qty = tonumber(qty) or 1
+  local id = type(item) == "number" and item or nil
+  if not id then
+    -- The posted item it was: the exact name first, then a version with random stats.
+    local loose
+    for postedID, n in pairs(s.posted or {}) do
+      if n > 0 and s.loot[postedID] then
+        local base = ns.ItemName(postedID)
+        if base == item then id = postedID; break end
+        if not loose and nameMatches(item, base) then loose = postedID end
+      end
+    end
+    id = id or loose
+    if not id then return end
+    qty = math.min(qty, s.posted[id])
+    s.posted[id] = s.posted[id] - qty
+  end
+  if not (id and s.loot[id]) then return end
+  s.sold = s.sold or {}
+  s.sold[id] = math.min(s.loot[id], (s.sold[id] or 0) + qty)
+end
+
+-- Posted on the auction house during the session (the hooks below): what its sales can
+-- count against.
+function ns:SessionPosted(id, qty)
+  local s = live()
+  if not (s and id) or s.char ~= ns.CharKey() then return end
+  s.posted = s.posted or {}
+  s.posted[id] = (s.posted[id] or 0) + (tonumber(qty) or 1)
+end
+ns:OnReady(function()
+  local AH = C_AuctionHouse
+  local function onPost(loc, _, qty)
+    if not live() then return end
+    local ok, id = pcall(function() return C_Item and C_Item.GetItemID and C_Item.GetItemID(loc) end)
+    if ok and id then ns:SessionPosted(id, qty) end
+  end
+  if AH and AH.PostItem then hooksecurefunc(AH, "PostItem", onPost) end
+  if AH and AH.PostCommodity then hooksecurefunc(AH, "PostCommodity", onPost) end
+end)
 
 -- "You receive loot: [Linen Cloth]x2." in the client's own language, as patterns.
 local lootPatterns
@@ -103,14 +224,18 @@ end
 
 ns:On("CHAT_MSG_LOOT", function(msg)
   local s = live()
-  if not (s and msg) or s.char ~= ns.CharKey() then return end
+  if not (s and msg) or s.char ~= ns.CharKey() or s.paused then return end
   for _, pat in ipairs(patterns()) do
     local link, n = msg:match(pat.p)
     if link then
       local id = ns.ItemIDFromLink(link)
       if id then
-        s.loot[id] = (s.loot[id] or 0) + (tonumber(n) or 1)
+        n = tonumber(n) or 1
+        s.loot[id] = (s.loot[id] or 0) + n
         ns:RememberItem(id)
+        -- The tracker shows what came in for a few seconds ("+2 Linen Cloth").
+        ns.sessionLastLoot = { id = id, n = n, t = GetTime and GetTime() or time() }
+        if drawTracker then drawTracker() end
       end
       return
     end
@@ -121,15 +246,49 @@ end)
 -- The tracker: a small window you can move, while a session runs.
 ---------------------------------------------------------------------------
 local tracker, ticker
-local drawTracker
 
 -- Small and quiet, so it doesn't get in the way of playing (owner's test, October 3:
 -- "make it look a little nicer while keeping it small"): a thin accent line on top, the
 -- time, gold an hour in larger text (the number people watch), gold and loot under it.
--- Right-click folds it to one slim line (settings.sessionSmall).
+-- Right-click folds it to one slim line (settings.sessionSmall). More opens the full view
+-- under it (settings.sessionFull; Frank, November 17: "a mini version... then the full
+-- version that lets people see all the data live"): gold by where it came from, every
+-- item looted with its worth (hover one for its tooltip), and your usual pace.
+local W_MINI, W_SMALL = 224, 210
+local FLASH_SECONDS = 4   -- (new loot shows on the tracker and is lit in the window this long)
+local LOOT_NOTE = "Добыча считается по лучшей из цен аукциона (за вычетом комиссии) и торговца (Настройки, Сессии: только торговец), и только пока предмет у вас: проданное за сессию считается один раз — золотом, которое принесло."
+local function fullView() return ns.SessionWindowShown and ns.SessionWindowShown() end   -- (SessionWindow.lua)
+
+-- A small icon button with its name and what it does on hover; SetIcon changes both (Pause / Carry on).
+local ICONS = "Interface\\AddOns\\ForeverLedger\\media\\icons\\session-"
+local function iconButton(parent, icon, name, what, onClick)
+  local b = CreateFrame("Button", nil, parent)
+  b:SetSize(18, 18)
+  b.tex = b:CreateTexture(nil, "ARTWORK")
+  b.tex:SetSize(12, 12)
+  b.tex:SetPoint("CENTER")
+  local function tint(on) b.tex:SetVertexColor(on and 1 or 0.75, on and 0.85 or 0.75, on and 0.45 or 0.75) end
+  function b:SetIcon(i, n, w)
+    if i ~= b.icon then b.icon = i; b.tex:SetTexture(ICONS .. i) end
+    b.name, b.what = n, w or b.what
+  end
+  b:SetIcon(icon, name, what)
+  tint(false)
+  b:SetScript("OnClick", onClick)
+  b:SetScript("OnEnter", function(self)
+    tint(true)
+    GameTooltip:SetOwner(self, "ANCHOR_TOP")
+    ns:TooltipAddLine(self.name, 1, 1, 1)
+    if self.what then ns:TooltipAddLine(self.what, 0.7, 0.7, 0.7, true) end
+    GameTooltip:Show()
+  end)
+  b:SetScript("OnLeave", function() tint(false); GameTooltip:Hide() end)
+  return b
+end
+
 local function layoutTracker(f)
   local small = ns.db.settings.sessionSmall
-  f:SetSize(210, small and 22 or 64)
+  f:SetSize(small and W_SMALL or W_MINI, small and 22 or 64)
   f.title:ClearAllPoints()
   f.title:SetPoint(small and "LEFT" or "TOPLEFT", 8, small and 0 or -8)
   f.time:ClearAllPoints()
@@ -138,8 +297,13 @@ local function layoutTracker(f)
   f.gold:SetShown(not small)
   f.loot:SetShown(not small)
   f.stop:SetShown(not small)
+  f.pause:SetShown(not small)
+  f.more:SetShown(not small)
+  f.more:SetIcon(fullView() and "less" or "more", fullView() and "Less" or "More",
+    fullView() and "Closes the session window." or "Opens the session window: a graph of your pace, every item looted (sort by any column), gold by where it came from and your past sessions.")
   f.smallRate:SetShown(small)
 end
+ns.SessionTrackerLayout = function() if tracker then layoutTracker(tracker) end end
 
 local function buildTracker()
   local f = CreateFrame("Frame", "ForeverLedgerSessionTracker", UIParent)
@@ -187,16 +351,27 @@ local function buildTracker()
   f.loot = T:Text(f, 11)
   f.loot:SetPoint("BOTTOMRIGHT", -8, 7)
   f.loot:SetJustifyH("RIGHT")
+  f.loot:SetWidth(118)   -- (a new item's name, "+2 Linen Cloth", is cut short, not run into Gold)
+  f.loot:SetWordWrap(false)
   f.smallRate = T:Text(f, 11, { 1, 0.82, 0, 1 })
   f.smallRate:SetPoint("RIGHT", -8, 0)
   f.smallRate:SetJustifyH("RIGHT")
-  f.stop = T:Button(f, "Стоп", 40, function() ns:StopGeneralSession() end, 16)
-  f.stop:SetPoint("TOPRIGHT", -5, -6)
-  f.stop:GetFontString():SetFont(T.font, 10, "")
+  -- Small icons, not words (Frank, AN29, November 17: "More Pause Stop" ran over the time;
+  -- media/icons/session-*, drawn by tools/make-icons.ps1). A hover names each one.
+  f.stop = iconButton(f, "stop", "Стоп", "Завершает сессию и кладёт её итог в чат и в «Сессии» журнала.", function() ns:StopGeneralSession() end)
+  f.stop:SetPoint("TOPRIGHT", -5, -5)
+  -- Pause (Blackthornes Farmer has one; Frank, November 17): the clock stops and nothing is
+  -- counted until Carry on (the play icon).
+  f.pause = iconButton(f, "pause", "Пауза", "Счёт времени останавливается, и ничего не считается, пока не продолжите.", function() ns:PauseGeneralSession() end)
+  f.pause:SetPoint("RIGHT", f.stop, "LEFT", -2, 0)
+  f.more = iconButton(f, "more", "Ещё", "", function() ns:ToggleSessionWindow() end)
+  f.more:SetPoint("RIGHT", f.pause, "LEFT", -2, 0)
   layoutTracker(f)
   f:SetScript("OnEnter", function(self)
+    local ahlBefore = ns.AHledgerUses and ns.AHledgerUses() or 0
     local st = ns:SessionTotals()
-    if not st then return end
+    -- (The full view shows all of it already.)
+    if not st or fullView() then return end
     GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
     ns:TooltipAddLine("Сессия", 1, 1, 1)
     ns:TooltipAddDoubleLine("Приход", ns.Money(st.earned), 0.8, 0.8, 0.8, 1, 1, 1)
@@ -216,9 +391,11 @@ local function buildTracker()
       local it = st.items[k]
       ns:TooltipAddDoubleLine(("  %d x %s"):format(it.n, ns.ItemName(it.id) or "?"), ns.Money(it.value), 0.7, 0.7, 0.7, 1, 1, 1)
     end
-    ns:TooltipAddLine("Добыча считается по лучшей из цен аукциона (за вычетом комиссии) и торговца; в настройках можно считать только по торговцу.", 0.6, 0.6, 0.6, true)
-    ns:TooltipAddLine(ns.db.settings.sessionSmall and "Перетащите, чтобы переместить. Правый клик — полный вид, там же «Стоп»."
-      or "Перетащите, чтобы переместить. Правый клик — свернуть в одну строку.", 0.6, 0.6, 0.6, true)
+    if #st.items > 5 then ns:TooltipAddLine(("  и ещё %d: стрелка («Ещё») покажет все"):format(#st.items - 5), 0.6, 0.6, 0.6) end
+    ns:TooltipAddLine(LOOT_NOTE, 0.6, 0.6, 0.6, true)
+    if ns.AHledgerUses and ns.AHledgerUses() ~= ahlBefore then ns:TooltipAddLine(ns.AHLEDGER_CREDIT, 0.5, 0.5, 0.5) end
+    ns:TooltipAddLine(ns.db.settings.sessionSmall and "Перетащите, чтобы переместить. Правый клик — полный вид, там же «Ещё» (стрелка), «Пауза» и «Стоп»."
+      or "Перетащите, чтобы переместить. Правый клик — свернуть в одну строку. Стрелка показывает всё по мере поступления.", 0.6, 0.6, 0.6, true)
     GameTooltip:Show()
   end)
   f:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -226,22 +403,51 @@ local function buildTracker()
 end
 
 drawTracker = function()
+  local ahlBefore = ns.AHledgerUses and ns.AHledgerUses() or 0
   local st = ns:SessionTotals()
+  if st then st.ahledger = ns.AHledgerUses and ns.AHledgerUses() ~= ahlBefore end   -- (loot valued with its prices: its credit)
   if not (tracker and st) then return end
-  -- Gold an hour from 2 minutes in: before that one purchase swings it wildly (owner's
-  -- test, October 3: "-21g 60s an hour" 20 seconds in).
-  local rate = st.secs >= 120 and rateText(st.perHour) or "|cff888888...|r"
-  tracker.time:SetText(duration(st.secs))
-  tracker.rate:SetText(st.secs >= 120 and (rate .. " |cffbbbbbbв час|r") or "|cff888888в час: через 2 мин|r")   -- (shorter: the longer text ran past the tracker, October 4)
-  tracker.smallRate:SetText(rate .. " |cffbbbbbb/ч|r")
+  local s = live()
+  local rate = st.secs >= RATE_SECONDS and rateText(st.perHour) or "|cff888888...|r"
+  tracker.time:SetText(duration(st.secs) .. (s.paused and " |cffffd100пауза|r" or ""))
+  tracker.rate:SetText(st.secs >= RATE_SECONDS and (rate .. " |cffbbbbbbв час|r") or "|cff888888в час: через 5 мин|r")   -- (shorter: the longer text ran past the tracker, October 4)
+  tracker.smallRate:SetText(s.paused and "|cffffd100пауза|r" or (rate .. " |cffbbbbbb/ч|r"))
+  tracker.pause:SetIcon(s.paused and "play" or "pause", s.paused and "Продолжить" or "Пауза",
+    s.paused and "Счёт времени идёт дальше, и всё снова считается." or "Счёт времени останавливается, и ничего не считается, пока не продолжите.")
   tracker.gold:SetText(("|cff999999Золото|r |cff%s%s|r"):format(st.gained >= 0 and "7fd39c" or "ee8597", signed(st.gained)))
-  tracker.loot:SetText(("|cff999999Добыча|r %s"):format(ns.Money(st.loot)))
+  -- What just came in, for a few seconds (as Blackthornes Farmer's "+2").
+  local last = ns.sessionLastLoot
+  local now = GetTime and GetTime() or time()
+  local flashID = last and now - last.t < FLASH_SECONDS and last.id or nil
+  if flashID then
+    tracker.loot:SetText(("|cff7fd39c+%d %s|r"):format(last.n, ns.ItemName(last.id) or "?"))
+  else
+    tracker.loot:SetText(("|cff999999Добыча|r %s"):format(ns.Money(st.loot)))
+  end
+  if ns.SessionPaceSample then ns.SessionPaceSample(s, st) end   -- (the window's graph)
+  if ns.DrawSessionWindow then ns:DrawSessionWindow(st, s, flashID) end
+end
+
+-- Pause or carry on (on = true pauses, false carries on, nil switches). While paused the
+-- clock stops and nothing new is counted; selling what was looted still moves it to gold.
+function ns:PauseGeneralSession(on)
+  local s = live()
+  if not s or s.char ~= ns.CharKey() then ns:Print("Сессия здесь не идёт. /fl session start начнёт её."); return end
+  if on == nil then on = not s.paused end
+  if on and not s.paused then
+    if s.resume then s.active = (s.active or 0) + (time() - s.resume) end
+    s.resume, s.paused = nil, true
+  elseif not on and s.paused then
+    s.paused, s.resume = nil, time()
+  end
+  if drawTracker then drawTracker() end
 end
 
 local function showTracker()
   if not tracker then tracker = buildTracker() end
   tracker:Show()
   drawTracker()
+  if ns.db.settings.sessionFull and ns.ToggleSessionWindow then ns:ToggleSessionWindow(true) end
   if ticker then ticker:Cancel() end
   ticker = C_Timer.NewTicker(TRACKER_SECONDS, drawTracker)
 end
@@ -249,6 +455,7 @@ end
 local function hideTracker()
   if ticker then ticker:Cancel(); ticker = nil end
   if tracker then tracker:Hide() end
+  if ns.HideSessionWindow then ns.HideSessionWindow() end
 end
 
 ---------------------------------------------------------------------------
@@ -290,6 +497,7 @@ function ns:StopGeneralSession(quiet)
     if ns.RefreshUI then ns:RefreshUI() end
     return false
   end
+  local usual = ns:SessionUsual()   -- (before this one joins them)
   local top = {}
   for k = 1, math.min(5, #st.items) do top[k] = { st.items[k].id, st.items[k].n, st.items[k].value } end
   table.insert(ns.db.sessions, { kind = "general", name = "Сессия", c = s.char, t = s.t, stop = time(), secs = st.secs, earned = st.earned,
@@ -302,6 +510,14 @@ function ns:StopGeneralSession(quiet)
   end
   ns:Print(("Сессия длилась %s: золото %s, добыто примерно на %s — примерно %s в час."):format(duration(st.secs),
     signed(st.gained), ns.Money(st.loot), rateText(st.perHour)))
+  -- Against your usual pace, and a cheer for your best yet (as Blackthornes Farmer does).
+  if usual and st.secs >= USUAL_MIN_SECONDS then
+    if st.perHour > usual.best then
+      print(("  |cff7fd39cЛучшая сессия!|r (прежняя лучшая: %s в час)"):format(rateText(usual.best)))
+    else
+      print(("  Ваш обычный темп: %s в час."):format(rateText(usual.usual)))
+    end
+  end
   -- Gold by where it came from, biggest first.
   local by = {}
   for src, v in pairs(s.money or {}) do if v ~= 0 then by[#by + 1] = { src, v } end end
@@ -310,10 +526,10 @@ function ns:StopGeneralSession(quiet)
   for k = 1, math.min(4, #by) do
     parts[k] = ("%s %s"):format((ns.MONEY_LABELS and ns.MONEY_LABELS[by[k][1]]) or by[k][1], signed(by[k][2]))
   end
-  if #parts > 0 then print("  Gold: " .. table.concat(parts, ", ") .. ".") end
+  if #parts > 0 then print("  Золото: " .. table.concat(parts, ", ") .. ".") end
   for k = 1, math.min(3, #st.items) do
     local it = st.items[k]
-    print(("  %d x %s, about %s"):format(it.n, ns.ItemName(it.id) or "?", ns.Money(it.value)))
+    print(("  %d x %s, около %s"):format(it.n, ns.ItemName(it.id) or "?", ns.Money(it.value)))
   end
   if ns.RefreshUI then ns:RefreshUI() end
   return true
@@ -332,7 +548,7 @@ end
 ns:On("PLAYER_ENTERING_WORLD", function()
   local s = live()
   -- Carrying on after a logout or reload: count time again from now.
-  if s and s.char == ns.CharKey() and not s.resume then
+  if s and s.char == ns.CharKey() and not s.resume and not s.paused then
     if s.active == nil then s.active = time() - s.t end   -- one started before this was counted
     s.resume = time()
   end

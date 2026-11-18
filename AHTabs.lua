@@ -113,14 +113,15 @@ local function makeOwn()
   root:SetPoint("TOPLEFT", last, "TOPRIGHT", 0, 0)
   local prev
   for _, t in ipairs(TABS) do
-    local b = CreateFrame("Button", "ForeverLedgerAHTab_" .. t.key, root, "AuctionHouseFrameDisplayModeTabTemplate")
-    b:SetText(ns.LocalizeText(t.label))
+    local key, label = t.key, t.label
+    local b = CreateFrame("Button", "ForeverLedgerAHTab_" .. key, root, "AuctionHouseFrameDisplayModeTabTemplate")
+    b:SetText(ns.LocalizeText(label))
     PanelTemplates_TabResize(b, 20, nil, 70)
     if prev then b:SetPoint("TOPLEFT", prev, "TOPRIGHT", overlap, 0)
     else b:SetPoint("TOPLEFT", root, "TOPLEFT", overlap, 0) end
     PanelTemplates_DeselectTab(b)
-    b:SetScript("OnClick", function() selectTab(t.key) end)
-    buttons[t.key] = b
+    b:SetScript("OnClick", function() selectTab(key) end)
+    buttons[key] = b
     prev = b
   end
   hooksecurefunc(ah, "SetDisplayMode", function(_, mode)
@@ -135,22 +136,23 @@ end
 -- Through LibAHTab: one frame per tab, each showing our host when it opens.
 local function makeShared()
   for _, t in ipairs(TABS) do
+    local key, label, title = t.key, t.label, t.title
     local holder = CreateFrame("Frame", nil, AuctionHouseFrame)
     holder:SetAllPoints(host)
     holder:Hide()
     holder:SetScript("OnShow", function()
-      host.key, chosen = t.key, t.key
+      host.key, chosen = key, key
       if host:IsShown() then host:GetScript("OnShow")(host) else host:Show() end
     end)
     holder:SetScript("OnHide", function()
       -- Another tab picked while the window stays open: no longer chosen. The window
       -- itself hiding (closing the auction house) keeps the choice for next visit.
-      if chosen == t.key and AuctionHouseFrame:IsVisible() then chosen = nil end
-      if host.key == t.key then host:Hide() end
+      if chosen == key and AuctionHouseFrame:IsVisible() then chosen = nil end
+      if host.key == key then host:Hide() end
     end)
-    local id = "ForeverLedger_" .. t.key
-    lib:CreateTab(id, holder, ns.LocalizeText(t.label), ns.LocalizeText(t.title))
-    buttons[t.key] = lib:GetButton(id)
+    local id = "ForeverLedger_" .. key
+    lib:CreateTab(id, holder, ns.LocalizeText(label), ns.LocalizeText(title))
+    buttons[key] = lib:GetButton(id)
   end
 end
 

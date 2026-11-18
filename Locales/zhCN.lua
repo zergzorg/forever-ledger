@@ -3505,3 +3505,315 @@ language.strings["Buy %d (one copy a click) for %s%s. %d listed at or under %s a
 for english, translated in pairs(language.strings) do language.upper[string.upper(english)] = translated end
 language.strings["Darkmoon Faire: %d for %d ticket%s (%s)"] = nil
 ns.RegisterLocale("zhCN", language)
+
+language.strings["Forever Ledger's tabs in the auction house"] = '永恒账本在拍卖行中的分页'
+language.strings["Buy and My auctions tabs after Blizzard's Buy, Sell and Auctions, inside the auction house window. When off: the Buy queue panel opens beside the window instead, with its Buy queue button."] = '在暴雪拍卖行的“购买”“出售”“拍卖”分页后，增加“购买”和“我的拍卖”分页并显示在拍卖行窗口内。关闭后，购买队列面板会单独显示在窗口旁边。'
+language.strings['Resume Live watch'] = '重新开启实时监控'
+language.strings['If Live watch was on when you closed the auction house, start it again when you come back. It can only scan while the auction house is open.'] = '如果关闭拍卖行时实时监控处于运行状态，下次打开拍卖行时自动恢复。拍卖行关闭时无法扫描。'
+language.strings['Disenchanting from your bags with one click per item.'] = '在背包中逐件点击即可分解。'
+language.strings['QUICK DISENCHANT'] = '快速分解'
+language.strings['Hold a key and click to disenchant'] = '按住快捷键并点击分解'
+language.strings["Hold the key below and click a green, blue or purple weapon or armor in your bags: it's disenchanted. Only on a character with Enchanting, not in combat."] = '按住下方按键，点击背包中的绿色、蓝色或紫色武器或护甲即可分解。需要角色学会附魔；战斗中不可使用。'
+language.strings['Key to hold'] = '按住的快捷键'
+language.strings["In your bags, this key wins over the price window's click if both are the same (Tooltips, Price window click). The Disenchant window (/fl disenchant, or Disenchant at the top of the main window) lists what you can disenchant, to tick and do one click at a time."] = '在背包中，如果此按键与价格窗口的点击快捷键相同，将优先执行分解（设置→鼠标提示→价格窗口点击）。输入 /fl disenchant，或点击主窗口顶部的“分解”，可查看可分解物品并逐件处理。'
+language.strings['What a session counts each looted item as worth. Auction house prices are after the cut; items that bind when picked up always count at vendor price. Start a session with /fl session start or on the Dashboard.'] = '游玩统计中拾取物品的估值方式。拍卖行价格已扣除手续费；拾取绑定物品始终按商店收购价计算。输入 /fl session start，或在总览中开始统计。'
+language.strings['Start a session with /fl session start or on the Dashboard.'] = '输入 /fl session start，或在总览中开始统计。'
+language.strings['Loot counts at the better of the auction house (after the cut) and a vendor (Settings, Sessions: vendor only), and only while you still have it: what you sell during the session counts once, as the gold it brought.'] = '拾取物品按拍卖行（扣除手续费后）与商店收购价中的较高者估值（可在设置→游玩统计中改为仅按商店价计算）。物品只有仍在背包、银行或未售出的拍卖中才计入；统计期间卖出的物品只计入所得金币，不重复计入拾取价值。'
+language.strings['  and %d more: More shows them all'] = '  另有%d件：点击“更多”查看'
+language.strings['Drag to move. Right-click for the bigger view: More, Pause and Stop are there.'] = '拖动可移动。右键可折叠；展开后可查看更多、暂停或停止。'
+language.strings['Drag to move. Right-click to fold it to one line. More shows everything as it comes in.'] = '拖动可移动。右键可折叠为一行；点击“更多”查看实时明细。'
+language.strings['AHledger'] = 'AHledger'
+language.strings['Prices from AHledger (ahledger.com)'] = '价格来自 AHledger（ahledger.com）'
+language.strings['AHledger, packaged copy'] = 'AHledger 内置数据'
+language.strings['Auction price (%s)'] = '拍卖行价格（%s）'
+language.strings["AHledger first (prices from every player's scans, credited as Prices from AHledger, ahledger.com), then Auctionator, TSM and Auctioneer."] = '优先使用 AHledger（汇总玩家扫描数据，并标注“价格来自 AHledger（ahledger.com）”），然后依次使用 Auctionator、TSM 和 Auctioneer。'
+language.strings['Auction house prices from'] = '拍卖行价格来源'
+language.strings['AHledger prices are read live and are never copied to saved data.'] = 'AHledger 价格仅实时读取，不会复制到插件保存的数据中。'
+language.strings['With Auctionator, TSM, AHledger or ForeverForge installed'] = '检测到 Auctionator、TSM、AHledger 或 ForeverForge'
+
+language.strings["Buy and My auctions tabs after Blizzard's Buy, Sell and Auctions, inside the auction house window. Off: the Buy queue panel opens beside the window instead, with its Buy queue button."] = '在暴雪拍卖行的“购买”“出售”“拍卖”分页后，增加“购买”和“我的拍卖”分页并显示在拍卖行窗口内。关闭后，购买队列面板会单独显示在窗口旁边。'
+
+language.strings['Counting what your play time earns.'] = '统计本次游玩期间的收入。'
+
+language.strings['Count loot at'] = '拾取物品按什么价格估值'
+
+language.strings['Best of auction and vendor'] = '拍卖行与商店价格取高'
+
+language.strings['Vendor only'] = '仅按商店收购价'
+
+language.strings['What a session counts each looted item as worth. Auction house prices are after the cut; items that bind when picked up always count at vendor price. Start a session with /fl session start, or Ctrl-click the minimap button.'] = '统计拾取物品的估值方式。拍卖行价格已扣除手续费；拾取绑定物品始终按商店收购价计算。输入 /fl session start，或按住 Ctrl 点击小地图按钮开始统计。'
+
+language.strings["Auto uses your own scans while they're fresh, then other auction addons: AHledger first (prices from every player's scans, credited as Prices from AHledger, ahledger.com), then Auctionator, TSM and Auctioneer."] = '优先使用仍在有效期内的自有扫描数据；数据过期后，依次使用 AHledger（汇总玩家扫描数据，并标注“价格来自 AHledger（ahledger.com）”）、Auctionator、TSM 和 Auctioneer。'
+
+language.strings['No gold in or out yet.'] = '暂时没有金币收入或支出。'
+
+language.strings['%d more'] = '另有%d项'
+
+language.strings['Gold'] = '金币'
+
+language.strings['Loot'] = '拾取物品'
+
+language.strings["Nothing looted yet (or it's all sold: that's in Gold)."] = '还没有拾取物品，或拾取物品已售出（所得计入金币）。'
+
+language.strings['%d more items'] = '另有%d件物品'
+
+language.strings['%d with no price yet, not counted.'] = '另有%d件物品暂无估价，未计入。'
+
+language.strings['Your usual'] = '平时水平'
+
+language.strings['Your best'] = '最佳记录'
+
+language.strings[' an hour'] = '/小时'
+
+language.strings['Above your usual pace.'] = '高于平时水平。'
+
+language.strings['Below your usual pace so far.'] = '目前低于平时水平。'
+
+language.strings['Your usual pace shows after 3 sessions of 10 minutes or more.'] = '至少完成3次、每次10分钟以上的统计后，才会显示平时水平。'
+
+language.strings['Less'] = '收起'
+
+language.strings['More'] = '更多'
+
+language.strings['Pause'] = '暂停'
+
+language.strings['Stop'] = '停止'
+
+language.strings['Session'] = '游玩统计'
+
+language.strings["Auction house prices are after the cut; where your own scans can't say how fast an item sells yet, AHledger's sold a day is used and marked AHledger."] = '拍卖行价格已扣除手续费。自有扫描数据还不足以判断商品销量时，会使用 AHledger 提供的日均售出量，并标明来源。'
+
+language.strings["With Auctionator, TSM, AHledger or ForeverForge installed, Forever Ledger switches off the features they already cover, so you don't see things twice: the auction and vendor price lines in tooltips (Worth to you, Buy at or below and the rest stay), and with ForeverForge the sound when an auction sells."] = '安装 Auctionator、TSM、AHledger 或 ForeverForge 后，永恒账本会关闭重复功能，避免提示重复：例如拍卖行与商店价格行（“对你有价值”“建议买入价”等仍会保留）；安装 ForeverForge 时还会关闭重复的拍卖成交音效。'
+
+language.strings["Auto uses your own scans while they're fresh, then other auction addons: AHledger first (prices from every player's scans, credited as Prices from AHledger (ahledger.com)), then Auctionator, TSM and Auctioneer."] = '优先使用有效期内的自有扫描数据；数据过期后，依次使用 AHledger（汇总玩家扫描数据，并标注“价格来自 AHledger（ahledger.com）”）、Auctionator、TSM 和 Auctioneer。'
+
+language.strings['Sessions: /fl session start, pause, resume or stop (or Ctrl-click the minimap button).'] = '游玩统计：输入 /fl session start 开始，pause 暂停，resume 继续，stop 停止；也可按住 Ctrl 点击小地图按钮。'
+
+language.strings["Your usual and best gold an hour, from finished sessions of 10 minutes or more on this character's realm and faction (the newest 20; usual = their median). nil with fewer than 3."] = '根据本角色所在服务器与阵营最近20次、时长至少10分钟的统计，计算平时收益和最高收益；少于3次时不显示。'
+
+language.strings["AHledger's prices are read live and are never copied into saved data."] = 'AHledger 的价格仅实时读取，不会复制到插件保存的数据中。'
+
+language.strings['If Auctionator or another addon runs a full scan, Forever Ledger reads it too. With Auctionator, TSM, AHledger or ForeverForge installed, features they already cover (like auction prices in tooltips, or a sound when an auction sells) are switched off once, with a message; turn them back on in Settings.'] = 'Auctionator 或其他插件完成全量扫描后，永恒账本也会读取扫描结果。检测到 Auctionator、TSM、AHledger 或 ForeverForge 时，插件会提示并关闭重复功能，例如拍卖价格提示或拍卖成交音效。可在设置中重新开启。'
+
+language.strings["Auction, cheapest: the lowest price listed at your last scan, how many were listed, and (in gray) how long ago. Under it, when different: the average of the 20 cheapest, about what you'd pay buying a few. Values in Forever Ledger use that average, so one odd cheap listing doesn't sway them. With your own prices over 12 hours old, another addon's price is used if you have one, and named: AHledger first (its prices come from every player's scans, refreshed every half hour by its sync app; shown with Prices from AHledger, ahledger.com), then Auctionator, TSM or Auctioneer. Where your own scans can't yet say how fast an item sells, AHledger's sold a day is used, marked AHledger."] = '“拍卖行最低价”显示最近一次扫描到的最低挂单价、挂单数量和扫描时间；下方会显示最低20件的平均价，作为购买多件时的参考，避免单个异常低价影响估值。自有价格数据超过12小时后，会改用其他拍卖插件的数据，并注明来源：优先 AHledger（每半小时汇总玩家扫描结果，并标注“价格来自 AHledger（ahledger.com）”），然后是 Auctionator、TSM 或 Auctioneer。自有扫描数据不足以判断销量时，会使用 AHledger 的日均售出量并标明来源。'
+
+language.strings["Start one (Ctrl-click on the minimap button, or /fl session start) and a small tracker you can drag counts what your time is worth: gold an hour, gold in and out, and what you loot (at the better of auction and vendor price; Settings, Sessions can make it vendor only). Right-click the tracker to fold it to one line. More opens the full view under it, live: gold by where it came from, everything looted with its worth (hover an item for its tooltip; what just came in is lit for a few seconds), and your usual and best gold an hour (after 3 sessions of 10 minutes or more). Pause stops the clock and the counting until Go on (or /fl session pause and resume). Loot counts only while you still have it: sell it during the session and it counts once, as the gold it brought; disenchant, use or destroy it and it drops out. Gold an hour shows after 5 minutes. Stop it to get a summary in chat (with your best yet, or your usual); it joins the Ledger's Sessions sub-tab, with when, length, gold, what you looted, gold an hour and the character (hover one for where its gold came from and the best loot). A session carries on through a logout on the same character."] = '输入 /fl session start 或按住 Ctrl 点击小地图按钮即可开始统计。可拖动的小窗口会显示每小时收益、金币收支和拾取物品价值（按拍卖行与商店价格中的较高者估值，也可在设置中改为仅按商店价计算）。右键可折叠窗口；点击“更多”可实时查看各项金币来源、拾取物品价值和个人收益水平，悬停物品可查看详情，新拾取物品会短暂高亮。暂停后计时和统计都会停止，输入 /fl session resume 可继续。拾取物品只有仍持有时才计入；统计期间卖出的物品只计入售得金币，分解、使用或销毁后不再计入。开始5分钟后显示每小时收益。停止后会在聊天中显示汇总，并将记录加入账本的游玩统计页。记录会在退出后保留，同一角色重新登录后继续。'
+
+language.strings['AH crafts'] = '拍卖行制作'
+
+language.strings['Crafts that sell on the auction house for more than their materials cost, after the cut.'] = '扣除拍卖手续费后，成品售价高于材料成本的配方。'
+
+language.strings['Conversions'] = '材料转换'
+
+language.strings['How it adds up'] = '成本与收益明细'
+
+language.strings['Click an idea on the left: what it costs, what it brings and, for a craft, the cheapest way to get its materials for that many crafts.'] = '点击左侧条目，查看所需成本和预期收益；制作配方还会列出按当前数量计算的最低材料获取成本。'
+
+language.strings['Least profit'] = '最低利润'
+
+language.strings['Only my recipes'] = '仅显示我的配方'
+
+language.strings['Search names'] = '搜索名称'
+
+language.strings['Save these filters'] = '保存当前筛选'
+
+language.strings['Saved filters:'] = '已保存筛选：'
+
+language.strings['none yet: pick filters above, then Save these filters.'] = '暂无：先设置上方筛选条件，再保存。'
+
+language.strings['Pick a rule on the left'] = '请先在左侧选择规则'
+
+language.strings["Forever Ledger's defaults"] = '永恒账本默认规则'
+
+language.strings['Default post'] = '默认上架规则'
+
+language.strings['Default buy'] = '默认购买规则'
+
+language.strings['Default vendor'] = '默认商店规则'
+
+language.strings['Default craft'] = '默认制作规则'
+
+language.strings["can't change"] = '不可修改'
+
+language.strings['YOUR RULES'] = '你的规则'
+
+language.strings['  none yet: New rule, or Copy a default'] = '  暂无：新建规则，或复制默认规则'
+
+language.strings["No group uses it yet: pick it on a group's Rules."] = '目前没有分组使用此规则，可在分组的“规则”页选择它。'
+
+language.strings["Forever Ledger's defaults can't be changed: we tune them in updates, and groups on Default always get the newest. Copy one to make your own."] = '永恒账本的默认规则不可修改；插件更新时会调整，使用默认规则的分组会自动采用新版。复制后可创建自己的规则。'
+
+-- Extra zhCN coverage for labels introduced in the 0.26 UI.
+language.strings["Sorting %d of %d items into groups..."] = "正在将物品归入分组：%d/%d……"
+language.strings["|cff888888(learn)|r"] = "|cff888888（未学配方）|r"
+language.strings[" rule"] = " 规则"
+language.strings["Live watch looks for it every time it reads the auction house. Click to stop watching it."] = "每次读取拍卖行时，实时监控都会检查此物品。点击可停止监控。"
+language.strings["No items we know of are in it yet."] = "目前没有已知物品属于此分组。"
+language.strings["not known yet (players say "] = "暂不确定（玩家反馈："
+language.strings["an hour"] = "每小时"
+language.strings["No session is running here. /fl session start begins one."] = "当前角色没有正在进行的游玩统计。输入 /fl session start 可开始统计。"
+language.strings["not known yet"] = "暂不确定"
+language.strings["paused"] = "已暂停"
+language.strings["  suggested"] = "  建议分解"
+language.strings["The Disenchant window opens after combat."] = "战斗结束后会打开分解窗口。"
+language.strings["What in your bags can be disenchanted: tick items, then one click each. Or hold %s and click an item in your bags."] = "背包中可分解的物品会列在这里：勾选物品后，每件点击一次即可分解。也可按住%s，再点击背包中的物品。"
+language.strings[" (added by you)"] = "（你添加）"
+language.strings["Auction sales count what you got after the cut."] = "拍卖成交金额按扣除手续费后的实收金币统计。"
+language.strings["%s |cff888888(%d)|r"] = "%s |cff888888（装等%d）|r"
+language.strings["What to buy for it, or its materials when making it is cheaper; what you have is used first."] = "列出交付所需物品；若自行制作更便宜，则列出所需材料。背包和银行中的物品会优先计入。"
+language.strings["Add this order to the Writs shopping list"] = "将此订单加入订单清单"
+language.strings["No price for it or its materials yet: run a full scan."] = "尚无该物品或其材料的价格数据：请先进行全量扫描。"
+language.strings["The cheapest way"] = "最低成本方案"
+language.strings["Deliver to"] = "交付地点"
+language.strings["Quiet mode will come on while Live watch runs."] = "实时监控期间会自动启用安静模式。"
+language.strings["Add an item"] = "添加物品"
+language.strings["Untick all"] = "取消全选"
+language.strings["Tick suggested"] = "勾选建议分解项"
+language.strings["Watched: click to stop watching it"] = "已监控：点击停止监控"
+language.strings["This group's items are as Forever Ledger made them already."] = "此分组的物品已与永恒账本默认内容一致。"
+language.strings["Restore items..."] = "恢复物品……"
+language.strings["Type its name or ID and press Enter, or click in the box and Shift-click the item."] = "输入物品名称或 ID 后按回车；也可点击输入框，再按住 Shift 点击物品。"
+language.strings["Click to disenchant it (%s held)."] = "点击分解此物品（按住%s）。"
+language.strings["Delete..."] = "删除……"
+language.strings["New rule: craft"] = "新建制作规则"
+language.strings["New rule: vendor"] = "新建商店规则"
+language.strings["Writ"] = "订单"
+language.strings["New rule: post"] = "新建上架规则"
+language.strings["New rule..."] = "新建规则……"
+language.strings["The built-in groups are as Forever Ledger made them already."] = "内置分组已与永恒账本的默认内容一致。"
+language.strings["Restore built-in..."] = "恢复内置分组……"
+language.strings["New group"] = "新建分组"
+language.strings["Rules"] = "规则"
+language.strings["Groups"] = "分组"
+language.strings["Count my bags as paid for"] = "将背包材料视为已拥有"
+language.strings["How many crafts"] = "制作数量"
+language.strings["Work it out again"] = "重新计算"
+language.strings["Add materials to a shopping list"] = "将材料加入购物清单"
+language.strings["Click for how it adds up. Right-click for its price window."] = "点击查看成本与收益明细；右键打开价格窗口。"
+language.strings["Each auction house's cut and one unsold listing's deposit are counted. Its prices are from your last scan there ("] = "已计入拍卖手续费和一份未售出挂单的押金。价格来自该拍卖行上次扫描（"
+language.strings["Scroll to cancel"] = "滚轮取消拍卖"
+language.strings["Live watch then looks for it every time it reads the auction house, and it's bought here at or under your price (set it on the item's price window)."] = "开启实时监控后，每次读取拍卖行都会检查此物品。符合价格上限的挂单会加入购买队列；价格上限可在物品价格窗口设置。"
+language.strings["Copy"] = "复制"
+language.strings["Working out %d of %d items..."] = "正在整理物品：%d/%d……"
+language.strings["Reading the auction house list..."] = "正在读取拍卖行列表……"
+language.strings["Scan once"] = "单次扫描"
+language.strings["Add yours to a shopping list"] = "将你的订单加入购物清单"
+language.strings["No Craftsman's Writs in your bags or bank (open sealed ones first)."] = "背包和银行中没有工匠订单（请先打开密封订单）。"
+language.strings["To make it"] = "制作要求"
+language.strings["Remove from group"] = "从分组中移除"
+language.strings["Add to a shopping list"] = "加入购物清单"
+language.strings["class or riding"] = "职业或骑术"
+language.strings["No Enchanting on this character"] = "当前角色没有附魔专业"
+language.strings["In all"] = "合计"
+language.strings["Scan"] = "扫描"
+language.strings["New rule: buy"] = "新建购买规则"
+language.strings["Add an item:"] = "添加物品："
+language.strings["Also cancel ones I could ask more for"] = "同时取消可提高售价的拍卖"
+language.strings["Tick an item to disenchant it"] = "勾选物品后即可分解"
+language.strings["Live watch looks for watched items every time it reads the auction house, and the Buy queue buys them at or under your price (set it on the item's price window)."] = "每次读取拍卖行时，实时监控都会检查已监控物品。符合价格上限的挂单会加入购买队列；价格上限可在物品价格窗口设置。"
+language.strings["%s (%s), %d services:"] = "%s（%s），%d项服务："
+language.strings["Groups to show"] = "显示分组"
+language.strings["an hour: after 5 min"] = "每小时收益：5分钟后显示"
+language.strings["Name for the new group:"] = "新分组名称："
+language.strings["Click to use. Right-click to delete."] = "点击应用；右键删除。"
+language.strings["List"] = "加入清单"
+
+-- Visible strings found in the Gold making, Settings and Help screens.
+language.strings["Everything"] = "全部类别"
+language.strings["Any"] = "不限"
+language.strings["Vendor crafts"] = "卖店制作"
+language.strings["Craft, vendor"] = "制作，卖给商店"
+language.strings["Craft, AH"] = "制作，上架拍卖行"
+language.strings["Vendor flips"] = "卖店套利"
+language.strings["Vendor flip"] = "卖店套利"
+language.strings["Deal"] = "低价机会"
+language.strings["anyone"] = "不限角色"
+language.strings["Idea"] = "条目"
+language.strings["What to buy or craft. Click a row for how it adds up; right-click for its price window."] = "要购买或制作的物品。点击查看成本与收益，右键打开价格窗口。"
+language.strings["Kind"] = "类型"
+language.strings["How it makes gold. Hover a row for the details."] = "收益来源。悬停可查看详情。"
+language.strings["Who"] = "可制作角色"
+language.strings["Which of your characters can do it."] = "哪些角色掌握所需配方或专业。"
+language.strings["Costs"] = "成本"
+language.strings["What it costs each time: one item, or one craft's materials at today's prices."] = "每次操作的成本：单件物品，或按当前价格计算的一份配方材料。"
+language.strings["Brings"] = "收入"
+language.strings["What it brings each time, after the auction house cut where it's sold there."] = "每次操作的收入；在拍卖行出售时已扣除手续费。"
+language.strings["Brings minus costs."] = "收入减去成本。"
+language.strings["How many times you could do it with what's listed cheaply enough now. No limit: everything comes from vendors."] = "按当前达到筛选价格的挂单，估算可操作次数。“不限”表示所需物品均可从商店购买。"
+language.strings["Every kind below together, except Booty Bay, which needs a trip there: pick it on its own."] = "显示下列所有类别；藏宝海湾需前往当地扫描，可单独查看。"
+language.strings["Crafts a vendor pays more for than their materials cost."] = "制作成本低于商店收购价的配方。"
+language.strings["Crafts that sell on the auction house for more than their materials cost, after the cut."] = "制作成本低于拍卖行税后售价的配方。"
+language.strings["Turning one thing into another (essences, transmutes) that's worth more."] = "通过精华转换、转化术等方式制作价值更高的物品。"
+language.strings["Listed for less than a vendor pays: buy, then sell to a vendor. Live watch at the auction house buys these for you."] = "拍卖价低于商店收购价：买下后卖给商店。开启监控后，符合条件的物品会加入购买队列。"
+language.strings["Listed well below their usual price: buy and resell. A bet on the price coming back, so hover one for how sure it is."] = "拍卖价明显低于常见价格：买入后转卖。价格可能不会回升，悬停可查看估价依据。"
+language.strings["Gear worth more as enchanting materials than it costs."] = "装备分解所得材料价值高于买入成本。"
+language.strings["The same item cheaper at one auction house than it sells for at the other, after each one's cut (15% at Booty Bay). Needs a scan at Booty Bay."] = "同一物品在一个拍卖行的价格更低，扣除两边手续费后仍有价差（藏宝海湾手续费为 15%）。需要在藏宝海湾扫描。"
+language.strings["Buy at Booty Bay, sell here"] = "藏宝海湾买入，本阵营拍卖行出售"
+language.strings["Buy here, sell at Booty Bay"] = "本阵营拍卖行买入，藏宝海湾出售"
+language.strings["Booty Bay, cheapest"] = "藏宝海湾最低价"
+language.strings["Here, cheapest"] = "本阵营最低价"
+language.strings["Brings where you sell, after the cut"] = "出售后的收入（已扣手续费）"
+language.strings["Each auction house's cut and one unsold listing's deposit are counted. Its prices are from your last scan there ("] = "已计入拍卖手续费和一份未售出挂单的押金。价格来自该拍卖行上次扫描（"
+language.strings["Click for how it adds up. Right-click for its price window."] = "点击查看成本与收益明细；右键打开物品价格窗口。"
+language.strings["The Gold making tab"] = "赚钱页"
+language.strings["Gold making tab"] = "赚钱页"
+language.strings["Every way to make gold Forever Ledger finds, in one list: crafts that sell to a vendor or on the auction house, conversions, vendor flips, deals well below the usual price, disenchanting, and Booty Bay against your own auction house. Each row: what it costs, what it brings, the profit each time and how many times you could do it with what's listed cheaply enough now. Click a column name to sort; it starts with profit times how many. It's worked out when you open the tab (Refresh to do it again). It replaces the Shuffles and Deals tabs: /fl deals still opens the old Deals tab for now."] = "这里汇总永恒账本找到的赚钱机会：卖店制作、拍卖行制作、材料转换、卖店套利、低价转卖、分解收益，以及藏宝海湾与本阵营拍卖行之间的价差。每行显示成本、收入、单次利润和当前可操作次数。点击表头排序，默认按总利润排序。打开页面时会计算一次，点击“刷新”可重新计算。此页整合了原来的加工套利和低价机会页面；/fl deals 暂时仍会打开旧页面。"
+language.strings["Kinds and filters"] = "类别与筛选"
+language.strings["The buttons across the top pick a kind, with how many of each; Everything leaves Booty Bay out (it needs a trip there, and only prices from the last 3 days count). Least profit hides small ones, and the profession box shows one profession's crafts (disenchanting counts as Enchanting); flips, deals and Booty Bay have none. Only my recipes shows recipes your characters know; turn it off to include vendor crafts from recipes none of your characters know yet (marked learn). Search narrows it by name."] = "顶部按钮按类别筛选，数字表示机会数量。“全部类别”不含藏宝海湾机会；当地价格仅保留最近 3 天的数据。可设置最低利润、选择专业，并只看角色已学配方。关闭“仅显示我的配方”后，也会列出尚未学会、但卖给商店有利润的制作配方，并标注“未学”。搜索框可按名称筛选。"
+language.strings["Saved filters"] = "已保存筛选"
+language.strings["Pick filters, then Save these filters: they become a quick button (up to 5). Click one to use it, right-click to delete it."] = "设置筛选条件后点击“保存筛选”，最多可保存 5 组。左键应用，右键删除。"
+language.strings["Click a craft: the panel on the right works out the cheapest way to get its materials for that many crafts (it starts at what's listed cheaply enough, and for an auction house craft no more than about a day's sales; change it with Crafts). Each material is filled one at a time from the cheapest place next: your bags, the auction house, a vendor, or making it from its own materials. Add materials to a shopping list puts what's bought on a new list, each up to the highest price the plan paid."] = "点击制作机会，右侧会按制作数量计算材料的最低获取成本。拍卖行采购量会参考近期销量，可在“制作数量”中调整。材料依次从背包、拍卖行、商店或自行制作中选取最低成本方案。点击“加入购物清单”可将所需材料加入新清单，并记录计算时的最高采购价。"
+language.strings["Other kinds"] = "其他机会"
+language.strings["Click a deal, flip, disenchant or Booty Bay row for its numbers and why. Right-click any row (or Price window) for the item's price window."] = "点击低价机会、卖店套利、分解或藏宝海湾条目可查看计算明细。右键条目可打开物品价格窗口。"
+language.strings["Crates and Writs under Professions: the cheapest way to fill each crate, and what each writ costs per reputation."] = "在“专业技能”页查看补给箱和工匠订单：计算补满补给箱的最低成本，以及每点声望对应的订单成本。"
+language.strings["The Crates and Writs tabs under Professions, and their tooltip lines."] = "在“专业技能”页显示补给箱和工匠订单标签及其物品提示。"
+language.strings["Help that mentions \"%s\", from every topic."] = "所有帮助主题中与“%s”相关的内容。"
+language.strings["%d things to know%s. Search finds anything in Help."] = "%d 条说明%s。可搜索帮助内容。"
+language.strings["Deal -%d%%"] = "低价%d%%"
+language.strings["You know this recipe."] = "你已学会此配方。"
+
+-- Session details and freeze diagnostics.
+language.strings["Drag to move"] = "拖动窗口可移动"
+language.strings["The graph starts after the first half minute."] = "统计满 30 秒后显示曲线。"
+language.strings["Sort by %s"] = "按%s排序"
+language.strings["Click again to turn the order around."] = "再次点击可切换升降序。"
+language.strings["Gold and loot"] = "金币与拾取估值"
+language.strings["Your usual pace"] = "历史平均"
+language.strings["Best drop: |T%s:14:14|t %s, %s each"] = "最高价值掉落：|T%s:14:14|t %s，单件 %s"
+language.strings["Nothing looted yet (or it's all sold: that's in Gold)."] = "暂无未售出的拾取物品。卖出收入已计入金币。"
+language.strings["Gray items for the vendor (%d)"] = "可卖店的灰色物品（%d 种）"
+language.strings["%d more with no price yet, not counted."] = "另有 %d 种物品暂无估价，未计入。"
+language.strings["No gold in or out yet."] = "暂无金币收支。"
+language.strings["Past sessions"] = "历史统计"
+language.strings["Your finished sessions show here."] = "暂无已结束的统计。"
+language.strings["short"] = "时长不足"
+language.strings["gold and loot"] = "含拾取估值"
+language.strings["after %d minutes"] = "满 %d 分钟后显示"
+language.strings["in %s, out %s"] = "收入 %s，支出 %s"
+language.strings["Loot, still yours"] = "尚持有的拾取物品"
+language.strings["%d kinds"] = "%d 种物品"
+language.strings["Your usual"] = "历史平均"
+language.strings["ahead by %s"] = "高出 %s"
+language.strings["behind by %s"] = "低于平均 %s"
+language.strings["best %s"] = "最高 %s"
+language.strings["after 3 sessions of 10 min"] = "需完成 3 次至少 10 分钟的统计"
+language.strings["Less"] = "收起详情"
+language.strings["More"] = "展开详情"
+language.strings["Carry on"] = "继续统计"
+language.strings["Closes the session window."] = "关闭游玩统计详情。"
+language.strings["Opens the session window: a graph of your pace, every item looted (sort by any column), gold by where it came from and your past sessions."] = "打开游玩统计详情，查看收益曲线、拾取物品、金币收支来源和历史记录。"
+language.strings["Ends the session and puts its summary in chat and the Ledger's Sessions."] = "结束本次统计，并在聊天窗口和账本的“游玩统计”中显示摘要。"
+language.strings["The clock stops and nothing is counted until you carry on."] = "暂停计时和收支、拾取记录。"
+language.strings["The clock runs and counting starts again."] = "恢复计时和收支、拾取记录。"
+language.strings["  and %d more: the arrow (More) shows them all"] = "  另有 %d 种，点击箭头查看全部"
+language.strings["Drag to move. Right-click for the bigger view, with More (the arrow), Pause and Stop."] = "拖动可移动。右键展开统计条，可查看详情、暂停或结束。"
+language.strings["Drag to move. Right-click to fold it to one line. The arrow shows everything as it comes in."] = "拖动可移动，右键折叠为一行。点击箭头查看统计详情。"
+language.strings["Timing and freezes reset. Play until it happens again, then /fl perf."] = "已清空耗时和卡顿记录。再次卡顿后输入 /fl perf 查看。"
+language.strings["  Freezes: none seen (a frame of %.2f seconds or more) since they were first watched."] = "  尚未记录到单帧耗时达到 %.2f 秒的卡顿。"
+language.strings["  Freezes (the newest %d of %d kept):"] = "  最近 %d 次卡顿（共保留 %d 次）："
+language.strings["  (This game client has no addon profiler, so other addons can't be named; Forever Ledger's share still shows.)"] = "  当前客户端不支持按插件统计耗时。仍可查看永恒账本的耗时。"
+language.strings["What takes time, and any freezes (a frame of a quarter second or more): how long, how much of it was Forever Ledger and which part, the item a tooltip showed, and which other addons the game names. /fl perf reset starts over. /fl probe: game checks."] = "查看插件耗时和单帧达到 0.25 秒的卡顿记录。报告包括总耗时、永恒账本耗时及最慢环节、当时提示的物品，以及客户端识别到的其他插件。用 /fl perf reset 清空记录，用 /fl probe 查看客户端接口。"
+language.strings[", which costs about %s to fill on average"] = "，平均补齐成本约 %s"
+language.strings["WHY"] = "归类"
+language.strings["Why"] = "归类"
+language.strings["Start one (Ctrl-click on the minimap button, or /fl session start) and a small tracker you can drag counts what your time is worth: gold an hour, gold in and out, and what you loot (at the better of auction and vendor price; Settings, Sessions can make it vendor only). Right-click the tracker to fold it to one line. The small icons: the arrow (More) opens the session window, live: tiles for gold an hour, gold, loot and your usual pace (after 3 sessions of 10 minutes or more; ahead or behind it), a graph of gold and loot over the session against your usual pace, every item looted with how many, worth each and in all (click a heading to sort; gray items for the vendor apart; the best drop on top; hover one for its tooltip; new loot lit for a few seconds), gold by where it came from, and your past sessions (the best gold an hour lit). Drag it anywhere; Close or the arrow closes it. Pause (two bars) stops the clock and the counting until Carry on (the play arrow; or /fl session pause and resume). Loot counts only while you still have it: sell it during the session and it counts once, as the gold it brought; disenchant, use or destroy it and it drops out. Gold an hour shows after 5 minutes. Stop it (the square) to get a summary in chat (with your best yet, or your usual); it joins the Ledger's Sessions sub-tab, with when, length, gold, what you looted, gold an hour and the character (hover one for where its gold came from and the best loot). A session carries on through a logout on the same character."] = "按住 Ctrl 点击小地图图标，或输入 /fl session start 开始统计。统计条记录金币收支和拾取估值，右键可折叠成一行。拾取估值取拍卖行价格和商店收购价中较高者，可在“设置 → 游玩统计”中改用商店收购价。\n点击箭头查看详情，包括每小时收益、收益曲线、拾取物品、金币来源和历史记录。点击表头可排序，灰色物品单独显示，新拾取的物品会短暂高亮。达到 5 分钟后显示每小时收益。完成 3 次至少 10 分钟的统计后，可与历史平均比较。\n点击暂停或播放图标可暂停、恢复统计，也可输入 /fl session pause 或 /fl session resume。物品卖出后只计入金币收入，分解、使用或销毁后会从拾取估值中扣除。点击方块结束统计，摘要会发到聊天窗口并存入账本的“游玩统计”。同一角色重新登录后可继续未结束的统计。"

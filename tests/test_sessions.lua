@@ -1,0 +1,194 @@
+-- Sessions.lua (November 17): loot counted once (a player on CurseForge: sold loot counted
+-- as loot and again as gold), pause, usual pace and the full view's lines.
+local T = ...
+local ns, S = T.ns, T.S
+
+local A, B = 990101, 990102   -- items no other test uses
+
+-- A running session on this character with loot already in it, each item worth 100c.
+local function session(loot)
+  ns.db.liveSession = { t = S.now - 600, resume = S.now - 600, active = 0, char = ns.CharKey(), money = {}, loot = loot }
+  return ns.db.liveSession
+end
+local function withValues(fn)
+  local real = ns.LootValue
+  ns.LootValue = function(_, id) return (id == A or id == B) and 100 or 0 end
+  local ok, err = pcall(fn)
+  ns.LootValue = real
+  ns.db.liveSession = nil
+  S.bags[A], S.bags[B], S.bank[A] = nil, nil, nil
+  if not ok then error(err, 0) end
+end
+
+T.test("Sessions: loot sold during the session counts once, as gold", function()
+  withValues(function()
+    S.items[A] = { name = "Session Test Cloth" }
+    local s = session({ [A] = 5, [B] = 2 })
+    S.bags[A], S.bags[B] = 5, 2
+    T.eq(ns:SessionTotals().loot, 700, "all of it, still in the bags")
+    -- Sold 2 to a vendor: they're gold now (History.lua passes the item ID).
+    ns:SessionSold(A, 2)
+    S.bags[A] = 3
+    ns:SessionMoney("vendorSell", 200)
+    local st = ns:SessionTotals()
+    T.eq(st.loot, 500, "3 + 2 left as loot")
+    T.eq(st.gained, 200, "the 2 sold, as gold")
+    -- An auction sale names the item; it counts when posted during the session.
+    ns:SessionPosted(A, 1)
+    ns:SessionSold("Session Test Cloth", 1)
+    T.eq(s.sold[A], 3)
+    -- Never more sold than looted.
+    ns:SessionSold(A, 50)
+    T.eq(s.sold[A], 5)
+    S.bags[A] = 10   -- (bought more: still only what was looted, less what was sold)
+    T.eq(ns:SessionTotals().loot, 200, "only B left")
+  end)
+end)
+
+T.test("Sessions: auction sales count only what was posted this session, random stats too", function()
+  -- (Codex review, November 17: an old auction's money took new loot off; a sale named
+  -- with random stats didn't match the looted item.)
+  withValues(function()
+    S.items[A] = { name = "Session Test Sword" }
+    local oldName = ns.db.itemNames[A]
+    ns.db.itemNames[A] = "Session Test Sword"   -- (saved names come first; an earlier test named it)
+    local s = session({ [A] = 5 })
+    S.bags[A] = 5
+    ns:SessionSold("Session Test Sword", 5)   -- an auction posted before the session
+    T.eq(s.sold and s.sold[A], nil, "not posted this session: the new loot stays loot")
+    T.eq(ns:SessionTotals().loot, 500)
+    ns:SessionPosted(A, 2)
+    S.bags[A] = 3
+    ns:SessionSold("Session Test Sword of Strength", 1)
+    T.eq(s.sold[A], 1, "the version with random stats is the looted sword")
+    ns:SessionSold("Session Test Sword of the Bear", 5)
+    T.eq(s.sold[A], 2, "no more than was posted")
+    T.eq(s.posted[A], 0)
+    ns:SessionPosted(A, 1)
+    ns:SessionSold("Session Test Swordfish", 1)
+    T.eq(s.sold[A], 2, "another item whose name starts the same")
+    T.eq(s.posted[A], 1)
+    S.items[A], ns.db.itemNames[A] = nil, oldName
+  end)
+end)
+
+T.test("Sessions: loot no longer held drops out; posted auctions still count", function()
+  withValues(function()
+    session({ [A] = 4 })
+    S.bags[A], S.bank[A] = 1, 1
+    T.eq(ns:SessionTotals().loot, 200, "disenchanted or used: only what's left")
+    ns.db.myAuctions = ns.db.myAuctions or {}
+    ns.db.myAuctions[ns.CharKey()] = { list = { { id = A, q = 2 }, { id = A, q = 5, sold = true } } }
+    T.eq(ns:SessionTotals().loot, 400, "2 on the auction house, not sold yet")
+    ns.db.myAuctions[ns.CharKey()] = nil
+    S.bags[A], S.bank[A] = 0, 0
+    local st = ns:SessionTotals()
+    T.eq(st.loot, 0)
+    T.eq(#st.items, 0)
+  end)
+end)
+
+T.test("Sessions: items without a price are counted apart", function()
+  withValues(function()
+    session({ [A] = 1, [990103] = 3 })
+    S.bags[A], S.bags[990103] = 1, 3
+    local st = ns:SessionTotals()
+    T.eq(st.loot, 100)
+    T.eq(st.unpriced, 3)
+    S.bags[990103] = nil
+  end)
+end)
+
+T.test("Sessions: pause stops the clock and the counting", function()
+  withValues(function()
+    local s = session({})
+    T.eq(ns:SessionTotals().secs, 600)
+    ns:PauseGeneralSession(true)
+    T.ok(s.paused, "paused")
+    T.eq(s.active, 600, "the time so far banked")
+    ns:SessionMoney("loot", 500)
+    T.eq(s.money.loot, nil, "nothing counted while paused")
+    S.now = S.now + 300
+    T.eq(ns:SessionTotals().secs, 600, "the clock stood still")
+    ns:PauseGeneralSession(false)
+    T.eq(s.paused, nil)
+    S.now = S.now + 60
+    T.eq(ns:SessionTotals().secs, 660, "and runs again")
+    ns:SessionMoney("loot", 500)
+    T.eq(s.money.loot, 500)
+    S.now = S.now - 360
+  end)
+end)
+
+T.test("Sessions: gold an hour after 5 minutes, usual and best pace", function()
+  T.eq(ns.SessionRate({ secs = 200, earned = 100 }), nil, "too short")
+  T.eq(ns.SessionRate({ secs = 3600, earned = 1000, spent = 200, loot = 400 }), 1200, "gold and loot")
+  local saved = ns.db.sessions
+  ns.db.sessions = {
+    { kind = "general", secs = 3600, earned = 1000 },
+    { kind = "general", secs = 300, earned = 99999 },   -- under 10 minutes: not counted
+    { kind = "general", secs = 3600, earned = 3000 },
+  }
+  T.eq(ns:SessionUsual(), nil, "needs 3 sessions")
+  ns.db.sessions[#ns.db.sessions + 1] = { kind = "general", secs = 1800, earned = 1000 }   -- 2000 an hour
+  ns.db.sessions[#ns.db.sessions + 1] = { kind = "general", secs = 3600, earned = 4000 }
+  local u = ns:SessionUsual()
+  T.eq(u and u.n, 4)
+  T.eq(u and u.usual, 2500, "the median of 1000, 2000, 3000, 4000")
+  T.eq(u and u.best, 4000)
+  ns.db.sessions = saved
+end)
+
+T.test("Session window: pace points every half minute, never while paused, thinned", function()
+  local s = { pace = nil }
+  T.ok(ns.SessionPaceSample(s, { secs = 1, gained = 0, loot = 0 }), "the start")
+  T.eq(ns.SessionPaceSample(s, { secs = 20, gained = 50, loot = 0 }), nil, "too soon")
+  T.ok(ns.SessionPaceSample(s, { secs = 31, gained = 50, loot = 25 }))
+  T.eq(s.pace[2][2], 75, "gold and loot")
+  s.paused = true
+  T.eq(ns.SessionPaceSample(s, { secs = 90, gained = 50, loot = 25 }), nil, "paused")
+  s.paused = nil
+  for i = 3, 241 do ns.SessionPaceSample(s, { secs = i * 30 + 1, gained = i, loot = 0 }) end
+  T.ok(#s.pace <= 240, "kept small")
+  T.eq(s.pace[1][1], 1, "from the start")
+  T.eq(s.pace[#s.pace][1], 241 * 30 + 1, "to now")
+end)
+
+T.test("Session window: the loot table sorts, keeps gray items apart, names the best drop", function()
+  local names = { [A] = "Bolt of Cloth", [B] = "Aqua Gem", [990104] = "Broken Tooth" }
+  local realName = ns.ItemName
+  ns.ItemName = function(id) return names[id] end
+  local items = { { id = A, n = 10, value = 1000 }, { id = B, n = 1, value = 500 }, { id = 990104, n = 4, value = 40 } }
+  local quality = function(id) return id == 990104 and 0 or 2 end
+  local ok, err = pcall(function()
+    local t = ns.SessionLootRows(items, "value", nil, quality)
+    T.eq(#t.rows, 2)
+    T.eq(t.rows[1].id, A, "biggest total first")
+    T.eq(#t.grays, 1)
+    T.eq(t.grayValue, 40)
+    T.eq(t.best.id, B, "the best drop: worth most each (500 against 100)")
+    T.eq(ns.SessionLootRows(items, "name", nil, quality).rows[1].id, B, "A to Z")
+    T.eq(ns.SessionLootRows(items, "name", true, quality).rows[1].id, A, "turned around")
+    T.eq(ns.SessionLootRows(items, "n", nil, quality).rows[1].id, A, "most first")
+    T.eq(ns.SessionLootRows({ { id = 990104, n = 1, value = 5 } }, "value", nil, quality).best.id, 990104, "only gray: still a best drop")
+  end)
+  ns.ItemName = realName
+  if not ok then error(err, 0) end
+end)
+
+T.test("Session window: past sessions, newest first, the best one marked", function()
+  local saved = ns.db.sessions
+  ns.db.sessions = {
+    { kind = "general", t = 100, secs = 3600, earned = 1000 },
+    { kind = "shuffle", t = 150, secs = 3600, earned = 99999 },
+    { kind = "general", t = 200, secs = 3600, earned = 5000 },
+    { kind = "general", t = 300, secs = 120, earned = 10 },
+  }
+  local rows = ns.SessionPastRows(6)
+  ns.db.sessions = saved
+  T.eq(#rows, 3, "general sessions only")
+  T.eq(rows[1].t, 300, "newest first")
+  T.eq(rows[1].rate, nil, "too short for a rate")
+  T.ok(rows[2].best, "the best gold an hour")
+  T.eq(rows[3].best, nil)
+end)

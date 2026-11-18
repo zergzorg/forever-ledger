@@ -9,7 +9,7 @@ codes = true
 -- Do not generate this list from addon identifiers or allow arbitrary new globals.
 read_globals = {
   -- Modern API namespaces and engine objects (fields vary between game clients).
-  "C_AddOns", "C_AuctionHouse", "C_ChatInfo", "C_ClassTalents", "C_Container",
+  "C_AddOnProfiler", "C_AddOns", "C_AuctionHouse", "C_ChatInfo", "C_ClassTalents", "C_Container",
   "C_CurrencyInfo", "C_CVar", "C_GameRules", "C_GossipInfo", "C_Item", "C_Map",
   "C_MerchantFrame", "C_MountJournal", "C_PartyInfo", "C_PetJournal", "C_PvP",
   "C_QuestLog", "C_Seasons", "C_SpecializationInfo", "C_Spell", "C_SpellBook",
@@ -47,7 +47,7 @@ read_globals = {
   "UnitIsDead", "UnitLevel", "UnitName", "UnitReaction",
 
   -- Items, loot, merchants, mail, trade, professions, spells and older API fallbacks.
-  "GetActiveTalentGroup", "GetAddOnMemoryUsage", "GetAddOnMetadata", "IsAddOnLoaded",
+  "GetActiveTalentGroup", "GetAddOnMemoryUsage", "GetAddOnMetadata", "IsAddOnLoaded", "GetNumAddOns", "GetAddOnInfo",
   "UpdateAddOnMemoryUsage", "GetChannelDisplayInfo", "GetChannelName",
   "EnumerateServerChannels", "GetNumDisplayChannels", "GetInboxHeaderInfo",
   "GetInboxInvoiceInfo", "GetInboxItem", "GetInboxNumItems", "GetInstanceInfo",
@@ -65,7 +65,7 @@ read_globals = {
   "SetTrainerServiceTypeFilter", "IsPlayerSpell", "IsSpellKnown", "UnitCharacterPoints",
 
   -- Optional addon APIs: used only behind their existing runtime checks.
-  "AucAdvanced", "Auctionator", "EllesmereUI", "TSM_API",
+  "AHledgerAPI", "AucAdvanced", "Auctionator", "EllesmereUI", "TSM_API",
 }
 
 -- Blizzard tables whose fields the addon deliberately registers or mutates.

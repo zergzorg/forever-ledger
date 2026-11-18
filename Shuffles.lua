@@ -1080,7 +1080,11 @@ function ns:DealExplain(d)
   end
   if d.speed then
     pair("Сбыт", ns:SellSpeedText(d.speed))
-    pair("Оценка по", ("сравнено %d ч проверок"):format(math.floor(d.speed.hours + 0.5)))
+    if d.speed.from == "AHledger" then
+      pair("Оценка по", ns.AHLEDGER_CREDIT)
+    else
+      pair("Оценка по", ("сравнено %d ч проверок"):format(math.floor(d.speed.hours + 0.5)))
+    end
   end
   -- Quest items sell to leveling players, once per character (QuestItems.lua).
   if ns.db.settings.tipQuest ~= false and ns.IsQuestItem and ns:IsQuestItem(d.id) then

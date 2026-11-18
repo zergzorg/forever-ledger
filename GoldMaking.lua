@@ -379,9 +379,12 @@ local function filters(kind)
   return { kind = kind, least = g.least, mine = g.mine, prof = g.prof, search = f and f.search:GetText() or "" }
 end
 
+local workedAHledger   -- (AHledger prices went into the list: its credit in the status line)
 local function work()
+  local before = ns.AHledgerUses and ns.AHledgerUses() or 0
   rows, noPrice = ns:GoldIdeas()
   workedAt = time()
+  workedAHledger = ns.AHledgerUses and ns.AHledgerUses() ~= before
 end
 
 local function sortRows(list)
@@ -399,14 +402,14 @@ local function rowTip(self)
   local r = self.entry
   GameTooltip:SetOwner(self, "ANCHOR_LEFT")
   GameTooltip:SetItemByID(r.id)
-  GameTooltip:AddLine(" ")
+  ns:TooltipAddLine(" ")
   if r.kind == "deal" then
     for _, l in ipairs(ns:DealExplain(r.d)) do
-      if l.head then GameTooltip:AddLine(l.head, 1, 0.82, 0)
+      if l.head then ns:TooltipAddLine(l.head, 1, 0.82, 0)
       elseif l.note then
         local c = l.color or { 0.8, 0.8, 0.8 }
-        GameTooltip:AddLine(l.note, c[1], c[2], c[3], true)
-      else GameTooltip:AddDoubleLine(l[1], l[2], 0.8, 0.8, 0.8, 1, 1, 1) end
+        ns:TooltipAddLine(l.note, c[1], c[2], c[3], true)
+      else ns:TooltipAddDoubleLine(l[1], l[2], 0.8, 0.8, 0.8, 1, 1, 1) end
     end
   elseif r.kind == "bootybay" then
     local c = r.c
@@ -416,8 +419,8 @@ local function rowTip(self)
     GameTooltip:AddDoubleLine("Приносит там, где продаёте, после комиссии", money(r.brings), 0.8, 0.8, 0.8, 1, 1, 1)
     GameTooltip:AddLine("Учтены комиссии обоих аукционов и залог одного непроданного лота. Цены — с вашей последней проверки там (" .. ns.Age(c.t) .. ").", 0.6, 0.6, 0.6, true)
   else
-    if r.whoLong then GameTooltip:AddLine(r.whoLong, 0.8, 0.8, 0.8, true) end
-    for line in (r.kind == "flip" and flipText(r) or ns:ShuffleDetails(r.s)):gmatch("[^\n]+") do GameTooltip:AddLine(line, 0.85, 0.85, 0.85, true) end
+    if r.whoLong then ns:TooltipAddLine(r.whoLong, 0.8, 0.8, 0.8, true) end
+    for line in (r.kind == "flip" and flipText(r) or ns:ShuffleDetails(r.s)):gmatch("[^\n]+") do ns:TooltipAddLine(line, 0.85, 0.85, 0.85, true) end
   end
   GameTooltip:AddLine(" ")
   GameTooltip:AddLine("Клик — из чего складывается. Правый клик — окно цены.", 0.6, 0.6, 0.6, true)
@@ -572,6 +575,7 @@ local function drawList()
   if noPrice > 0 and not g.mine then
     parts[#parts + 1] = ("Не учтено: %d — у материала нет цены"):format(noPrice)
   end
+  if workedAHledger then parts[#parts + 1] = ns.AHLEDGER_CREDIT end   -- (its terms: credit where its prices show)
   f.status:SetText(table.concat(parts, ". ") .. (#parts > 0 and "." or ""))
   f.empty:SetShown(#shown == 0)
   if #shown == 0 then
@@ -618,7 +622,9 @@ local function craftSpec(r, spec)
   -- list's prices change: scans redraw the tab up to once a second.
   local key = ("%s:%d:%s:%s"):format(r.key, n, tostring(free), tostring(workedAt))
   if f.panel.planKey ~= key then
+    local before = ns.AHledgerUses and ns.AHledgerUses() or 0
     f.panel.planKey, f.panel.planFor = key, ns:GoldPlan(r, n, free)
+    f.panel.planAHledger = ns.AHledgerUses and ns.AHledgerUses() ~= before
   end
   local plan = f.panel.planFor
   f.panel.plan = plan
@@ -637,8 +643,12 @@ local function craftSpec(r, spec)
       bits[#bits + 1] = sp.key == "none" and "продаж пока не видно"
         or ("продаётся: %s, примерно %d в день"):format(sp.label, math.floor(sp.perDay + 0.5))
     end
+    if sp and sp.from == "AHledger" then bits.credit = true end
   end
   if #bits > 0 then spec[#spec + 1] = { style = "note", left = table.concat(bits, ", ") } end
+  -- AHledger's terms: credit where its figures show (Prices.lua): its sell speed, or its
+  -- prices in the plan (Codex review, November 17).
+  if bits.credit or f.panel.planAHledger then spec[#spec + 1] = { style = "note", left = ns.AHLEDGER_CREDIT } end
   spec[#spec + 1] = { style = "head", left = ("На %d %s"):format(plan.n, ns.Plural(plan.n, "изготовление", "изготовления", "изготовлений")) }
   spec[#spec + 1] = { style = "pair", left = "Материалы на одно изготовление", right = ns.Money(each) }
   if plan.brings then
@@ -885,8 +895,8 @@ function ns:BuildGoldMaking(parent)
     end, 22)
     b:HookScript("OnEnter", function(self)
       GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
-      GameTooltip:AddLine(k.label, 1, 1, 1)
-      GameTooltip:AddLine(KIND_TIP[k.key], nil, nil, nil, true)
+      ns:TooltipAddLine(k.label, 1, 1, 1)
+      ns:TooltipAddLine(KIND_TIP[k.key], nil, nil, nil, true)
       GameTooltip:Show()
     end)
     b:HookScript("OnLeave", function() GameTooltip:Hide() end)
