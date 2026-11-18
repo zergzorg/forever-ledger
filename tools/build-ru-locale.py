@@ -375,6 +375,11 @@ PLURAL = {
               "%d предметов: потрачено %s, получено %s, прибыль с перепродажи %s%s   %s"),
     "Profit on %d resold":
         forms("Прибыль с %d перепроданного", "Прибыль с %d перепроданных", "Прибыль с %d перепроданных"),
+    # Gold making: the plan heading, with the English picks "craft" or "crafts" itself.
+    "For %d craft":
+        forms("На %d изготовление", "На %d изготовления", "На %d изготовлений"),
+    "For %d crafts":
+        forms("На %d изготовление", "На %d изготовления", "На %d изготовлений"),
 }
 
 # -- Messages Russian phrases differently ------------------------------------
@@ -414,6 +419,8 @@ MANUAL = {
         "Вернуть встроенные группы к наборам по умолчанию?\n\nУйдёт добавленных вами: %d. Вернётся убранных: %d. Правил, которые вы меняли, вернётся к «По умолчанию»: %d.\n\nВаши группы и сохранённые правила останутся. Отменить нельзя.",
     "Restore the built-in groups to their defaults?\n\n%d items you added taken out, %d you took out put back, %d rules you changed back to Default.\n\nYour own groups and saved rules stay. This can't be undone.":
         "Вернуть встроенные группы к наборам по умолчанию?\n\nУйдёт добавленных вами: %d. Вернётся убранных: %d. Правил, которые вы меняли, вернётся к «По умолчанию»: %d.\n\nВаши группы и сохранённые правила останутся. Отменить нельзя.",
+    # The session window's loot table: its own heading in the tooltip.
+    "Sort by %s": "Сортировать: %s",
     # Writs: two counts in one line, so both read as a colon list and no noun inflects.
     "%d orders, %d with a price.   %s": "Заказов: %d, с ценой: %d.   %s",
     # Ledger, By item: the hint under an empty list when a group or rarity filter hides
