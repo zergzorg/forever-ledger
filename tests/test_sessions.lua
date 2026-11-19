@@ -72,6 +72,29 @@ T.test("Sessions: auction sales count only what was posted this session, random 
   end)
 end)
 
+T.test("Sessions: a sale whose mail came before the post isn't this session's loot", function()
+  -- (Codex verification, November 18: loot 5 cloth, post them, then collect an old
+  -- invoice for 20: the 5 still listed went from loot.)
+  withValues(function()
+    S.items[A] = { name = "Session Test Linen" }
+    local oldName = ns.db.itemNames[A]
+    ns.db.itemNames[A] = "Session Test Linen"
+    local s = session({ [A] = 5 })
+    ns:SessionPosted(A, 5)   -- posted now (S.now); bags empty, the 5 listed
+    ns:SessionSold("Session Test Linen", 20, S.now - 7200)   -- an old sale's mail, 2 hours ago
+    T.eq(s.sold and s.sold[A], nil, "the listed loot stays loot")
+    T.eq(s.posted[A], 5, "and its posts are still there for its own sale")
+    ns:SessionSold("Session Test Linen", 3, S.now + 3600)   -- one of them sold, mail an hour later
+    T.eq(s.sold[A], 3)
+    T.eq(s.posted[A], 2)
+    T.eq(#s.postedAt[A], 1, "posts used oldest first")
+    T.eq(s.postedAt[A][1][2], 2)
+    ns:SessionSold("Session Test Linen", 9)   -- no mail time: as before, what's posted
+    T.eq(s.sold[A], 5)
+    S.items[A], ns.db.itemNames[A] = nil, oldName
+  end)
+end)
+
 T.test("Sessions: loot no longer held drops out; posted auctions still count", function()
   withValues(function()
     session({ [A] = 4 })
@@ -117,6 +140,31 @@ T.test("Sessions: pause stops the clock and the counting", function()
     ns:SessionMoney("loot", 500)
     T.eq(s.money.loot, 500)
     S.now = S.now - 360
+  end)
+end)
+
+T.test("Sessions: reset asks first, then starts over from zero", function()
+  withValues(function()
+    local s = session({ [A] = 2 })
+    S.bags[A] = 2
+    ns:SessionMoney("loot", 500)
+    ns:PauseGeneralSession(true)
+    local asked
+    local realShow = StaticPopup_Show
+    StaticPopup_Show = function(which) asked = which end
+    ns:ResetGeneralSession()
+    StaticPopup_Show = realShow
+    T.eq(asked, "FOREVER_LEDGER_SESSION_RESET", "asks first")
+    T.eq(ns.db.liveSession, s, "nothing changed yet")
+    local kept = #(ns.db.sessions or {})
+    StaticPopupDialogs.FOREVER_LEDGER_SESSION_RESET.OnAccept()
+    local st = ns:SessionTotals()
+    T.ok(ns.db.liveSession ~= s, "a new one")
+    T.eq(st.gained, 0)
+    T.eq(st.loot, 0)
+    T.eq(st.secs, 1, "the clock from zero")
+    T.eq(ns.db.liveSession.paused, nil, "counting again")
+    T.eq(#(ns.db.sessions or {}), kept, "the old one isn't kept")
   end)
 end)
 

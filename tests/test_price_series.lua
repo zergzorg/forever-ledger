@@ -74,6 +74,29 @@ T.test("Price history: a full scan saves each version's price", function()
   T.eq(v[1200], today() .. ":800:1")
 end)
 
+T.test("Price history: a gear version listed at 1,500,000g is saved (GitHub #22)", function()
+  -- The game's %d stops at 2^31 copper (about 214,748g): "integer overflow attempting to
+  -- store 15000000300" stopped every full scan short of done. Plain Lua's doesn't, so act
+  -- like the game's here.
+  start()
+  local real = string.format
+  string.format = function(fmt, ...)
+    if type(fmt) == "string" and fmt:find("%d", 1, true) then
+      for i = 1, select("#", ...) do
+        local v = select(i, ...)
+        if type(v) == "number" and math.abs(v) >= 2 ^ 31 then error("integer overflow attempting to store " .. v) end
+      end
+    end
+    return real(fmt, ...)
+  end
+  local ok, err = pcall(ns.RecordPrice, 70051, { { 15000000300, 1, 1019, 4 }, { 500, 1, 1020, 4 } }, "full")
+  string.format = real
+  T.ok(ok, err)
+  local rec = ns.db.prices[ns.MarketKey()][70051]
+  T.ok(rec and rec.sx and rec.sx:find("1019:15000000300:1", 1, true), rec and rec.sx)
+  T.eq(ns:SuffixPrice(70051, 1019), 15000000300)
+end)
+
 T.test("Price history: versions keep 90 days, then weeks, then 52 weeks", function()
   start()
   local now = S.now

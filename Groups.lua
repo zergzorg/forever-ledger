@@ -528,6 +528,17 @@ local function copy(t)
   return c
 end
 
+-- The default rule of one kind as it applies: RULE_DEFAULTS, with the post rule's undercut
+-- from Settings (Selling, Post tab: a CurseForge player asked for always undercutting,
+-- November 18). A group's own or saved rule keeps the undercut it was given.
+local function defaults(kind)
+  local f = copy(ns.RULE_DEFAULTS[kind])
+  local s = ns.db and ns.db.settings
+  if kind == "post" and s and type(s.postUndercut) == "number" and s.postUndercut > 0 then f.undercut = s.postUndercut end
+  return f
+end
+function ns:RuleDefaults(kind) return defaults(kind) end
+
 local function validKind(kind)
   for _, k in ipairs(ns.RULE_KINDS) do if k == kind then return true end end
   return false
@@ -569,17 +580,17 @@ local function resolve(gid, kind)
   while cur and steps < 20 do
     local ref = g.rules[cur] and g.rules[cur][kind]
     if ref ~= nil then
-      if ref == "default" then return copy(ns.RULE_DEFAULTS[kind]), "default", cur, nil, true end
+      if ref == "default" then return defaults(kind), "default", cur, nil, true end
       if ref == "off" then return nil, "off", cur, nil, true end
       if type(ref) == "table" then
-        local f = copy(ns.RULE_DEFAULTS[kind])
+        local f = defaults(kind)
         for k, v in pairs(ref) do f[k] = v end
         return f, "changed", cur, nil, true
       end
       local rid = type(ref) == "string" and ref:match("^rule:(.+)$")
       local saved = rid and g.saved[rid]
       if saved then
-        local f = copy(ns.RULE_DEFAULTS[kind])
+        local f = defaults(kind)
         for k, v in pairs(saved.fields or {}) do f[k] = v end
         return f, "rule", cur, rid, true
       end
@@ -588,7 +599,7 @@ local function resolve(gid, kind)
     local info = ns:GroupInfo(cur)
     cur, steps = info and info.parent, steps + 1
   end
-  return copy(ns.RULE_DEFAULTS[kind]), "default", nil, nil, false
+  return defaults(kind), "default", nil, nil, false
 end
 
 -- A group's rule of one kind as it applies: fields (nil when off), how ("default",
@@ -619,7 +630,7 @@ function ns:RuleFor(id, kind)
     local f, how, from, rid, set = resolve(gid, kind)
     if set then return f, describe(how, from, rid), from end
   end
-  return copy(ns.RULE_DEFAULTS[kind]), "По умолчанию", nil
+  return ns:RuleDefaults(kind), "По умолчанию", nil
 end
 
 -- Saved rules: your own, shared by any groups that pick them.

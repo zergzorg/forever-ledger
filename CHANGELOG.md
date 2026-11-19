@@ -5,7 +5,23 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### Fixed
+- **Always undercut by** works on Blizzard's Sell tab too (it only changed the Post tab): with the price helper on, the price box is filled with that much under the cheapest listing once the listings are in, or your own price when the cheapest is yours, and Undercut uses the same amount.
+
+## [0.27.0] - 2026-11-19
+
+### Highlights
+- Δ **Gold making**: every way to make gold in one list (crafts that sell, conversions, vendor flips, deals, disenchanting, Booty Bay) with what it costs, brings and how many times you could do it. Click a craft for the cheapest way to get its materials. Replaces the Shuffles and Deals tabs.
+- Δ **Auction house tabs**: Forever Ledger's own Buy, Post and My auctions tabs in the auction house window. Post prices everything in your bags from the listings and your rules (match the cheapest, or always undercut by your amount); Post, Skip, or scroll to post the next one.
+- + **Groups**: built-in groups that sort themselves by item type (cloth, herbs, gear by level...) and your own, each with rules for posting, buying, vendoring and crafting.
+- + **Professions and Writs**: every recipe of your professions, even ones you haven't seen yet, with Trainers, Crates and all 150 Craftsman's Writ orders beside them (the cheapest way to fill each, and the cost per reputation).
+- + **Session window**: a pace graph, every item looted and your past sessions. Pause and Reset on the tracker, and loot you sell during a session counts once.
+- + **AHledger prices**: with the AHledger addon installed, its prices fill in where your own scans are missing or old.
+- ✓ **Full scans finish again**: a piece of gear listed for over 214,748 gold stopped them just short of done (GitHub #22).
+
 ### Added
+- **Reset** on the session tracker (the circle arrow, or `/fl session reset`): clears what the session has counted and starts its clock again from zero, after asking. The old one isn't kept.
+- **Always undercut by** (Settings, Selling, Post tab): the Post tab prices everything that much under the cheapest listing that isn't yours (type 1 for 1 copper), unless the item's group has a post rule of its own. When the cheapest listing is yours, the Post tab matches it instead of undercutting yourself (a player on CurseForge).
 - Forever Ledger's own tabs in the auction house window: **Buy** (the Buy queue, shopping lists and Disenchant finder) and **My auctions**, after Blizzard's Buy, Sell and Auctions along the bottom. The tab you had open opens again next visit. New flips found while you're on one of Blizzard's tabs show as a count on Buy instead of changing the view. Settings, Auction house, **Forever Ledger's tabs in the auction house** (on); off puts the panel back beside the window.
 - Buy queue rows: a star to watch the item or stop watching it, and a short reason (FLIP, WATCH, or the shopping list's name). The numbers keep their places on the right, so a long name is shortened instead of pushing Profit off. **Buy** and **Total** replace Cheap: how many the queue would buy now (listed at or under Up to, no more than the list wants or your gold covers) and what they cost; Profit counts just those. A new flip's count is looked up while the queue waits for your click, instead of showing 1 until its turn.
 - **Scan once**, a new view on the Buy tab for looking things over: one reading of the whole auction house, then everything in the groups you tick (a group tree on the left, ticked groups add together) with its cheapest price, usual price, % of usual and how many are listed, best deals first, and a name search. The list stays as scanned until you scan again.
@@ -28,7 +44,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 - Scan once: the Cheapest, Usual and % of usual columns have room for large prices. Groups: the add-an-item box no longer runs under the buttons.
 
 ### Fixed
+- Full scans stopped just short of done, every time, when someone listed a piece of gear for over 214,748 gold (GitHub #22; the game can't format a number that big the usual way). Any price is saved now, and one item that can't be saved no longer stops the rest.
+- The sell suggestion on a stack compared the whole stack's vendor price with one item's auction price, so a stack of 5 potions said Sell: Vendor (12s 50c) when the auction house brings nearly three times as much each. It now compares one with one, as Worth to you does.
+- The Crates tab was empty in other languages than English (a German player on CurseForge): crates are now found by their item number (filled ones too, so a crate's shopping list still counts down), and their bundles read from the tooltip in any language.
 - Sessions: an auction sale counts against this session's loot only when it was posted during the session (collecting an older auction's money took new loot of the same item off), and a sale named with random stats (of Strength) now matches the looted item, so it isn't counted twice.
+- Sessions: collecting an old auction's gold no longer takes this session's loot of the same item off while it's still listed. A sale counts against the session's loot only if its mail came after you posted that item.
 - AHledger's credit now shows wherever its prices went into a figure, not only on the item's own price: Worth to you, conversions, crafts and disenchants in tooltips, Recipes, Gold making, Writs and the session tracker.
 - The freeze watch counts a timed step inside another once (it could show Forever Ledger's share as almost twice its time), and names the addons with a slow frame near a freeze as nearby, without blaming the game when none had one.
 - Hovering a sealed writ no longer freezes the game for half a second: the average cost of its tier's orders is worked out in the background a little at a time and kept for 10 minutes (it was all of them at once, again every 30 seconds). The freeze watch now pairs each freeze with the work in it (it was one frame off).

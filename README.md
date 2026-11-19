@@ -14,7 +14,7 @@
 |---|---|
 | <img src="https://raw.githubusercontent.com/ivellos/forever-ledger/main/docs/images/features/worth.png" width="32" height="32" alt=""> | **Know what everything is worth.** Hover any item: sell it, vendor it, disenchant it or craft it, whichever pays most, and the most worth paying for it. |
 | <img src="https://raw.githubusercontent.com/ivellos/forever-ledger/main/docs/images/features/buy.png" width="32" height="32" alt=""> | **Buy the bargains in one click.** Vendor flips and your shopping lists lined up beside the auction house: click or scroll to buy the next one. It never pays more than your limit. |
-| <img src="https://raw.githubusercontent.com/ivellos/forever-ledger/main/docs/images/features/deals.png" width="32" height="32" alt=""> | **Spot deals.** Listings well below their usual price, with the resale profit after the cut and how sure the deal is. |
+| <img src="https://raw.githubusercontent.com/ivellos/forever-ledger/main/docs/images/features/deals.png" width="32" height="32" alt=""> | **Every way to make gold, in one list.** Crafts that sell, conversions, vendor flips, deals well below the usual price and disenchanting, with the cost, the profit and how many times you can do it. |
 | <img src="https://raw.githubusercontent.com/ivellos/forever-ledger/main/docs/images/features/lists.png" width="32" height="32" alt=""> | **Shopping lists.** Twink gear to watch for or raid consumables to buy: search the whole list at once, see what you already own, buy with a tick. |
 | <img src="https://raw.githubusercontent.com/ivellos/forever-ledger/main/docs/images/features/crafting.png" width="32" height="32" alt=""> | **Profit from your professions.** Crafts and disenchants ranked by gold an hour, recipes and where to learn them, customers spotted in chat. |
 | <img src="https://raw.githubusercontent.com/ivellos/forever-ledger/main/docs/images/features/gold.png" width="32" height="32" alt=""> | **See where your gold goes.** Gold over time, every sale and purchase in one list, and what you trade a day. |
@@ -25,10 +25,11 @@
 
 ### Finding gold
 - **Tooltips:** what an item is worth to you (you choose which ways count) and the best few ways to use it, the auction price, how fast it sells, what it disenchants into, how many crafts and quests use it (Shift lists them; "keep it" if you will), and Darkmoon Faire turn-ins. Hold Ctrl for its price history. One line with Shift for more, if you prefer.
+- **Gold making:** every way to make gold in one tab: crafts that sell to a vendor or on the auction house, conversions, vendor flips, deals, disenchanting and Booty Bay, with what each costs and brings, the profit and how many times you could do it. Save your filters as quick buttons. Click a craft to see the cheapest way to get its materials, and add them to a shopping list.
 - **Deals:** listings well below their usual price, with the usual price, how many days of scans it's based on, the next listing up and the resale profit, rated Good, Fair or Thin. A Booty Bay view compares the neutral auction house with yours, each after its own cut.
+- **Scan once:** one reading of the whole auction house, then everything in the groups you tick with its cheapest and usual price, best deals first.
 - **Vendor flips:** things on the auction house for less than a vendor pays. Live watch keeps scanning while the auction house is open, reading every item's cheapest price about every 20 seconds between full scans, and chimes when one turns up. Pause holds it (and the Buy queue's own lookups) while you search yourself.
 - **Watched items:** items you always want checked, each with the most you'd pay (or only under what a vendor pays). Live watch looks for them every time it reads the auction house, and they go first in the Buy queue.
-- **Shuffles:** buy materials, craft, disenchant or convert, and sell, ranked by gold an hour, with every step spelled out. All professions shows every profession's crafts that sell to a vendor at a profit, from Forever's own recipes, even ones none of your characters has.
 - **Sell suggestion:** items in your bags say what to do with them: keep (a quest or one of your recipes needs it), sell to a vendor, sell on the auction house, or disenchant.
 - **On the auction house:** listings worth buying get a green bar and a badge saying why (FLIP, DE, CRAFT, USE).
 - **Disenchant finder:** armor and weapons by item level (greens, and blues and purples from higher levels), with what each is worth to disenchant, on average and on a bad or good roll; add them to a shopping list in one click.
@@ -36,32 +37,36 @@
 - **Gear versions:** "of the Eagle" and "of the Whale" are priced separately, each with its own price graph.
 
 ### Buying
-- **Buy queue:** flips and shopping list items beside the auction house, best profit you can afford first; click Buy or scroll over it to buy the next one, a stack of materials in one tick.
+- **Buy queue:** flips, watched items and shopping list items on Forever Ledger's own Buy tab in the auction house window, best profit you can afford first; click Buy or scroll over it to buy the next one, a stack of materials in one tick.
 - **Spend at most:** cap what the queue spends each auction house visit, or always keep some gold back for repairs.
 - **Shopping lists:** Search all checks the whole list at once (even one version, "of the Monkey"); Have shows what you own across your characters; tick to buy (type any in Want to keep buying whatever is under your price) from it with how many you want and the most you'll pay; craft or buy, whichever is cheaper. Add a shuffle's materials in one click; each price limit says where it came from. Share a list as text.
 ### Selling
-- **Your auctions:** what you have up, what's been undercut (with a reminder), and Cancel next undercut, one click each; sold ones show what you get and when the gold reaches your mailbox, and what sold while you were away is in chat when you come back.
+- **Post tab:** everything in your bags, grouped, with a price ready for each from the listings right now and its group's post rule (match the cheapest, or always undercut by an amount you choose; never below a floor). Post, Skip, or scroll to post the next one.
+- **Groups and rules:** built-in groups that sort themselves by item type (cloth, herbs, gear by level...) and your own, each with rules for posting, buying, vendoring and crafting.
+- **My auctions:** what you have up, what's been undercut (with a reminder), and Cancel next undercut or scroll to cancel, one click each; sold ones show what you get and when the gold reaches your mailbox, and what sold while you were away is in chat when you come back.
 - **Price helper:** the usual price and the cheapest now on the Sell tab, with Undercut and Usual buttons that fill the price in, and a warning when someone is dumping.
 - **Sell protection:** a warning, and Post grayed out, before you list something for less than a vendor pays.
 
 ### Crafting and professions
-- **Recipes and trainers:** every recipe for your professions, who knows it, where to get it, the skill needed and profit per craft; sort by any column.
+- **Professions:** every recipe of your professions, even ones you haven't seen yet, who knows it, where to get it, the skill needed and profit per craft; filter by where it's from or what you can learn now, and sort by any column. Trainers, Crates and Writs are tabs beside them.
 - **Waylaid Crates:** the cheapest way to fill each crate at today's prices, and gold per Merchant's Favor.
+- **Craftsman's Writs:** every writ order, the cheapest way to get what it asks for (bought or made), and what each point of reputation costs; put what you need on a shopping list in one click.
+- **Quick disenchant:** Ctrl+Alt-click gear in your bags to disenchant it, or tick items in the Disenchant window and click once per item.
 - **Customer finder and ads:** spots people in chat asking for what your character can do (enchanting, crafted items, Mage water and portals, Warlock summons, lockpicking), with Whisper and Invite buttons, one-click ads for Trade, and a Silence button.
 
 ### Your gold
 - **Dashboard:** gold now, profit, sales and expenses at a glance, gold over time, your best sales and buys, and how much you trade.
-- **Ledger:** every transaction in one list; select rows to see what they add up to; resale profit per item.
+- **Ledger:** every transaction in one list; select rows to see what they add up to; By item shows what you bought and sold of each item and the profit.
 - **Characters:** every character's bags and bank, per realm and faction, with what it's all worth and the best way to turn each item into gold.
 - **Bag value:** a bag's tooltip shows what one slot costs and the cheapest bag per slot right now.
 - **Riding fund:** how close you are to riding at 40 and epic riding at 60, mount included.
-- **Sessions:** a small tracker for gold an hour, gold in and out and what you loot, and every session listed in the Ledger.
+- **Sessions:** a small tracker for gold an hour, gold in and out and what you loot (sold loot counted once), with Pause and Reset; the session window adds a pace graph and every item looted. Every session is listed in the Ledger.
 
 ### Getting around
 - **Welcome and Help:** a short guide the first time, Help by topic with common questions, and search boxes for Settings and Help.
 - **Your look:** three themes (FL Clean, FL Bronze, FL Gilded), your accent color (or EllesmereUI's), and a Size from 75% to 150%.
 - **Settings profiles:** characters can share a set of settings or each have their own; export a profile for a friend.
-- **Works with Auctionator, TSM and Auctioneer** prices and full scans, switches off what they (or ForeverForge) already show, and looks at home with EllesmereUI.
+- **Works with AHledger, Auctionator, TSM and Auctioneer** prices and full scans, switches off what they (or ForeverForge) already show, and looks at home with EllesmereUI.
 - **Two accounts?** Live sync shares prices, price history and recipes between them while both are online, and your gold, sales, bags and bank if you like. Remove characters you no longer have in Settings.
 - **Update notice:** hear from your guild or group when a newer version is out.
 
@@ -121,14 +126,15 @@ Most things have a button; these are for when you'd rather type. The main ones:
 | `/fl scan materials` | Scan just the materials and products of your recipes |
 | `/fl stop` | Stop a scan |
 | `/fl shuffles` | List the best shuffles and vendor flips in chat (`/fl shuffles all` for everything) |
-| `/fl deals` | Open the Deals tab (`/fl deals list` in chat) |
+| `/fl deals` | Open the old Deals tab (`/fl deals list` in chat); deals are on Gold making now |
+| `/fl disenchant` | The Disenchant window: what in your bags can be disenchanted, one click each |
 | `/fl price` | The price window: add a shift-clicked item or its name, or leave it off to look one up |
 | `/fl customers`, `/fl work` | The Customers window, or its Work done view; `/fl customers on` / `off` turns the customer finder on or off |
 | `/fl cut 5` | Auction house cut used in values, in percent |
 | `/fl margin 10` | Safety margin for shuffles and "buy at or below", in percent |
 | `/fl seconds 3` | Seconds per craft, used for profit per hour |
 | `/fl money` | Today's money in and out for this character |
-| `/fl session start`, `/fl session stop` | Start or stop a session (or Ctrl-click the minimap button) |
+| `/fl session start`, `/fl session stop` | Start or stop a session (or Ctrl-click the minimap button); also `pause`, `resume` and `reset` |
 | `/fl de` | Disenchant results so far, against what the addon expects (`/fl de reset` to start over) |
 | `/fl new`, `/fl welcome` | What's new in this version; the welcome again |
 | `/fl pair First Last` | Pair with your character on another account for live sync (do it on both); `/fl unpair` stops it and removes their characters |
@@ -136,11 +142,11 @@ Most things have a button; these are for when you'd rather type. The main ones:
 | `/fl sync` | Sync status; `/fl sync now` sends everything, `/fl sync ping First Last` checks whispers reach someone |
 | `/fl minimap` | Hide or show the minimap button |
 | `/fl pull` | Copy prices from Auctionator, TSM or Auctioneer |
-| `/fl source auto` | Where prices come from: `auto`, `own`, `auctionator`, `tsm`, `auctioneer` |
+| `/fl source auto` | Where prices come from: `auto`, `own`, `ahledger`, `auctionator`, `tsm`, `auctioneer` |
 | `/fl export`, `/fl import` | Move data between accounts |
 | `/fl csv` | Prices as plain text |
 | `/fl tooltip` | Turn tooltip lines on or off |
-| `/fl perf` | What the addon has spent time on (for lag reports) |
+| `/fl perf` | What the addon has spent time on, and recent freezes (for lag reports) |
 | `/fl api` | Which game functions are available (useful in bug reports) |
 | `/fl debug` | Turn debug messages on or off |
 

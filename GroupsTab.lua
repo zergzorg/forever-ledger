@@ -119,7 +119,7 @@ local function fieldEditor(parent, kind, width, onEdit)
   end
   -- Shows fields; editable false greys them out (a default, or a rule that follows another).
   function e:Load(fields, editable)
-    values = copy(fields or ns.RULE_DEFAULTS[kind])
+    values = copy(fields or ns:RuleDefaults(kind))
     for _, c in ipairs(self.controls) do
       local v = values[c.def.key]
       if c.def.kind == "check" then c:SetChecked(v and true or false)
@@ -436,7 +436,7 @@ local function drawRules(gid)
     local value = settingValue(gid, kind)
     card.follow:SetValue(value)
     local fields, how, from, rid = ns:GroupRule(gid, kind)
-    card.editor:Load(fields or ns.RULE_DEFAULTS[kind], value == "changed")
+    card.editor:Load(fields or ns:RuleDefaults(kind), value == "changed")
     card.editor:SetAlpha(how == "off" and 0.35 or 1)
     local fromName = from and ns:GroupInfo(from) and ns:GroupInfo(from).name
     local saved = rid and ((ns.db.groups or {}).saved or {})[rid]
@@ -456,7 +456,7 @@ local function drawRule()
   local kind, fields, editable, title
   if r and r:match("^default:") then
     kind = r:match("^default:(.+)$")
-    fields, editable, title = ns.RULE_DEFAULTS[kind], false, "По умолчанию: " .. KIND_LABEL[kind]:lower()
+    fields, editable, title = ns:RuleDefaults(kind), false, "По умолчанию: " .. KIND_LABEL[kind]:lower()
   else
     local saved = ((ns.db.groups or {}).saved or {})[r or ""]
     if not saved then
@@ -562,7 +562,7 @@ function ns:BuildGroups(parent)
   f.restoreAll:SetPoint("LEFT", f.newGroup, "RIGHT", 4, 0)
   f.newRule = T:Dropdown(f, NAV_W - 4, function(kind)
     askName(("Название нового правила: %s"):format(KIND_LABEL[kind]:lower()), "", function(name)
-      local rid = ns:SaveRule(name, kind, ns.RULE_DEFAULTS[kind])
+      local rid = ns:SaveRule(name, kind, ns:RuleDefaults(kind))
       if rid then state.rule = rid; refresh() end
     end)
   end)
@@ -698,7 +698,7 @@ function ns:BuildGroups(parent)
     card.follow = T:Dropdown(card, 190, function(v)
       local gid = card.gid
       if v == "changed" then
-        ns:SetGroupRule(gid, kind, (ns:GroupRule(gid, kind)) or ns.RULE_DEFAULTS[kind])
+        ns:SetGroupRule(gid, kind, (ns:GroupRule(gid, kind)) or ns:RuleDefaults(kind))
       else
         ns:SetGroupRule(gid, kind, v)
       end
@@ -748,7 +748,7 @@ function ns:BuildGroups(parent)
     local r = state.rule
     local kind, fields, name
     if r:match("^default:") then
-      kind = r:match("^default:(.+)$"); fields = ns.RULE_DEFAULTS[kind]; name = "Моё правило: " .. KIND_LABEL[kind]:lower()
+      kind = r:match("^default:(.+)$"); fields = ns:RuleDefaults(kind); name = "Моё правило: " .. KIND_LABEL[kind]:lower()
     else
       local s = ns.db.groups.saved[r]; kind, fields, name = s.kind, s.fields, s.name .. " (копия)"
     end

@@ -27,8 +27,10 @@ local INDEX_HOURS = { 2, 8, 24 }
 ---------------------------------------------------------------------------
 -- rule: a post rule's fields (Groups.lua RULE_DEFAULTS.post) or nil when posting is off.
 -- usual, cheapest: copper or nil. vendorFloor: the least price that still beats a vendor
--- after the cut, or nil. Returns { price, floor, why, skip }.
-function ns.PostPrice(rule, usual, cheapest, vendorFloor)
+-- after the cut, or nil. mine: your own cheapest listing now, or nil; when it's the
+-- cheapest, yours is matched, never undercut (a CurseForge player, November 18: "except
+-- if its yours, then same price"). Returns { price, floor, why, skip }.
+function ns.PostPrice(rule, usual, cheapest, vendorFloor, mine)
   local out = {}
   if not rule then out.why = "Для него нет правила выставления («выкл»): введите цену."; return out end
   local floor = 0
@@ -36,7 +38,10 @@ function ns.PostPrice(rule, usual, cheapest, vendorFloor)
   if vendorFloor and vendorFloor > floor then floor = vendorFloor end
   out.floor = floor > 0 and floor or nil
   local price
-  if cheapest and cheapest > 0 then
+  if mine and mine > 0 and (not cheapest or mine <= cheapest) then
+    price = mine
+    out.why = ("как у вашего лота, минимум сейчас (%s)"):format(ns.MoneyPlain(mine))
+  elseif cheapest and cheapest > 0 then
     price = cheapest - (rule.undercut or 0)
     out.why = (rule.undercut or 0) > 0 and ("на %s ниже минимума (%s)"):format(ns.MoneyPlain(rule.undercut), ns.MoneyPlain(cheapest))
       or ("как у самого дешёвого (%s)"):format(ns.MoneyPlain(cheapest))
@@ -47,13 +52,14 @@ function ns.PostPrice(rule, usual, cheapest, vendorFloor)
     out.why = "Цены пока нет: проверьте аукцион или введите её."
     return out
   end
+  local ref = (mine and price == mine and mine) or cheapest or price   -- the listing it follows
   if out.floor and price < out.floor then
     if rule.belowFloor == "floor" then
       price = out.floor
-      out.why = ("ваш порог (минимум %s ниже него)"):format(ns.MoneyPlain(cheapest or 0))
+      out.why = ("ваш порог (минимум %s ниже него)"):format(ns.MoneyPlain(ref))
     else
       out.skip = true
-      out.why = ("Не выставлено: минимум (%s) ниже вашего порога (%s)."):format(ns.MoneyPlain(cheapest or 0), ns.MoneyPlain(out.floor))
+      out.why = ("Не выставлено: минимум (%s) ниже вашего порога (%s)."):format(ns.MoneyPlain(ref), ns.MoneyPlain(out.floor))
     end
   end
   out.price = math.max(1, math.floor(price))
@@ -199,7 +205,7 @@ local function price(e)
   local l = liveFor(keyOf(e))
   e.live = l and not l.failed and l or nil
   if e.live then e.cheapest = e.live.cheapest end
-  local p = ns.PostPrice(rule, e.usual, e.cheapest, ns:PostVendorFloor(e.id))
+  local p = ns.PostPrice(rule, e.usual, e.cheapest, ns:PostVendorFloor(e.id), e.live and e.live.mine)
   e.suggested, e.floor, e.why, e.skipRule = p.price, p.floor, p.why, p.skip
   local typed = edits[keyOf(e)] or {}
   e.price = typed.price or e.suggested
@@ -341,11 +347,15 @@ local function readLive(final)
     live[a.key] = { market = ns.MarketKey(), t = time(), failed = true }
   else
     table.sort(rows, function(x, y) return x.price < y.price end)
-    local cheapest
+    local cheapest, mine
     for _, r in ipairs(rows) do
       if not r.allMine and not r.refused then cheapest = r.price; break end
     end
-    live[a.key] = { market = ns.MarketKey(), t = time(), rows = rows, total = total, cheapest = cheapest }
+    -- Your own cheapest (all or part of a listing), so a cheapest that's yours is matched.
+    for _, r in ipairs(rows) do
+      if (r.allMine or r.someMine) and not r.refused then mine = r.price; break end
+    end
+    live[a.key] = { market = ns.MarketKey(), t = time(), rows = rows, total = total, cheapest = cheapest, mine = mine }
   end
   if final or complete then asking = nil end
   for _, e in ipairs(entries) do

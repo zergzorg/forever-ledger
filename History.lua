@@ -492,7 +492,7 @@ local function onMoney()
       local d = (h.deposit and h.deposit > 0 and h.deposit < amount) and h.deposit or nil
       addLog(ns.db.sales, { t = now, c = who, n = h.item, a = amount - (d or 0), dep = d, cut = h.cut, q = h.qty, b = h.buyer })
       -- Looted in a running session: it counts as this gold now, not as loot too (Sessions.lua).
-      if ns.SessionSold then ns:SessionSold(h.item, h.qty) end
+      if ns.SessionSold then ns:SessionSold(h.item, h.qty, h.arrived) end
       ns:Debug("Sale", h.qty or "?", "x", h.item or "?", "to", h.buyer or "?", "for", ns.Money(amount))
     elseif h.log == "vendor" then
       addLog(ns.db.vendorLog, { t = now, c = who, id = h.item, q = h.qty, a = amount, s = h.source == "vendorSell" and "sell" or "buy" })
@@ -570,10 +570,15 @@ ns:On("CHAT_MSG_SYSTEM", function(msg)
 end)
 
 -- Taking money from mail: an "Auction successful" invoice is a sale.
+local MAIL_DAYS = 30
 local function mailHint(index)
   if not GetInboxHeaderInfo then return end
-  local _, _, _, _, money = GetInboxHeaderInfo(index)
+  local _, _, _, _, money, _, daysLeft = GetInboxHeaderInfo(index)
   if not money or money <= 0 then return end
+  -- When the mail came: an auction's mail is kept 30 days (Classic), so from its days left.
+  -- A session counts a sale against its loot only if it came after the post (Sessions.lua).
+  daysLeft = tonumber(daysLeft)
+  local arrived = daysLeft and time() - (MAIL_DAYS - math.min(daysLeft, MAIL_DAYS)) * 86400 or nil
   local invoiceType, itemName, buyer, deposit, consignment, count
   if GetInboxInvoiceInfo then
     local info = { GetInboxInvoiceInfo(index) }
@@ -581,7 +586,7 @@ local function mailHint(index)
   end
   if invoiceType == "seller" then
     hint({ source = "ahSale", amount = money, item = itemName, cut = consignment, log = "sale",
-      buyer = buyer, qty = tonumber(count), deposit = tonumber(deposit) })
+      buyer = buyer, qty = tonumber(count), deposit = tonumber(deposit), arrived = arrived })
   else
     hint({ source = "mailIn", amount = money })
   end

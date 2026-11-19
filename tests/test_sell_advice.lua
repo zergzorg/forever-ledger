@@ -154,6 +154,10 @@ T.test("Sell suggestion: the tooltip line, only for an item you have", function(
   ns:InvalidateValues(true)
   local f = ns:SellFacts(ITEM, false, true)
   T.eq(f.vendor, 100); T.eq(f.ah, 930, "after the cut and one unsold deposit")
+  -- The game's Sell Price is the whole stack's (owner, November 18: a stack of 5 said Vendor).
+  T.eq(ns:SellFacts(ITEM, false, true, 500).vendor, 100, "a stack of 5: still one's price")
+  T.eq(ns.SellVerdict(ns:SellFacts(ITEM, false, true, 500)).kind, "ah", "and the auction house still")
+  T.eq(ns:SellFacts(ITEM, false, true, 60).vendor, 60, "damaged: this copy's lower price")
   local tip, added = fakeTip({})
   S.bags[ITEM] = nil
   ns:AddSellLines(tip, ITEM, false, true)

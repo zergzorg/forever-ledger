@@ -62,3 +62,32 @@ T.test("Post price: the default rule matches the cheapest (Frank, November 15)",
   local p = ns.PostPrice(ns.RULE_DEFAULTS.post, 125, 119, nil)
   T.eq(p.price, 119); T.ok(p.why:find("same as the cheapest"), p.why)
 end)
+
+T.test("Post price: yours is matched when it's the cheapest, never undercut (November 18)", function()
+  local p = ns.PostPrice(RULE, 125, 119, nil, 110)
+  T.eq(p.price, 110, "yours at 110 is under the others' 119"); T.ok(p.why:find("как у вашего"), p.why)
+  p = ns.PostPrice(RULE, 125, 119, nil, 119)
+  T.eq(p.price, 119, "yours shares the cheapest price: matched")
+  p = ns.PostPrice(RULE, 125, 119, nil, 130)
+  T.eq(p.price, 118, "yours is higher: the cheapest is undercut as before")
+  p = ns.PostPrice(RULE, 125, nil, nil, 140)
+  T.eq(p.price, 140, "only yours listed: matched, not the usual price")
+  p = ns.PostPrice(RULE, 200, nil, nil, 100)
+  T.ok(p.skip, "yours under the floor (140) still isn't followed down")
+  T.ok(p.why:find("ниже вашего порога"), p.why)
+end)
+
+T.test("Post: Always undercut by (Settings) sets the default rule's undercut, not a group's own", function()
+  ns.db.settings.postUndercut = 0
+  T.eq(ns:RuleDefaults("post").undercut, 0)
+  ns.db.settings.postUndercut = 1
+  T.eq(ns:RuleDefaults("post").undercut, 1)
+  T.eq(ns.RULE_DEFAULTS.post.undercut, 0, "the built-in default itself is untouched")
+  T.eq((ns:GroupRule("mat", "post")).undercut, 1, "a group following the default")
+  T.ok(ns:SetGroupRule("mat", "post", { undercut = 0, floorPct = 60 }))
+  T.eq((ns:GroupRule("mat", "post")).undercut, 0, "changed here: its own undercut")
+  T.eq(ns:RuleDefaults("buy").underPct, ns.RULE_DEFAULTS.buy.underPct, "other kinds untouched")
+  local p = ns.PostPrice(ns:RuleDefaults("post"), 125, 119, nil)
+  T.eq(p.price, 118)
+  ns.db.settings.postUndercut = 0
+end)

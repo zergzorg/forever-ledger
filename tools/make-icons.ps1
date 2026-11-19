@@ -166,5 +166,15 @@ Fill-Shape "session-less" { param($g, $b, $pen)
   $pen.Width = 2.6
   $g.DrawLines($pen, @((New-Object System.Drawing.PointF 5.5, 15), (New-Object System.Drawing.PointF 12, 8.5), (New-Object System.Drawing.PointF 18.5, 15)))
 }
+# Reset (Frank, November 18): a circle arrow, clockwise, its head at the top left.
+Fill-Shape "session-reset" { param($g, $b, $pen)
+  $pen.Width = 2.4
+  $pen.EndCap = [System.Drawing.Drawing2D.LineCap]::Flat
+  $g.DrawArc($pen, 5.5, 5.5, 13, 13, 315, 262)
+  $path = New-Object System.Drawing.Drawing2D.GraphicsPath
+  $path.AddPolygon(@((New-Object System.Drawing.PointF 10.3, 4.5), (New-Object System.Drawing.PointF 9.4, 11.2), (New-Object System.Drawing.PointF 3.6, 5.4)))
+  $g.FillPath($b, $path)
+  $path.Dispose()
+}
 
 Get-ChildItem $out, $pngOut | Select-Object Name, Length

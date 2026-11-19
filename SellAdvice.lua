@@ -161,7 +161,12 @@ function ns:SellFacts(id, bound, usable, copyPrice)
   local f = { keep = ns:SellKeepReason(id), bound = bound, usable = usable ~= false }
   f.gear = ns.IsGearItem and ns:IsGearItem(id) or false
   f.quality = select(3, ns.GetItemInfo(id))
-  f.vendor = copyPrice or ns:GetSellPrice(id)
+  -- The game's Sell Price is for the whole stack, and everything else here is for one, so
+  -- the copy's price only counts when it's less than one's (damaged gear), as in Worth to
+  -- you (ns:WorthOfCopy). Owner's screenshots, November 18: a stack of 5 Superior Healing
+  -- Potions said Sell: Vendor 12s 50c against 7s 11c on the auction house for one.
+  local one = ns:GetSellPrice(id)
+  f.vendor = (copyPrice and (not one or copyPrice < one)) and copyPrice or one
   local fresh = recentPrice(id)
   for _, o in ipairs(ns:Options(id) or {}) do
     if o.kind == "ah" and not f.ah and fresh then f.ah = o.value end

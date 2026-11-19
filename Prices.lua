@@ -658,7 +658,9 @@ local function record(id, units, src, liveSince)
       s.q = s.q + u[2]
     end
   end
-  for suffix, s in pairs(bySuffix) do sx[#sx + 1] = ("%d:%d:%d"):format(suffix, s.m, s.q) end
+  -- (Not %d: the game's %d stops at about 214,748g, and a listing at 1,500,000g stopped every
+  -- full scan short of done; GitHub #22, November 19. Plain numbers write any price.)
+  for suffix, s in pairs(bySuffix) do sx[#sx + 1] = math.floor(suffix) .. ":" .. math.floor(s.m) .. ":" .. math.floor(s.q) end
   -- Only full scans see versions. A search or quick check keeps the last full scan's
   -- version prices (sxt says when they're from) instead of wiping them.
   local old, sxt = ns.db.prices[key][id], nil
@@ -1430,6 +1432,7 @@ ns:On("REPLICATE_ITEM_LIST_UPDATE", function()
       -- market stays this scan's meanwhile (readingFull), and a price looked up or bought
       -- meanwhile stays as it is (liveAt).
       local ids, k = {}, 0
+      local saveErr   -- (an error saving one item: reported once)
       for id in pairs(byItem) do ids[#ids + 1] = id end
       local save
       save = ns.Timed("Full scan: saving", function()
@@ -1438,7 +1441,11 @@ ns:On("REPLICATE_ITEM_LIST_UPDATE", function()
           k = k + 1
           local id = ids[k]
           local units = byItem[id]
-          record(id, units, "full", liveSince); items = items + 1
+          -- One item's error mustn't stop the scan from finishing (GitHub #22: it stopped at
+          -- 304,000 of 304,584, every time): reported once, and the rest carry on.
+          local ok, err = pcall(record, id, units, "full", liveSince)
+          if not ok and not saveErr then saveErr = true; geterrorhandler()(err) end
+          items = items + 1
           sold.add(id, units)
           local has = false
           for _, u in ipairs(units) do if u[3] then versions = versions + 1; has = true end end
