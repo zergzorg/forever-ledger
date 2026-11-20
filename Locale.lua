@@ -137,8 +137,9 @@ local function translatePattern(text, depth, markupOnly)
           template = row.forms[form] or row.forms[1]
         end
         local index=0
-        return (template:gsub(spec,function()
+        return (template:gsub(spec,function(found)
           index=index+1
+          if found=="%.0s" then return "" end
           if row.kinds[index]=="s" or row.kinds[index]=="q" then return localize(captures[index],depth+1) end
           return captures[index]
         end):gsub("%%%%","%%"))
